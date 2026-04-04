@@ -119,9 +119,7 @@ export async function runInlineTypeScriptStep(
     const runner = await resolveInlineTypeScriptRunner<
       InlineTypeScriptContext,
       Command
-    >(
-      inlineConfig.source,
-    );
+    >(inlineConfig.source);
     const context: InlineTypeScriptContext = {
       cwd: process.cwd(),
       data: inlineConfig.data ?? {},

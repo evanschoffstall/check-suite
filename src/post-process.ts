@@ -43,13 +43,10 @@ export async function runStepPostProcess(
   if (!inlineConfig || command.notFound || command.timedOut) return null;
 
   try {
-    const postProcessor =
-      (await resolveInlineTypeScriptRunner<
-        InlineTypeScriptPostProcessContext,
-        StepPostProcessResult
-      >(
-        inlineConfig.source,
-      )) as InlineTypeScriptPostProcessor;
+    const postProcessor = (await resolveInlineTypeScriptRunner<
+      InlineTypeScriptPostProcessContext,
+      StepPostProcessResult
+    >(inlineConfig.source)) as InlineTypeScriptPostProcessor;
 
     const tokens = getStepTokens(step);
     const context: InlineTypeScriptPostProcessContext = {

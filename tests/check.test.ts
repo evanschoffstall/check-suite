@@ -79,7 +79,7 @@ describe("check CLI", () => {
           '      key: "demo",',
           '      label: "demo",',
           '      handler: "inline-ts",',
-          '      enabled: true,',
+          "      enabled: true,",
           '      summary: { type: "simple" },',
           "      config: {",
           "        source: async ({ ok }) => {",
@@ -94,11 +94,14 @@ describe("check CLI", () => {
         ].join("\n"),
       );
 
-      const result = Bun.spawnSync(["bun", join(process.cwd(), "src/check.ts"), "demo"], {
-        cwd: tempDir,
-        stderr: "pipe",
-        stdout: "pipe",
-      });
+      const result = Bun.spawnSync(
+        ["bun", join(process.cwd(), "src/check.ts"), "demo"],
+        {
+          cwd: tempDir,
+          stderr: "pipe",
+          stdout: "pipe",
+        },
+      );
 
       const stdout = result.stdout.toString().trim();
       const stderr = result.stderr.toString().trim();
