@@ -4,9 +4,9 @@ import type {
   PostProcessTone,
   ProcessedCheck,
   StepPostProcessResult,
-} from "../types/index.ts";
+} from "@/types/index.ts";
 
-import { isRecord } from "../types/index.ts";
+import { isRecord } from "@/types/index.ts";
 
 // ---------------------------------------------------------------------------
 // Normalization helpers (from post-process-result/normalize.ts)

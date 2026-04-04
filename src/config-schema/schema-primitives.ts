@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { isSafeRegExpPattern } from "../regex.ts";
+import { isSafeRegExpPattern } from "@/regex.ts";
 
 const functionSchema = z.custom<(...args: never[]) => unknown>(
   (value) => typeof value === "function",

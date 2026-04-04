@@ -1,8 +1,8 @@
 import { availableParallelism, cpus } from "node:os";
 
-import type { Command, LintConfig, StepConfig } from "./types/index.ts";
+import type { Command, LintConfig, StepConfig } from "@/types/index.ts";
 
-import { run } from "./process/runner.ts";
+import { run } from "@/process/index.ts";
 
 // ---------------------------------------------------------------------------
 // File counting

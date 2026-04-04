@@ -1,6 +1,6 @@
-import type { CliArguments, StepConfig } from "../types/index.ts";
+import type { CliArguments, StepConfig } from "@/types/index.ts";
 
-import { CFG } from "../config/runtime.ts";
+import { CFG } from "@/config/index.ts";
 
 const SUITE_EXCLUSION_PREFIX = "---no=";
 

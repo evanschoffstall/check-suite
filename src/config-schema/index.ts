@@ -1,6 +1,7 @@
 import { ZodError } from "zod";
 
-import { type CheckConfig, isRecord } from "../types/index.ts";
+import { type CheckConfig, isRecord } from "@/types/index.ts";
+
 import { checkConfigSchema } from "./schemas.ts";
 
 export function defineCheckSuiteConfig<TConfig extends CheckConfig>(

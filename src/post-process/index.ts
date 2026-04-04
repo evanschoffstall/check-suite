@@ -4,9 +4,10 @@ import type {
   InlineTypeScriptPostProcessor,
   StepConfig,
   StepPostProcessResult,
-} from "../types/index.ts";
+} from "@/types/index.ts";
 
-import { resolveInlineTypeScriptRunner } from "../inline-ts/runtime.ts";
+import { resolveInlineTypeScriptRunner } from "@/inline-ts/index.ts";
+
 import {
   buildPostProcessContext,
   getRunnablePostProcessConfig,

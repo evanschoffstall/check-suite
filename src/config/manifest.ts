@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import type { PackageManifest } from "../types/index.ts";
+import type { PackageManifest } from "@/types/index.ts";
 
 const PROJECT_MANIFEST: PackageManifest = (() => {
   try {

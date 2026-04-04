@@ -1,4 +1,4 @@
-import type { CliArguments } from "../types/index.ts";
+import type { CliArguments } from "@/types/index.ts";
 
 import {
   createDirectStepArguments,
