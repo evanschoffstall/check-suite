@@ -1,6 +1,6 @@
-import type { StreamCollector } from "./types.ts";
+import type { StreamCollector } from "../types/index.ts";
 
-import { createDelay } from "./timeout.ts";
+import { createDelay } from "../timeout.ts";
 
 export interface ProcessCollectors {
   stderrCollector: StreamCollector;

@@ -6,12 +6,12 @@ import type {
   InlineTypeScriptContext,
   InlineTypeScriptOverrides,
   StepConfig,
-} from "./types.ts";
+} from "../types/index.ts";
 
-import { toInlineTypeScriptConfig } from "./inline-ts-config.ts";
-import { resolveInlineTypeScriptRunner } from "./inline-ts-runtime.ts";
-import { withMissingDetection } from "./process.ts";
-import { isRecord } from "./types.ts";
+import { withMissingDetection } from "../process/index.ts";
+import { isRecord } from "../types/index.ts";
+import { toInlineTypeScriptConfig } from "./config.ts";
+import { resolveInlineTypeScriptRunner } from "./runtime.ts";
 
 export async function runInlineTypeScriptStep(
   step: StepConfig,

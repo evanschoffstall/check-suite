@@ -1,15 +1,15 @@
-import type { Command, RunOptions } from "./types.ts";
+import type { Command, RunOptions } from "../types/index.ts";
 
-import { DECLARED_BUNX_TARGETS } from "./config.ts";
-import { stripAnsi } from "./format.ts";
-import { createProcessCollectors } from "./process-collectors.ts";
+import { DECLARED_BUNX_TARGETS } from "../config/index.ts";
+import { stripAnsi } from "../format.ts";
+import { parsePositiveTimeoutMs } from "../timeout.ts";
+import { createProcessCollectors } from "./collectors.ts";
 import {
   buildCompletedCommand,
   buildTimedOutCommand,
   waitForProcessOutcome,
-} from "./process-io.ts";
-import { createProcessEnv, getPreflightFailure } from "./process-preflight.ts";
-import { parsePositiveTimeoutMs } from "./timeout.ts";
+} from "./io.ts";
+import { createProcessEnv, getPreflightFailure } from "./preflight.ts";
 
 const STREAM_FLUSH_GRACE_MS = 250;
 

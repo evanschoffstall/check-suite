@@ -1,4 +1,4 @@
-import type { Command } from "./types.ts";
+import type { Command } from "../types/index.ts";
 
 export function createProcessEnv(
   extraEnv?: Record<string, string>,

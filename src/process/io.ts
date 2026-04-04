@@ -1,15 +1,12 @@
-import type { Command, KillableProcess } from "./types.ts";
+import type { Command, KillableProcess } from "../types/index.ts";
 
-import {
-  flushCollectors,
-  type ProcessCollectors,
-} from "./process-collectors.ts";
-import { terminateProcess } from "./process-termination.ts";
 import {
   appendTimedOutDrainMessage,
   appendTimedOutMessage,
   createDelay,
-} from "./timeout.ts";
+} from "../timeout.ts";
+import { flushCollectors, type ProcessCollectors } from "./collectors.ts";
+import { terminateProcess } from "./termination.ts";
 
 export async function buildCompletedCommand(
   collectors: ProcessCollectors,
