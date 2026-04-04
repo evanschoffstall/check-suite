@@ -1,6 +1,9 @@
 import { ANSI, divider, paint } from "@/format/index.ts";
 
-import type { ComplexityThresholds, ComplexityViolation } from "./contracts.ts";
+import type {
+  ComplexityThresholds,
+  ComplexityViolation,
+} from "../shared/index.ts";
 
 const MAX_REPORTED_VIOLATIONS = 50;
 const METRIC_DETAIL_PATTERN =

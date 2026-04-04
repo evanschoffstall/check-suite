@@ -1,9 +1,9 @@
-import type { FunctionMetrics } from "./contracts.ts";
+import type { FunctionMetrics } from "./shared/index.ts";
 
-import { LIZARD_THRESHOLDS } from "./constants.ts";
 import { parseLizardCsv } from "./csv-parser.ts";
 import { runLizardAnalysis } from "./lizard-analysis.ts";
-import { buildLizardReportWithFiles } from "./report.ts";
+import { buildLizardReportWithFiles } from "./report/index.ts";
+import { LIZARD_THRESHOLDS } from "./shared/index.ts";
 import { resolveTopLevelFunctionMetrics } from "./top-level-resolution.ts";
 import { collectWorkspaceFileMetrics } from "./workspace-metrics.ts";
 

@@ -1,8 +1,21 @@
 /// <reference types="bun" />
 /// <reference types="node" />
 
-export { LIZARD_ANALYSIS_ARGS, LIZARD_THRESHOLDS } from "./constants.ts";
+export { parseLizardCsv, parseLizardCsvLine } from "./csv-parser.ts";
 
+export {
+  collectTopLevelFunctionNodes,
+  toTopLevelTypeScriptFunctionMetrics,
+} from "./function/index.ts";
+export { runLizardAnalysis } from "./lizard-analysis.ts";
+export { main } from "./main.ts";
+export {
+  buildLizardReportWithFiles,
+  findFileViolations,
+  findFunctionViolations,
+  formatViolations,
+} from "./report/index.ts";
+export { LIZARD_ANALYSIS_ARGS, LIZARD_THRESHOLDS } from "./shared/index.ts";
 export type {
   ComplexityThresholds,
   ComplexityViolation,
@@ -11,16 +24,15 @@ export type {
   TopLevelDeclaration,
   TopLevelFunctionNode,
   TypeScriptFunctionMetrics,
-} from "./contracts.ts";
-export { parseLizardCsv, parseLizardCsvLine } from "./csv-parser.ts";
-export { runLizardAnalysis } from "./lizard-analysis.ts";
-export { main } from "./main.ts";
+} from "./shared/index.ts";
 export {
-  buildLizardReportWithFiles,
-  findFileViolations,
-  findFunctionViolations,
-  formatViolations,
-} from "./report.ts";
+  collectExcludedRanges,
+  computeCyclomaticComplexity,
+  computeMaxNestingDepth,
+  countNonCommentLines,
+  countTokens,
+  isPositionInsideRanges,
+} from "./shared/index.ts";
 export { lizardStep } from "./step-config.ts";
 export {
   collectTopLevelTypeScriptFunctionMetrics,

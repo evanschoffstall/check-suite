@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 
-import { LIZARD_ANALYSIS_ARGS } from "./constants.ts";
+import { LIZARD_ANALYSIS_ARGS } from "./shared/index.ts";
 
 export function runLizardAnalysis(
   failWithOutput: (output: string, exitCode?: number) => never,

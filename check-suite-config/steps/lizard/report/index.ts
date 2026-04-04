@@ -4,16 +4,10 @@ import type {
   ComplexityThresholds,
   FileMetrics,
   TypeScriptFunctionMetrics,
-} from "./contracts.ts";
+} from "../shared/index.ts";
 
-import {
-  buildViolationSections,
-  formatThresholdBlock,
-} from "./report-formatting.ts";
-import {
-  findFileViolations,
-  findFunctionViolations,
-} from "./report-violations.ts";
+import { buildViolationSections, formatThresholdBlock } from "./formatting.ts";
+import { findFileViolations, findFunctionViolations } from "./violations.ts";
 
 type FunctionMetrics = TypeScriptFunctionMetrics;
 
@@ -70,8 +64,5 @@ function buildSummary(
 ): string {
   return `complexity: ${functionViolationCount} function violations · ${fileViolationCount} file violations`;
 }
-export { formatViolations } from "./report-formatting.ts";
-export {
-  findFileViolations,
-  findFunctionViolations,
-} from "./report-violations.ts";
+export { formatViolations } from "./formatting.ts";
+export { findFileViolations, findFunctionViolations } from "./violations.ts";

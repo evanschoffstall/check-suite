@@ -1,4 +1,15 @@
-import type { ComplexityThresholds } from "./contracts.ts";
+export interface ComplexityThresholds {
+  fileCcn: number;
+  fileFunctionCount: number;
+  fileNloc: number;
+  fileTokenCount: number;
+  functionCcn: number;
+  functionLength: number;
+  functionNestingDepth: number;
+  functionNloc: number;
+  functionParameterCount: number;
+  functionTokenCount: number;
+}
 
 const LIZARD_EXCLUDED_PATHS = ["src/components/ui/*"] as const;
 const LIZARD_TARGETS = [

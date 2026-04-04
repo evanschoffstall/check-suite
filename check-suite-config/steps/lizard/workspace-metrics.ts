@@ -1,10 +1,10 @@
 import { resolve } from "node:path";
 import ts from "typescript";
 
-import type { FileMetrics, FunctionMetrics } from "./contracts.ts";
+import type { FileMetrics, FunctionMetrics } from "./shared/index.ts";
 
-import { LIZARD_EXCLUDED_PATHS, LIZARD_TARGETS } from "./constants.ts";
 import { getAnalyzedTypeScriptFiles } from "./file-scanning.ts";
+import { LIZARD_EXCLUDED_PATHS, LIZARD_TARGETS } from "./shared/index.ts";
 
 // ---------------------------------------------------------------------------
 // Per-file metric aggregation from lizard function rows

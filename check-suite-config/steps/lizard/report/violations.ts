@@ -3,7 +3,7 @@ import type {
   ComplexityViolation,
   FileMetrics,
   TypeScriptFunctionMetrics,
-} from "./contracts.ts";
+} from "../shared/index.ts";
 
 type FunctionMetrics = TypeScriptFunctionMetrics;
 

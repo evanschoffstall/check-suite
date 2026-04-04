@@ -1,11 +1,11 @@
 import ts from "typescript";
 
-import type { TypeScriptFunctionMetrics } from "./contracts.ts";
+import type { TypeScriptFunctionMetrics } from "./shared/index.ts";
 
 import {
   collectTopLevelFunctionNodes,
   toTopLevelTypeScriptFunctionMetrics,
-} from "./function-nodes.ts";
+} from "./function/index.ts";
 
 // ---------------------------------------------------------------------------
 // Single-file: collect top-level TypeScript function metrics via the AST
