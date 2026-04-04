@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 import type { CheckConfig } from "@/types/index.ts";
 
 import { parseCheckConfigModule } from "@/config-schema/index.ts";
-import { resolveTimeoutMs } from "@/timeout.ts";
+import { resolveTimeoutMs } from "@/timeout/index.ts";
 
 import { resolveCheckSuiteConfigPath } from "./config-files.ts";
 

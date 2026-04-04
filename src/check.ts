@@ -10,5 +10,5 @@ export { runStepPostProcess } from "@/post-process/index.ts";
 export { applyOutputFilter, run } from "@/process/index.ts";
 export { runStepWithinDeadline } from "@/step/index.ts";
 export { runCheckSuite, runStepBatch } from "@/suite-processing/index.ts";
-export { buildSummary, compactDomAssertionNoise } from "@/summary.ts";
-export { resolveTimeoutMs } from "@/timeout.ts";
+export { buildSummary, compactDomAssertionNoise } from "@/summary/index.ts";
+export { resolveTimeoutMs } from "@/timeout/index.ts";
