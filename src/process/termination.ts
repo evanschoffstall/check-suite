@@ -1,6 +1,6 @@
 import type { KillableProcess } from "@/types/index.ts";
 
-import { createDelay } from "@/timeout.ts";
+import { createDelay } from "@/timeout/index.ts";
 
 const PROCESS_KILL_GRACE_MS = 250;
 

@@ -4,7 +4,7 @@ import {
   appendTimedOutDrainMessage,
   appendTimedOutMessage,
   createDelay,
-} from "@/timeout.ts";
+} from "@/timeout/index.ts";
 
 import { flushCollectors, type ProcessCollectors } from "./collectors.ts";
 import { terminateProcess } from "./termination.ts";
