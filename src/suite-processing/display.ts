@@ -1,5 +1,5 @@
-import type { CheckRow, ProcessedResultEntry } from "./suite-processing.ts";
-import type { Command, StepConfig } from "./types.ts";
+import type { Command, StepConfig } from "../types/index.ts";
+import type { CheckRow, ProcessedResultEntry } from "./types.ts";
 
 import {
   ANSI,
@@ -9,8 +9,9 @@ import {
   printPostProcessSections,
   printStepOutput,
   row,
-} from "./format.ts";
+} from "../format.ts";
 
+/** Prints each executed step's display output to stdout. */
 export function printSuiteOutputs(
   allExecutedSteps: StepConfig[],
   runs: Record<string, Command>,
@@ -30,6 +31,7 @@ export function printSuiteOutputs(
   }
 }
 
+/** Prints post-process feedback messages and sections for each executed main step. */
 export function printSuitePostProcessFeedback(
   executedMainSteps: StepConfig[],
   processedResults: Record<string, ProcessedResultEntry>,
@@ -62,6 +64,7 @@ export function printSuitePostProcessFeedback(
   }
 }
 
+/** Prints the quality summary table and returns `true` when all checks passed. */
 export function printSuiteSummary(
   checks: CheckRow[],
   runs: Record<string, Command>,
@@ -90,6 +93,7 @@ export function printSuiteSummary(
   return allOk;
 }
 
+/** Writes the suite progress indicator unless running in summary-only mode. */
 export function startSuiteProgress(summaryOnly: boolean): void {
   if (summaryOnly) return;
   process.stdout.write(paint("⏳ Please wait ... ", ANSI.bold, ANSI.cyan));

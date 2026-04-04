@@ -1,15 +1,13 @@
-import { CFG, SUITE_LABEL, SUITE_TIMEOUT_MS } from "./config.ts";
+import { CFG, SUITE_LABEL, SUITE_TIMEOUT_MS } from "../config/index.ts";
 import {
   printSuiteOutputs,
   printSuitePostProcessFeedback,
   printSuiteSummary,
   startSuiteProgress,
-} from "./suite-display.ts";
-import {
-  executeSuiteSteps,
-  prepareSuiteReport,
-  selectSuiteSteps,
-} from "./suite-processing.ts";
+} from "./display.ts";
+import { executeSuiteSteps } from "./execution.ts";
+import { prepareSuiteReport } from "./report.ts";
+import { selectSuiteSteps } from "./selection.ts";
 
 /** Runs the configured quality suite with optional step filtering and summary mode. */
 export async function runCheckSuite(
