@@ -2,9 +2,39 @@ import { existsSync, statSync } from "node:fs";
 import { relative, resolve } from "node:path";
 import ts from "typescript";
 
-import { createGlobMatcher } from "./glob-matcher.ts";
-import { normalizePath } from "./normalize-path.ts";
+// ---------------------------------------------------------------------------
+// Path normalization
+// ---------------------------------------------------------------------------
 
+/** Returns a matcher function for a glob pattern (supports * and **). */
+export function createGlobMatcher(pattern: string): (value: string) => boolean {
+  const escapedPattern = pattern
+    .replaceAll("\\", "\\\\")
+    .replaceAll(".", "\\.")
+    .replaceAll("+", "\\+")
+    .replaceAll("?", "\\?")
+    .replaceAll("^", "\\^")
+    .replaceAll("$", "\\$")
+    .replaceAll("{", "\\{")
+    .replaceAll("}", "\\}")
+    .replaceAll("(", "\\(")
+    .replaceAll(")", "\\)")
+    .replaceAll("|", "\\|")
+    .replaceAll("[", "\\[")
+    .replaceAll("]", "\\]")
+    .replaceAll("**", "\\u0000")
+    .replaceAll("*", "[^/]*")
+    .replaceAll("\\u0000", ".*");
+  const patternRegex = new RegExp(`^${escapedPattern}$`, "u");
+
+  return (value: string): boolean => patternRegex.test(normalizePath(value));
+}
+
+// ---------------------------------------------------------------------------
+// Glob matching
+// ---------------------------------------------------------------------------
+
+/** Returns all TypeScript/TSX files under the given targets, excluding paths that match any exclusion pattern. */
 export function getAnalyzedTypeScriptFiles(
   cwd: string,
   targets: readonly string[],
@@ -20,6 +50,14 @@ export function getAnalyzedTypeScriptFiles(
   }
 
   return [...filePaths].sort();
+}
+
+// ---------------------------------------------------------------------------
+// File discovery
+// ---------------------------------------------------------------------------
+
+export function normalizePath(path: string): string {
+  return path.replaceAll("\\", "/");
 }
 
 function addIfIncluded(
