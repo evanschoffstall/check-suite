@@ -2,7 +2,39 @@ import ts from "typescript";
 
 import type { TypeScriptFunctionMetrics } from "./contracts.ts";
 
-import { collectTopLevelTypeScriptFunctionMetrics } from "./collect-top-level-metrics.ts";
+import {
+  collectTopLevelFunctionNodes,
+  toTopLevelTypeScriptFunctionMetrics,
+} from "./function-nodes.ts";
+
+// ---------------------------------------------------------------------------
+// Single-file: collect top-level TypeScript function metrics via the AST
+// ---------------------------------------------------------------------------
+
+/** Parses a single source file and returns typed metrics for all top-level functions. */
+export function collectTopLevelTypeScriptFunctionMetrics(
+  sourceText: string,
+  filePath: string,
+): TypeScriptFunctionMetrics[] {
+  const sourceFile = ts.createSourceFile(
+    filePath,
+    sourceText,
+    ts.ScriptTarget.Latest,
+    true,
+    filePath.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  );
+
+  return toTopLevelTypeScriptFunctionMetrics(
+    collectTopLevelFunctionNodes(sourceFile),
+    sourceFile,
+    sourceText,
+    filePath,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Multi-file: resolve lizard function metrics against AST-derived metrics
+// ---------------------------------------------------------------------------
 
 export function resolveTopLevelFunctionMetrics(
   functions: TypeScriptFunctionMetrics[],
