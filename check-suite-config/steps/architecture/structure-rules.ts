@@ -73,8 +73,13 @@ function buildSiblingLayoutViolations(
   directoryFactsByPath: Map<string, (typeof project.directoryFacts)[number]>,
 ): ArchitectureViolation[] {
   const violations: ArchitectureViolation[] = [];
+  const siblingParentPaths = new Set<string>([
+    ...directoriesByParent.keys(),
+    ...filesByParent.keys(),
+  ]);
 
-  for (const [parentPath, siblingDirectories] of directoriesByParent) {
+  for (const parentPath of siblingParentPaths) {
+    const siblingDirectories = directoriesByParent.get(parentPath) ?? new Set();
     const siblingFiles = filesByParent.get(parentPath) ?? [];
     violations.push(
       ...buildSplitHomeViolations(parentPath, siblingDirectories, siblingFiles),

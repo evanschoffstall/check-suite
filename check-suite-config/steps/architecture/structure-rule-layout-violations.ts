@@ -15,14 +15,14 @@ export function buildFlattenedFeatureViolations(
   entrypointNames: readonly string[],
 ): ArchitectureViolation[] {
   return [
-    ...collectFlattenedFeatureGroups(
+    ...collectDuplicatePrefixGroups(
       siblingDirectories,
       siblingFiles,
       entrypointNames,
     ),
   ].map(([featureName, groupedFiles]) => ({
     code: "mixed-feature-layout",
-    message: `${normalizeParentPath(parentPath)} mixes folder-owned features with flattened ${featureName} files (${groupedFiles.join(", ")}); move ${featureName} into ${featureName}/ and expose one public entrypoint`,
+    message: `${normalizeParentPath(parentPath)} uses a correct ${featureName}* naming convention across ${groupedFiles.join(", ")}, but flattened duplicate prefixes are not allowed; move this responsibility into ${featureName}/ and expose one public entrypoint`,
   }));
 }
 
@@ -134,40 +134,58 @@ export function buildSplitHomeViolations(
     );
 }
 
-function collectFlattenedFeatureGroups(
+/** Collects duplicate flat filename prefixes, including nested prefixes such as normalize-result*. */
+function collectDuplicatePrefixGroups(
   siblingDirectories: Set<string>,
   siblingFiles: string[],
   entrypointNames: readonly string[],
 ): Map<string, string[]> {
-  if (siblingDirectories.size === 0) return new Map();
-
   const fileEntries = siblingFiles.map((fileName) => ({
     fileName,
+    prefixCandidates: getPrefixCandidates(getCodeStem(fileName)),
     stem: getCodeStem(fileName),
   }));
   const groups = new Map<string, string[]>();
+  const candidatePrefixes = new Set<string>();
 
-  for (const { stem } of fileEntries) {
-    if (siblingDirectories.has(stem) || entrypointNames.includes(stem)) {
+  for (const { prefixCandidates } of fileEntries) {
+    for (const prefixCandidate of prefixCandidates) {
+      if (entrypointNames.includes(prefixCandidate)) {
+        continue;
+      }
+
+      candidatePrefixes.add(prefixCandidate);
+    }
+  }
+
+  for (const prefixCandidate of candidatePrefixes) {
+    if (siblingDirectories.has(prefixCandidate)) {
       continue;
     }
 
     const groupedFiles = fileEntries
       .filter(
         (entry) =>
-          entry.stem === stem ||
-          entry.stem.startsWith(`${stem}-`) ||
-          entry.stem.startsWith(`${stem}_`),
+          entry.stem === prefixCandidate ||
+          entry.stem.startsWith(`${prefixCandidate}-`) ||
+          entry.stem.startsWith(`${prefixCandidate}_`),
       )
       .map((entry) => entry.fileName)
       .sort((left, right) => left.localeCompare(right));
 
     if (groupedFiles.length >= 2) {
-      groups.set(stem, groupedFiles);
+      groups.set(prefixCandidate, groupedFiles);
     }
   }
 
   return new Map(
     [...groups.entries()].sort(([left], [right]) => left.localeCompare(right)),
   );
+}
+
+/** Builds every delimiter-aware prefix candidate for a file stem using kebab-case normalization. */
+function getPrefixCandidates(stem: string): string[] {
+  const segments = stem.split(/[-_]/u).filter((segment) => segment.length > 0);
+
+  return segments.map((_, index) => segments.slice(0, index + 1).join("-"));
 }
