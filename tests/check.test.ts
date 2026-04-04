@@ -64,6 +64,22 @@ describe("check CLI", () => {
     expect(stdout).toContain("knip");
   });
 
+  test("runs when invoked through the declared package binary", async () => {
+    const result = Bun.spawnSync(["./bin/check-suite", "keys"], {
+      cwd: process.cwd(),
+      stderr: "pipe",
+      stdout: "pipe",
+    });
+
+    const stdout = result.stdout.toString().trim();
+    const stderr = result.stderr.toString().trim();
+
+    expect(result.exitCode).toBe(0);
+    expect(stderr).toBe("");
+    expect(stdout.length).toBeGreaterThan(0);
+    expect(stdout).toContain("knip");
+  });
+
   test("loads a TypeScript config module with multiline inline functions", async () => {
     const tempDir = mkdtempSync(join(tmpdir(), "check-suite-config-"));
 
