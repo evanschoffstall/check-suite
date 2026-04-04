@@ -15,7 +15,7 @@ import type {
 
 import { stripAnsi } from "./format.ts";
 import {
-  compileInlineTypeScriptFunction,
+  resolveInlineTypeScriptRunner,
   toInlineTypeScriptConfig,
 } from "./inline-ts.ts";
 import { compactDomAssertionNoise } from "./summary.ts";
@@ -36,12 +36,18 @@ export async function runStepPostProcess(
   command: Command,
   displayOutput: string,
 ): Promise<null | StepPostProcessResult> {
-  const inlineConfig = toInlineTypeScriptConfig(step.postProcess);
+  const inlineConfig = toInlineTypeScriptConfig<
+    InlineTypeScriptPostProcessContext,
+    StepPostProcessResult
+  >(step.postProcess);
   if (!inlineConfig || command.notFound || command.timedOut) return null;
 
   try {
     const postProcessor =
-      (await compileInlineTypeScriptFunction<StepPostProcessResult>(
+      (await resolveInlineTypeScriptRunner<
+        InlineTypeScriptPostProcessContext,
+        StepPostProcessResult
+      >(
         inlineConfig.source,
       )) as InlineTypeScriptPostProcessor;
 

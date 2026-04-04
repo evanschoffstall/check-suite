@@ -7,6 +7,7 @@ import type {
   InlineTypeScriptConfig,
   InlineTypeScriptContext,
   InlineTypeScriptOverrides,
+  InlineTypeScriptSource,
   StepConfig,
 } from "./types.ts";
 
@@ -76,6 +77,21 @@ export function compileInlineTypeScriptFunction<TResult>(
 }
 
 /**
+ * Resolves an inline TypeScript source string or function to an executable runner.
+ */
+export function resolveInlineTypeScriptRunner<TContext, TResult>(
+  source: InlineTypeScriptSource<TContext, TResult>,
+): Promise<(context: TContext) => Promise<TResult> | TResult> {
+  if (typeof source === "function") {
+    return Promise.resolve(source);
+  }
+
+  return compileInlineTypeScriptFunction<TResult>(source) as Promise<
+    (context: TContext) => Promise<TResult> | TResult
+  >;
+}
+
+/**
  * Executes the inline TypeScript `source` from a step's config, injecting a
  * sandboxed context with filesystem helpers and pass/fail result builders.
  */
@@ -84,7 +100,10 @@ export async function runInlineTypeScriptStep(
   overrides: InlineTypeScriptOverrides = {},
 ): Promise<Command> {
   const startMs = Date.now();
-  const inlineConfig = toInlineTypeScriptConfig(step.config);
+  const inlineConfig = toInlineTypeScriptConfig<
+    InlineTypeScriptContext,
+    Command
+  >(step.config);
   if (!inlineConfig)
     return withMissingDetection({
       durationMs: Date.now() - startMs,
@@ -97,7 +116,10 @@ export async function runInlineTypeScriptStep(
     withMissingDetection({ durationMs, exitCode, output, timedOut: false });
 
   try {
-    const runner = await compileInlineTypeScriptFunction<Command>(
+    const runner = await resolveInlineTypeScriptRunner<
+      InlineTypeScriptContext,
+      Command
+    >(
       inlineConfig.source,
     );
     const context: InlineTypeScriptContext = {
@@ -172,13 +194,21 @@ export function toCommand(
 /** Extracts and validates an `InlineTypeScriptConfig` from a raw step config value. */
 export function toInlineTypeScriptConfig(
   config: StepConfig["config"] | StepConfig["postProcess"],
-): InlineTypeScriptConfig | null {
+): InlineTypeScriptConfig<unknown, unknown> | null;
+export function toInlineTypeScriptConfig<TContext, TResult>(
+  config: StepConfig["config"] | StepConfig["postProcess"],
+): InlineTypeScriptConfig<TContext, TResult> | null;
+export function toInlineTypeScriptConfig<TContext, TResult>(
+  config: StepConfig["config"] | StepConfig["postProcess"],
+): InlineTypeScriptConfig<TContext, TResult> | null {
   if (!isRecord(config)) return null;
   const source = config.source;
   const data = config.data;
-  if (typeof source !== "string") return null;
+  if (typeof source !== "string" && typeof source !== "function") {
+    return null;
+  }
   return {
     data: isRecord(data) ? data : {},
-    source,
+    source: source as InlineTypeScriptSource<TContext, TResult>,
   };
 }

@@ -2,10 +2,10 @@ import type { existsSync, readFileSync } from "node:fs";
 import type { dirname, join } from "node:path";
 
 // ---------------------------------------------------------------------------
-// Config schema — mirrors check-suite.json structure
+// Config schema — mirrors the exported check-suite config module structure
 // ---------------------------------------------------------------------------
 
-/** Root configuration loaded from `check-suite.json`. */
+/** Root configuration loaded from the check-suite config module. */
 export interface CheckConfig {
   /** Path tokens joined to cwd and exposed as `{key}` substitutions. */
   paths: Record<string, string>;
@@ -45,9 +45,9 @@ export interface DelayHandle<T> {
 }
 
 /** Inline TypeScript step or post-process configuration. */
-export interface InlineTypeScriptConfig {
+export interface InlineTypeScriptConfig<TContext, TResult> {
   data?: Record<string, unknown>;
-  source: string;
+  source: InlineTypeScriptSource<TContext, TResult>;
 }
 
 /** Context object injected into inline TypeScript step handlers. */
@@ -69,10 +69,6 @@ export interface InlineTypeScriptOverrides {
   importModule?: (specifier: string) => Promise<unknown>;
 }
 
-// ---------------------------------------------------------------------------
-// Runtime types
-// ---------------------------------------------------------------------------
-
 /** Context object injected into inline TypeScript post-processor handlers. */
 export interface InlineTypeScriptPostProcessContext {
   command: Command;
@@ -91,10 +87,19 @@ export interface InlineTypeScriptPostProcessContext {
   tokens: Record<string, string>;
 }
 
+// ---------------------------------------------------------------------------
+// Runtime types
+// ---------------------------------------------------------------------------
+
 /** Compiled inline TypeScript post-processor function signature. */
 export type InlineTypeScriptPostProcessor = (
   context: InlineTypeScriptPostProcessContext,
 ) => Promise<StepPostProcessResult> | StepPostProcessResult;
+
+/** String or function source accepted by inline TypeScript config entries. */
+export type InlineTypeScriptSource<TContext, TResult> =
+  | ((context: TContext) => Promise<TResult> | TResult)
+  | string;
 
 /** Minimal interface over a spawned child process. */
 export interface KillableProcess {
@@ -155,13 +160,16 @@ export interface RunOptions {
   timeoutMs?: number;
 }
 
-/** A single configured check step from `check-suite.json`. */
+/** A single configured check step from the check-suite config module. */
 export interface StepConfig {
   /** Allows `bun check --step ...args` to run the selected step directly. */
   allowSuiteFlagArgs?: boolean;
   args?: string[];
   cmd?: string;
-  config?: InlineTypeScriptConfig | LintConfig | Record<string, unknown>;
+  config?:
+    | InlineTypeScriptConfig<InlineTypeScriptContext, Command>
+    | LintConfig
+    | Record<string, unknown>;
   enabled?: boolean;
   ensureDirs?: string[];
   failMsg?: string;
@@ -170,7 +178,12 @@ export interface StepConfig {
   label: string;
   outputFilter?: OutputFilter;
   passMsg?: string;
-  postProcess?: InlineTypeScriptConfig | Record<string, unknown>;
+  postProcess?:
+    | InlineTypeScriptConfig<
+        InlineTypeScriptPostProcessContext,
+        StepPostProcessResult
+      >
+    | Record<string, unknown>;
   preRun?: boolean;
   serialGroup?: string;
   summary?: Summary;

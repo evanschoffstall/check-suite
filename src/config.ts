@@ -1,18 +1,29 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 
 import type { CheckConfig, PackageManifest } from "./types.ts";
 
+import { parseCheckConfigModule } from "./config-schema.ts";
 import { resolveTimeoutMs } from "./timeout.ts";
 
 // ---------------------------------------------------------------------------
 // Suite configuration
 // ---------------------------------------------------------------------------
 
-/** Loaded check-suite.json configuration. */
-export const CFG: CheckConfig = JSON.parse(
-  readFileSync(join(process.cwd(), "check-suite.json"), "utf8"),
-) as CheckConfig;
+const DEFAULT_CONFIG_FILE_NAMES = [
+  "check-suite.config.ts",
+  "check-suite.config.mts",
+  "check-suite.config.js",
+  "check-suite.config.mjs",
+];
+const CONFIG_PATH_ENV_VAR = "CHECK_SUITE_CONFIG";
+
+/** Absolute path to the resolved check-suite config module. */
+export const CHECK_SUITE_CONFIG_PATH = resolveCheckSuiteConfigPath();
+
+/** Loaded check-suite config module. */
+export const CFG: CheckConfig = await loadCheckSuiteConfig();
 
 // ---------------------------------------------------------------------------
 // Package manifest — used to enumerate declared bunx targets
@@ -87,7 +98,7 @@ export const SUITE_LABEL =
   process.env.npm_lifecycle_event?.trim() ?? "quality suite";
 
 /**
- * Token map derived from `paths` in `check-suite.json`.
+ * Token map derived from `paths` in the check-suite config module.
  * Every key becomes a `{key}` substitution resolving to a cwd-joined absolute path.
  */
 export const PATH_TOKENS: Record<string, string> = (() => {
@@ -96,3 +107,41 @@ export const PATH_TOKENS: Record<string, string> = (() => {
     t[`{${k}}`] = join(process.cwd(), v);
   return t;
 })();
+
+async function loadCheckSuiteConfig(): Promise<CheckConfig> {
+  const moduleNamespace = (await import(
+    pathToFileURL(CHECK_SUITE_CONFIG_PATH).href
+  )) as Record<string, unknown>;
+  return parseCheckConfigModule(moduleNamespace);
+}
+
+function resolveCheckSuiteConfigPath(): string {
+  const explicitPath = process.env[CONFIG_PATH_ENV_VAR]?.trim();
+  if (explicitPath) {
+    const resolvedPath = resolve(process.cwd(), explicitPath);
+    if (!existsSync(resolvedPath)) {
+      throw new Error(
+        `Configured check-suite config path does not exist: ${resolvedPath}`,
+      );
+    }
+    return resolvedPath;
+  }
+
+  const discoveredPaths = DEFAULT_CONFIG_FILE_NAMES.map((fileName) =>
+    join(process.cwd(), fileName),
+  ).filter((filePath) => existsSync(filePath));
+
+  if (discoveredPaths.length === 1) {
+    return discoveredPaths[0];
+  }
+
+  if (discoveredPaths.length > 1) {
+    throw new Error(
+      `Multiple check-suite config files found: ${discoveredPaths.join(", ")}`,
+    );
+  }
+
+  throw new Error(
+    `No check-suite config file found. Create one of ${DEFAULT_CONFIG_FILE_NAMES.join(", ")} or set ${CONFIG_PATH_ENV_VAR}.`,
+  );
+}
