@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import type { StepConfig } from "../../../src/types/index.ts";
+import type { StepConfig } from "@/types/index.ts";
 
 import { playwrightPostProcess } from "./post-process.ts";
 

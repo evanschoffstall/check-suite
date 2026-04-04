@@ -1,4 +1,4 @@
-import type { StepConfig } from "../../../src/types/index.ts";
+import type { StepConfig } from "@/types/index.ts";
 
 export const lizardStep: StepConfig = {
   args: ["check-suite-config/steps/lizard/index.ts"],

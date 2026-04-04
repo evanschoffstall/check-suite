@@ -1,4 +1,4 @@
-import type { Command, InlineTypeScriptContext } from "../../../src/types/index.ts";
+import type { Command, InlineTypeScriptContext } from "@/types/index.ts";
 
 /**
  * Runs PurgeCSS against the configured content globs and reports only rejected

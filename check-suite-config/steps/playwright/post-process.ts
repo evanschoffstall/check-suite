@@ -1,12 +1,9 @@
 import type {
   InlineTypeScriptPostProcessContext,
   StepPostProcessResult,
-} from "../../../src/types/index.ts";
-import type {
-  ConfigCheck,
-  ConfigMessage,
-  ConfigSection,
-} from "../../types.ts";
+} from "@/types/index.ts";
+
+import type { ConfigCheck, ConfigMessage, ConfigSection } from "../../types.ts";
 
 import {
   buildCommonCoverageState,
