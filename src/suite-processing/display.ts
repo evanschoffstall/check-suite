@@ -71,12 +71,14 @@ export function printSuiteSummary(
   startedAtMs: number,
 ): boolean {
   const presentChecks = checks.filter(
-    (check) => !check.stpk || !runs[check.stpk].notFound,
+    (check) => !check.stepKey || !runs[check.stepKey].notFound,
   );
   console.info(`\n${paint("Quality Summary", ANSI.bold, ANSI.cyan)}`);
   console.info(divider());
   for (const check of presentChecks) {
-    console.info(row(check.k, check.status, check.d, check.ms));
+    console.info(
+      row(check.label, check.status, check.details, check.durationMs),
+    );
   }
   console.info(divider());
 
