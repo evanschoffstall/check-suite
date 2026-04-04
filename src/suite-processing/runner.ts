@@ -32,17 +32,9 @@ export async function runCheckSuite(
   );
   const report = await prepareSuiteReport(executionState);
 
-  printSuiteOutputs(
-    executionState.allExecutedSteps,
-    executionState.runs,
+  printSuiteReport(
+    executionState,
     report.processedResults,
-    executionState.suiteExpiredBeforeOutput,
-    summaryOnly,
-  );
-  printSuitePostProcessFeedback(
-    executionState.executedMainSteps,
-    report.processedResults,
-    executionState.suiteExpiredBeforeOutput,
     summaryOnly,
     report.missingSteps,
   );
@@ -61,4 +53,28 @@ function completeSuiteRun(allOk: boolean, timedOut: boolean): void {
     process.exit(1);
   }
   if (!allOk) process.exit(1);
+}
+
+function printSuiteReport(
+  executionState: Awaited<ReturnType<typeof executeSuiteSteps>>,
+  processedResults: Awaited<
+    ReturnType<typeof prepareSuiteReport>
+  >["processedResults"],
+  summaryOnly: boolean,
+  missingSteps: Awaited<ReturnType<typeof prepareSuiteReport>>["missingSteps"],
+): void {
+  printSuiteOutputs(
+    executionState.allExecutedSteps,
+    executionState.runs,
+    processedResults,
+    executionState.suiteExpiredBeforeOutput,
+    summaryOnly,
+  );
+  printSuitePostProcessFeedback(
+    executionState.executedMainSteps,
+    processedResults,
+    executionState.suiteExpiredBeforeOutput,
+    summaryOnly,
+    missingSteps,
+  );
 }

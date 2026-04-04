@@ -13,7 +13,7 @@ import {
   printPostProcessSections,
   printStepOutput,
   row,
-} from "@/format.ts";
+} from "@/format/index.ts";
 
 /** Prints each executed step's display output to stdout. */
 export function printSuiteOutputs(

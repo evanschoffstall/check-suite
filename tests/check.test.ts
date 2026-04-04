@@ -18,7 +18,7 @@ import {
   row,
   splitLines,
   stripAnsi,
-} from "../src/format.ts";
+} from "../src/format/index.ts";
 import {
   appendTimedOutDrainMessage,
   appendTimedOutMessage,
