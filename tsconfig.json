@@ -11,6 +11,6 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
   },
-  "include": ["src/**/*", "tests/**/*"],
+  "include": ["check-suite.config.ts", "check-suite-config/**/*.ts", "src/**/*", "tests/**/*"],
   "exclude": ["node_modules", "dist"]
 }
