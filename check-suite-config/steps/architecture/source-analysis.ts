@@ -29,31 +29,35 @@ function analyzeSourceFile(
     ts.ScriptTarget.Latest,
     true,
   );
-  const exportModuleSpecifiers: string[] = [];
-  let topLevelDeclarationCount = 0;
-
-  for (const statement of sourceFile.statements) {
-    if (
-      ts.isExportDeclaration(statement) &&
-      statement.moduleSpecifier &&
-      ts.isStringLiteralLike(statement.moduleSpecifier)
-    ) {
-      exportModuleSpecifiers.push(statement.moduleSpecifier.text);
-    }
-
-    topLevelDeclarationCount += countTopLevelDeclarations(statement);
-  }
+  const fileName = filePath.split("/").pop() ?? filePath;
 
   return {
     directoryPath: dirname(filePath).replace(/^\.$/u, ""),
-    exportModuleSpecifiers,
-    isEntrypoint: entrypointNames.includes(
-      getCodeStem(filePath.split("/").pop() ?? filePath),
-    ),
+    exportModuleSpecifiers: collectExportModuleSpecifiers(sourceFile),
+    isEntrypoint: entrypointNames.includes(getCodeStem(fileName)),
     path: filePath,
-    stem: getCodeStem(filePath.split("/").pop() ?? filePath),
-    topLevelDeclarationCount,
+    stem: getCodeStem(fileName),
+    topLevelDeclarationCount: countSourceFileTopLevelDeclarations(sourceFile),
   };
+}
+
+function collectExportModuleSpecifiers(sourceFile: ts.SourceFile): string[] {
+  return sourceFile.statements.flatMap((statement) =>
+    ts.isExportDeclaration(statement) &&
+    statement.moduleSpecifier &&
+    ts.isStringLiteralLike(statement.moduleSpecifier)
+      ? [statement.moduleSpecifier.text]
+      : [],
+  );
+}
+
+function countSourceFileTopLevelDeclarations(
+  sourceFile: ts.SourceFile,
+): number {
+  return sourceFile.statements.reduce(
+    (count, statement) => count + countTopLevelDeclarations(statement),
+    0,
+  );
 }
 
 function countTopLevelDeclarations(statement: ts.Statement): number {
