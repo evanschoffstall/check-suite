@@ -110,6 +110,47 @@ export function runStepWithinDeadline(
 // Deadline-aware step execution
 // ---------------------------------------------------------------------------
 
+function runCommandStep(
+  step: StepConfig,
+  timeoutMs?: number,
+  extraArgs: string[] = [],
+): Promise<Command> {
+  if (!step.cmd) {
+    return Promise.resolve({
+      exitCode: 1,
+      output: `step "${step.key}" missing cmd`,
+      timedOut: false,
+    });
+  }
+
+  ensureStepDirectories(step);
+  const tokens = getStepTokens(step);
+  return run(
+    step.cmd,
+    [...resolveArgs(step.args ?? [], tokens), ...extraArgs],
+    {
+      label: step.label,
+      timeoutDrainMs: resolveStepTimeoutDrainMsValue(step) ?? undefined,
+      timeoutMs,
+    },
+  );
+}
+
+function runHandledStep(
+  step: StepConfig,
+  timeoutMs?: number,
+  extraArgs: string[] = [],
+): Promise<Command> {
+  const handler = HANDLERS[step.handler ?? ""];
+  return handler
+    ? handler(step, timeoutMs, extraArgs)
+    : Promise.resolve({
+        exitCode: 1,
+        output: `unknown handler: ${step.handler ?? ""}`,
+        timedOut: false,
+      });
+}
+
 /**
  * Dispatches a step to its handler or spawns its configured command.
  * Applies directory setup, token substitution, and timeout drain limits.
@@ -120,35 +161,8 @@ function runStep(
   extraArgs: string[] = [],
 ): Promise<Command> {
   if (step.handler) {
-    const handler = HANDLERS[step.handler];
-    if (!handler) {
-      return Promise.resolve({
-        exitCode: 1,
-        output: `unknown handler: ${step.handler}`,
-        timedOut: false,
-      });
-    }
-
-    return handler(step, timeoutMs, extraArgs);
+    return runHandledStep(step, timeoutMs, extraArgs);
   }
 
-  if (!step.cmd)
-    return Promise.resolve({
-      exitCode: 1,
-      output: `step "${step.key}" missing cmd`,
-      timedOut: false,
-    });
-
-  ensureStepDirectories(step);
-  const tokens = getStepTokens(step);
-
-  return run(
-    step.cmd,
-    [...resolveArgs(step.args ?? [], tokens), ...extraArgs],
-    {
-      label: step.label,
-      timeoutDrainMs: resolveStepTimeoutDrainMsValue(step) ?? undefined,
-      timeoutMs,
-    },
-  );
+  return runCommandStep(step, timeoutMs, extraArgs);
 }

@@ -1,30 +1,9 @@
-import type {
-  Command,
-  KillableProcess,
-  OutputFilter,
-  RunOptions,
-  StreamCollector,
-} from "./types.ts";
+import type { OutputFilter } from "./types.ts";
 
-import { DECLARED_BUNX_TARGETS } from "./config.ts";
 import { stripAnsi } from "./format.ts";
-import {
-  appendTimedOutDrainMessage,
-  appendTimedOutMessage,
-  createDelay,
-  parsePositiveTimeoutMs,
-} from "./timeout.ts";
+import { testSafeRegExp } from "./regex.ts";
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const PROCESS_KILL_GRACE_MS = 250;
-const STREAM_FLUSH_GRACE_MS = 250;
-
-// ---------------------------------------------------------------------------
-// bunx availability guard
-// ---------------------------------------------------------------------------
+export { run, withMissingDetection } from "./process-runner.ts";
 
 /** Applies the configured output filter rule to raw step output. */
 export function applyOutputFilter(
