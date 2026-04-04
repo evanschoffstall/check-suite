@@ -40,9 +40,10 @@ export async function runStepPostProcess(
   if (!inlineConfig || command.notFound || command.timedOut) return null;
 
   try {
-    const postProcessor = (await compileInlineTypeScriptFunction<
-      StepPostProcessResult
-    >(inlineConfig.source)) as InlineTypeScriptPostProcessor;
+    const postProcessor =
+      (await compileInlineTypeScriptFunction<StepPostProcessResult>(
+        inlineConfig.source,
+      )) as InlineTypeScriptPostProcessor;
 
     const tokens = getStepTokens(step);
     const context: InlineTypeScriptPostProcessContext = {
@@ -148,9 +149,7 @@ function toProcessedCheck(value: unknown): null | ProcessedCheck {
 // Step post-process runner
 // ---------------------------------------------------------------------------
 
-function toStepPostProcessResult(
-  value: unknown,
-): null | StepPostProcessResult {
+function toStepPostProcessResult(value: unknown): null | StepPostProcessResult {
   if (!isRecord(value)) return null;
 
   const { extraChecks, messages, output, sections, status, summary } = value;

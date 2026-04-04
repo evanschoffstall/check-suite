@@ -145,8 +145,7 @@ function matchSummaryPattern(
 
       return pat.format.replace(
         /\{(\d+)\}/g,
-        (_whole: string, indexText: string) =>
-          cells[Number(indexText)] ?? "",
+        (_whole: string, indexText: string) => cells[Number(indexText)] ?? "",
       );
     }
   }

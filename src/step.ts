@@ -36,7 +36,9 @@ function getStepTimeoutMs(step: StepConfig, deadlineMs: number): number {
   if (remainingMs <= 0) return 0;
 
   const configuredMs = resolveStepTimeoutMsValue(step);
-  return configuredMs !== null ? Math.min(configuredMs, remainingMs) : remainingMs;
+  return configuredMs !== null
+    ? Math.min(configuredMs, remainingMs)
+    : remainingMs;
 }
 
 function resolveConfiguredPath(entry: string): string {

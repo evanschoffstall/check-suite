@@ -124,7 +124,8 @@ export async function runCheckSuite(
   if (!summaryOnly && !suiteExpiredBeforeOutput) {
     for (const step of allExecutedSteps) {
       if (runs[step.key].notFound) continue;
-      const postProcessedOutput = processedResults[step.key].postProcess?.output;
+      const postProcessedOutput =
+        processedResults[step.key].postProcess?.output;
       const displayOutput =
         postProcessedOutput ?? processedResults[step.key].displayOutput;
       printStepOutput(step.label, displayOutput);
@@ -174,9 +175,7 @@ export async function runCheckSuite(
       );
   }
 
-  const presentChecks = checks.filter(
-    (c) => !c.stpk || !runs[c.stpk].notFound,
-  );
+  const presentChecks = checks.filter((c) => !c.stpk || !runs[c.stpk].notFound);
 
   console.info(`\n${paint("Quality Summary", ANSI.bold, ANSI.cyan)}`);
   console.info(divider());

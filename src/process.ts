@@ -1,4 +1,10 @@
-import type { Command, KillableProcess, OutputFilter, RunOptions, StreamCollector } from "./types.ts";
+import type {
+  Command,
+  KillableProcess,
+  OutputFilter,
+  RunOptions,
+  StreamCollector,
+} from "./types.ts";
 
 import { DECLARED_BUNX_TARGETS } from "./config.ts";
 import { stripAnsi } from "./format.ts";
@@ -21,7 +27,10 @@ const STREAM_FLUSH_GRACE_MS = 250;
 // ---------------------------------------------------------------------------
 
 /** Applies the configured output filter rule to raw step output. */
-export function applyOutputFilter(filter: OutputFilter, output: string): string {
+export function applyOutputFilter(
+  filter: OutputFilter,
+  output: string,
+): string {
   return output
     .split(/\r?\n/)
     .filter((line) => !new RegExp(filter.pattern, "i").test(stripAnsi(line)))

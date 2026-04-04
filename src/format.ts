@@ -1,4 +1,8 @@
-import type { PostProcessMessage, PostProcessSection, PostProcessTone } from "./types.ts";
+import type {
+  PostProcessMessage,
+  PostProcessSection,
+  PostProcessTone,
+} from "./types.ts";
 
 // ---------------------------------------------------------------------------
 // ANSI escape codes
@@ -60,7 +64,8 @@ export const row = (
 };
 
 /** Renders a horizontal divider line. */
-export const divider = () => paint("────────────────────────────────", ANSI.gray);
+export const divider = () =>
+  paint("────────────────────────────────", ANSI.gray);
 
 // ---------------------------------------------------------------------------
 // String utilities

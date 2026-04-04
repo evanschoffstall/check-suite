@@ -23,7 +23,12 @@ const INLINE_TS_FUNCTION_CACHE = new Map<
 >();
 
 const INLINE_TS_TRANSPILE = new Bun.Transpiler({ loader: "ts" });
-const INLINE_TS_CACHE_DIR = join(process.cwd(), ".cache", "check-suite", "inline-ts");
+const INLINE_TS_CACHE_DIR = join(
+  process.cwd(),
+  ".cache",
+  "check-suite",
+  "inline-ts",
+);
 
 // ---------------------------------------------------------------------------
 // Config coercers
