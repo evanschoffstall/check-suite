@@ -10,7 +10,7 @@ import type {
 } from "../types/index.ts";
 
 import { stripAnsi } from "../format.ts";
-import { toInlineTypeScriptConfig } from "../inline-ts/index.ts";
+import { toInlineTypeScriptConfig } from "../inline-ts/config.ts";
 import { compactDomAssertionNoise } from "../summary.ts";
 import { getStepTokens, resolveTokenString } from "../tokens.ts";
 

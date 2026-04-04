@@ -6,13 +6,16 @@ import type {
   StepPostProcessResult,
 } from "../types/index.ts";
 
-import { resolveInlineTypeScriptRunner } from "../inline-ts/index.ts";
-import { toStepPostProcessResult } from "../post-process-result/index.ts";
+import { resolveInlineTypeScriptRunner } from "../inline-ts/runtime.ts";
 import {
   buildPostProcessContext,
   getRunnablePostProcessConfig,
 } from "./context.ts";
-import { makePostProcessFailure } from "./failure.ts";
+import { toStepPostProcessResult } from "./result.ts";
+
+// ---------------------------------------------------------------------------
+// Failure helper (from post-process-runner/failure.ts)
+// ---------------------------------------------------------------------------
 
 export async function runStepPostProcess(
   step: StepConfig,
@@ -24,6 +27,10 @@ export async function runStepPostProcess(
 
   return executePostProcessor(step, command, displayOutput, inlineConfig);
 }
+
+// ---------------------------------------------------------------------------
+// Runner
+// ---------------------------------------------------------------------------
 
 async function executePostProcessor(
   step: StepConfig,
@@ -59,4 +66,20 @@ async function executePostProcessor(
       `failed: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
+}
+
+function makePostProcessFailure(
+  label: string,
+  message: string,
+): StepPostProcessResult {
+  return {
+    messages: [
+      {
+        text: `${label} post-process ${message}`,
+        tone: "fail",
+      },
+    ],
+    status: "fail",
+    summary: `${label} post-process ${message}`,
+  };
 }
