@@ -1,5 +1,6 @@
+import type { CheckRow, ProcessedResultEntry } from "@/types/index.ts";
+
 import type { Command, StepConfig } from "../types/index.ts";
-import type { CheckRow, ProcessedResultEntry } from "./types.ts";
 
 import {
   ANSI,

@@ -1,7 +1,11 @@
-import type { Command, StepConfig } from "../types/index.ts";
-import type { CheckRow, ProcessedResultEntry } from "./types.ts";
+import type { CheckRow, ProcessedResultEntry } from "@/types/index.ts";
 
-import { buildProcessedResults, collectMissingSteps } from "./processed-results.ts";
+import type { Command, StepConfig } from "../types/index.ts";
+
+import {
+  buildProcessedResults,
+  collectMissingSteps,
+} from "./processed-results.ts";
 import { buildCheckRows } from "./rows.ts";
 
 /** Builds the full post-run suite report: processed results, check rows, and missing-step names. */
