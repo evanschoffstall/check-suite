@@ -76,7 +76,7 @@ const stepConfigSchema = z
   .superRefine((step, context) => {
     if (!step.handler && !step.cmd) {
       context.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: "step must define `cmd` when no `handler` is configured",
         path: ["cmd"],
       });
@@ -102,13 +102,19 @@ const stepConfigSchema = z
     }
 
     if (step.handler === "lint") {
-      validateNestedConfig(step.config, lintConfigSchema, "config", context, true);
+      validateNestedConfig(
+        step.config,
+        lintConfigSchema,
+        "config",
+        context,
+        true,
+      );
       return;
     }
 
     if (step.config !== undefined && !isRecord(step.config)) {
       context.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: "config must be an object when provided",
         path: ["config"],
       });
@@ -133,7 +139,7 @@ const checkConfigSchema = z
     for (const [index, step] of config.steps.entries()) {
       if (seenKeys.has(step.key)) {
         context.addIssue({
-          code: z.ZodIssueCode.custom,
+          code: "custom",
           message: `duplicate step key: ${step.key}`,
           path: ["steps", index, "key"],
         });
@@ -160,7 +166,7 @@ export function parseCheckConfig(config: unknown): CheckConfig {
   try {
     return checkConfigSchema.parse(config) as CheckConfig;
   } catch (error) {
-    throw new Error(formatConfigError(error));
+    throw new Error(formatConfigError(error), { cause: error });
   }
 }
 
@@ -210,7 +216,7 @@ function validateNestedConfig<TConfig>(
   if (value === undefined) {
     if (required) {
       context.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: `${pathSegment} is required`,
         path: [pathSegment],
       });
@@ -225,7 +231,7 @@ function validateNestedConfig<TConfig>(
 
   for (const issue of result.error.issues) {
     context.addIssue({
-      code: z.ZodIssueCode.custom,
+      code: "custom",
       message: issue.message,
       path: [pathSegment, ...issue.path],
     });
