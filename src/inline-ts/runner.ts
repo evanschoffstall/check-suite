@@ -8,7 +8,7 @@ import type {
   StepConfig,
 } from "../types/index.ts";
 
-import { withMissingDetection } from "../process/index.ts";
+import { withMissingDetection } from "../process/runner.ts";
 import { isRecord } from "../types/index.ts";
 import { toInlineTypeScriptConfig } from "./config.ts";
 import { resolveInlineTypeScriptRunner } from "./runtime.ts";
