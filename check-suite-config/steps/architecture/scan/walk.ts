@@ -1,9 +1,9 @@
 import { join } from "node:path";
 
-import type { ArchitectureAnalyzerConfig } from "./types.ts";
+import type { ArchitectureAnalyzerConfig } from "../foundation/index.ts";
 
-import { safeReadDir } from "./scan-io.ts";
-import { isIncludedCodeFile, shouldSkipDirectory } from "./scan-rules.ts";
+import { safeReadDir } from "./io.ts";
+import { isIncludedCodeFile, shouldSkipDirectory } from "./rules.ts";
 
 export function directoryContainsCode(
   directoryPath: string,

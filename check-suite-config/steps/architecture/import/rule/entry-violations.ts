@@ -1,14 +1,14 @@
-import type { ArchitectureProject, ArchitectureViolation } from "./types.ts";
+import type {
+  ArchitectureProject,
+  ArchitectureViolation,
+} from "../../foundation/index.ts";
 
 import {
   getContainingBoundary,
   shouldFlagDeepRelativeImport,
   shouldPreferAliasImport,
-} from "./import-rule-helpers.ts";
-import {
-  addRepeatedImport,
-  buildLayerViolation,
-} from "./import-rule-violations.ts";
+} from "./helpers.ts";
+import { addRepeatedImport, buildLayerViolation } from "./violations.ts";
 
 /** Builds all import-edge violations for a single resolved import record. */
 export function buildImportEntryViolations(

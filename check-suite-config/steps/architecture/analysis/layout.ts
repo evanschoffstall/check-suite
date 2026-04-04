@@ -5,17 +5,20 @@ import type {
   BoundaryDirectory,
   CodeRoots,
   DirectoryFacts,
-} from "./types.ts";
+} from "../foundation/index.ts";
 
-import { TEST_DIRECTORY_NAMES } from "./constants.ts";
+import {
+  getCodeStem,
+  normalizePath,
+  TEST_DIRECTORY_NAMES,
+} from "../foundation/index.ts";
 import {
   directoryContainsCode,
   isIgnoredDirectory,
   isIncludedCodeFile,
   safeReadDir,
   visitCodeDirectories,
-} from "./scan.ts";
-import { getCodeStem, normalizePath } from "./utils.ts";
+} from "../scan/index.ts";
 
 /** Collects all non-test code files under the discovered roots. */
 export function collectCodeFiles(

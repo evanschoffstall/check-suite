@@ -1,11 +1,14 @@
-import type { ArchitectureProject, ArchitectureViolation } from "./types.ts";
+import type {
+  ArchitectureProject,
+  ArchitectureViolation,
+} from "../../foundation/index.ts";
 
+import { getCodeStem, getLastPathSegment } from "../../foundation/index.ts";
 import {
   isDirectChildOfCodeRoot,
   matchesResponsibilityName,
   normalizeParentPath,
-} from "./structure-rule-helpers.ts";
-import { getCodeStem, getLastPathSegment } from "./utils.ts";
+} from "./helpers.ts";
 
 /** Detects flattened file groups that should live under a feature directory. */
 export function buildFlattenedFeatureViolations(
@@ -61,6 +64,26 @@ export function buildJunkDrawerViolations(
   }
 
   return violations;
+}
+
+/** Flags exact same-name file and folder pairs that coexist in one directory. */
+export function buildSameNameFileDirectoryViolations(
+  parentPath: string,
+  siblingDirectories: Set<string>,
+  siblingFiles: string[],
+): ArchitectureViolation[] {
+  return [...siblingDirectories]
+    .flatMap((directoryName) => {
+      const exactNameMatches = siblingFiles.filter(
+        (fileName) => getCodeStem(fileName) === directoryName,
+      );
+
+      return exactNameMatches.map((fileName) => ({
+        code: "same-name-file-folder",
+        message: `${normalizeParentPath(parentPath)} contains ${fileName} beside ${directoryName}/ in the same directory; a file cannot share a folder name, so absorb ${fileName} into ${directoryName}/`,
+      }));
+    })
+    .sort((left, right) => left.message.localeCompare(right.message));
 }
 
 /** Flags responsibilities that are split between a folder home and flat files. */

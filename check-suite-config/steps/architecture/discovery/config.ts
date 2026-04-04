@@ -1,6 +1,9 @@
 import { join } from "node:path";
 
-import type { ArchitectureAnalyzerConfig, CodeRoots } from "./types.ts";
+import type {
+  ArchitectureAnalyzerConfig,
+  CodeRoots,
+} from "../foundation/index.ts";
 
 import {
   DEFAULT_ENTRYPOINT_NAMES,
@@ -15,19 +18,13 @@ import {
   DEFAULT_SHARED_HOME_NAMES,
   DEFAULT_VENDOR_MANAGED_DIRECTORY_NAMES,
   TEST_DIRECTORY_NAMES,
-} from "./constants.ts";
+} from "../foundation/index.ts";
 import {
   directoryContainsCode,
   isIgnoredDirectory,
   isIncludedCodeFile,
   safeReadDir,
-} from "./scan.ts";
-import {
-  isRecord,
-  toIntegerAtLeast,
-  toLayerPatternGroups,
-  toStringList,
-} from "./utils.ts";
+} from "../scan/index.ts";
 
 /** Adds one root-level directory or file to the discovered code roots when applicable. */
 export function collectRootEntry(
@@ -81,6 +78,10 @@ export function normalizeArchitectureConfig(
     ...normalizeThresholdConfig(record),
     layerGroups: normalizeLayerGroups(record.layerGroups),
   };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 function normalizeDirectoryNameConfig(
@@ -180,4 +181,51 @@ function normalizeThresholdConfig(
       DEFAULT_MIN_REPEATED_DEEP_IMPORTS,
     ),
   };
+}
+
+function toIntegerAtLeast(value: unknown, minimum: number): null | number {
+  return typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= minimum
+    ? value
+    : null;
+}
+
+function toLayerPatternGroups(
+  value: unknown,
+): null | { name: string; patterns: string[] }[] {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const groups = value
+    .map((entry) => {
+      if (!isRecord(entry)) {
+        return null;
+      }
+
+      const name = entry.name;
+      const patterns = toStringList(entry.patterns);
+
+      return typeof name === "string" && name.length > 0 && patterns !== null
+        ? { name, patterns }
+        : null;
+    })
+    .filter(
+      (
+        entry,
+      ): entry is {
+        name: string;
+        patterns: string[];
+      } => entry !== null,
+    );
+
+  return groups.length === value.length ? groups : null;
+}
+
+function toStringList(value: unknown): null | string[] {
+  return Array.isArray(value) &&
+    value.every((entry) => typeof entry === "string")
+    ? value
+    : null;
 }

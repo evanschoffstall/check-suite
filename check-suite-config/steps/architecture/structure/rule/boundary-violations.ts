@@ -2,14 +2,14 @@ import type {
   ArchitectureProject,
   ArchitectureViolation,
   DirectoryFacts,
-} from "./types.ts";
+} from "../../foundation/index.ts";
 
+import { getLastPathSegment } from "../../foundation/index.ts";
 import {
   isCodeRootDirectory,
   isPureBarrelEntrypoint,
   normalizeParentPath,
-} from "./structure-rule-helpers.ts";
-import { getLastPathSegment } from "./utils.ts";
+} from "./helpers.ts";
 
 /** Flags entrypoints that re-export too many modules. */
 export function buildBroadBarrelViolations(

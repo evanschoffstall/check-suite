@@ -2,9 +2,9 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import ts from "typescript";
 
-import type { SourceFileFacts } from "./types.ts";
+import type { SourceFileFacts } from "../foundation/index.ts";
 
-import { getCodeStem } from "./utils.ts";
+import { getCodeStem } from "../foundation/index.ts";
 
 /** Collects AST-derived facts for each scanned source file. */
 export function collectSourceFacts(

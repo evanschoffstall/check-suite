@@ -1,6 +1,6 @@
 import { dirname } from "node:path";
 
-import type { ArchitectureProject } from "./types.ts";
+import type { ArchitectureProject } from "../../foundation/index.ts";
 
 /** Returns whether the directory path is one of the discovered code roots. */
 export function isCodeRootDirectory(

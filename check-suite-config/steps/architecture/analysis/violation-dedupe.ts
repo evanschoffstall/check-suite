@@ -1,4 +1,4 @@
-import type { ArchitectureViolation } from "./types.ts";
+import type { ArchitectureViolation } from "../foundation/index.ts";
 
 /** Removes duplicate architecture violations while preserving first-seen order. */
 export function dedupeArchitectureViolations(

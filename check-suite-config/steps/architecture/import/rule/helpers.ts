@@ -2,10 +2,10 @@ export {
   inferLayerGroup,
   shouldFlagDeepRelativeImport,
   shouldPreferAliasImport,
-} from "./import-rule-layering.ts";
+} from "./layering.ts";
 export {
   getCodeRoot,
   getContainingBoundary,
   hasAliasForTarget,
   isSameDirectory,
-} from "./import-rule-paths.ts";
+} from "./paths.ts";

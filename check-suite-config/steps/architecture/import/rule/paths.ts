@@ -1,6 +1,9 @@
 import { dirname } from "node:path";
 
-import type { ArchitectureProject, BoundaryDirectory } from "./types.ts";
+import type {
+  ArchitectureProject,
+  BoundaryDirectory,
+} from "../../foundation/index.ts";
 
 export function getCodeRoot(
   project: ArchitectureProject,

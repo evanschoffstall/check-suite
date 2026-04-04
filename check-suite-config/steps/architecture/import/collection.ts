@@ -2,10 +2,13 @@ import { readFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import ts from "typescript";
 
-import type { AliasMapping, ImportRecord } from "./types.ts";
+import type { AliasMapping, ImportRecord } from "../foundation/index.ts";
 
-import { CODE_EXTENSIONS } from "./constants.ts";
-import { normalizePath, trimLeadingDotSlash } from "./utils.ts";
+import {
+  CODE_EXTENSIONS,
+  normalizePath,
+  trimLeadingDotSlash,
+} from "../foundation/index.ts";
 
 /** Collects import edges for all scanned source files. */
 export function collectImports(

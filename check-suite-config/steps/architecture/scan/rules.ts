@@ -1,11 +1,11 @@
-import type { ArchitectureAnalyzerConfig } from "./types.ts";
+import type { ArchitectureAnalyzerConfig } from "../foundation/index.ts";
 
 import {
   CODE_FILE_REGEX,
   DECLARATION_FILE_REGEX,
   TEST_DIRECTORY_NAMES,
   TEST_FILE_REGEX,
-} from "./constants.ts";
+} from "../foundation/index.ts";
 
 export function isIgnoredDirectory(
   directoryName: string,

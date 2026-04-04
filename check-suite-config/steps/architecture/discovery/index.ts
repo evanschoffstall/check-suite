@@ -1,17 +1,14 @@
-import type { ArchitectureProject } from "./types.ts";
+import type { ArchitectureProject } from "../foundation/index.ts";
 
-import { discoverAliasMappings } from "./alias-mappings.ts";
-import {
-  discoverCodeRoots,
-  normalizeArchitectureConfig,
-} from "./discovery-config.ts";
-import { collectImports } from "./import-collection.ts";
 import {
   collectCodeFiles,
   collectDirectoryFacts,
+  collectSourceFacts,
+  discoverAliasMappings,
   discoverBoundaryDirectories,
-} from "./layout.ts";
-import { collectSourceFacts } from "./source-analysis.ts";
+} from "../analysis/index.ts";
+import { collectImports } from "../import/index.ts";
+import { discoverCodeRoots, normalizeArchitectureConfig } from "./config.ts";
 
 /** Discovers the code roots, boundaries, aliases, files, and imports in a repository. */
 export function discoverArchitectureProject(
@@ -38,4 +35,4 @@ export function discoverArchitectureProject(
   };
 }
 
-export { normalizeArchitectureConfig } from "./discovery-config.ts";
+export { normalizeArchitectureConfig } from "./config.ts";

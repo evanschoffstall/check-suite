@@ -2,14 +2,10 @@ import type {
   ArchitectureLayerGroup,
   ArchitectureProject,
   BoundaryDirectory,
-} from "./types.ts";
+} from "../../foundation/index.ts";
 
-import {
-  getCodeRoot,
-  hasAliasForTarget,
-  isSameDirectory,
-} from "./import-rule-paths.ts";
-import { getCodeStem } from "./utils.ts";
+import { getCodeStem } from "../../foundation/index.ts";
+import { getCodeRoot, hasAliasForTarget, isSameDirectory } from "./paths.ts";
 
 export function inferLayerGroup(
   filePath: string,

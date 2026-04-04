@@ -1,6 +1,9 @@
-import type { ArchitectureProject, ArchitectureViolation } from "./types.ts";
+import type {
+  ArchitectureProject,
+  ArchitectureViolation,
+} from "../../foundation/index.ts";
 
-import { normalizeParentPath } from "./structure-rule-helpers.ts";
+import { normalizeParentPath } from "./helpers.ts";
 
 /** Flags repositories that split one shared-home concept across local and central homes. */
 export function buildMixedTypesViolations(

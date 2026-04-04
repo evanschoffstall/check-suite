@@ -1,6 +1,9 @@
-import type { ArchitectureProject, ArchitectureViolation } from "./types.ts";
+import type {
+  ArchitectureProject,
+  ArchitectureViolation,
+} from "../../foundation/index.ts";
 
-import { inferLayerGroup } from "./import-rule-layering.ts";
+import { inferLayerGroup } from "./layering.ts";
 
 /** Builds the layer-direction violation for a single import edge when needed. */
 export function buildLayerViolation(

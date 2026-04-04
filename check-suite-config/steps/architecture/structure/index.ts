@@ -1,19 +1,21 @@
-import type { ArchitectureProject, ArchitectureViolation } from "./types.ts";
+import type {
+  ArchitectureProject,
+  ArchitectureViolation,
+} from "../foundation/index.ts";
 
+import { dedupeArchitectureViolations } from "../analysis/index.ts";
 import {
   buildBroadBarrelViolations,
   buildDirectoryFactViolations,
-  buildPeerBoundaryConsistencyViolations,
-} from "./structure-rule-boundary-violations.ts";
-import {
   buildFlattenedFeatureViolations,
   buildJunkDrawerViolations,
+  buildMixedTypesViolations,
+  buildPeerBoundaryConsistencyViolations,
+  buildSameNameFileDirectoryViolations,
   buildScatteredFeatureHomeViolations,
   buildSplitHomeViolations,
-} from "./structure-rule-layout-violations.ts";
-import { buildMixedTypesViolations } from "./structure-rule-shared-home-violations.ts";
-import { collectSiblingsByParent } from "./structure-rule-sibling-collection.ts";
-import { dedupeArchitectureViolations } from "./violation-dedupe.ts";
+  collectSiblingsByParent,
+} from "./rule/index.ts";
 
 /** Applies folder ownership and file-layout architecture rules. */
 export function analyzeStructureRules(
@@ -82,26 +84,49 @@ function buildSiblingLayoutViolations(
     const siblingDirectories = directoriesByParent.get(parentPath) ?? new Set();
     const siblingFiles = filesByParent.get(parentPath) ?? [];
     violations.push(
-      ...buildSplitHomeViolations(parentPath, siblingDirectories, siblingFiles),
-      ...buildFlattenedFeatureViolations(
+      ...collectParentLayoutViolations(
         parentPath,
         siblingDirectories,
         siblingFiles,
-        project.config.entrypointNames,
-      ),
-      ...buildMixedTypesViolations(
-        parentPath,
-        siblingDirectories,
-        project.files,
-        project.imports,
-      ),
-      ...buildPeerBoundaryConsistencyViolations(
-        parentPath,
-        siblingDirectories,
+        project,
         directoryFactsByPath,
       ),
     );
   }
 
   return violations;
+}
+
+function collectParentLayoutViolations(
+  parentPath: string,
+  siblingDirectories: Set<string>,
+  siblingFiles: string[],
+  project: ArchitectureProject,
+  directoryFactsByPath: Map<string, (typeof project.directoryFacts)[number]>,
+): ArchitectureViolation[] {
+  return [
+    ...buildSameNameFileDirectoryViolations(
+      parentPath,
+      siblingDirectories,
+      siblingFiles,
+    ),
+    ...buildSplitHomeViolations(parentPath, siblingDirectories, siblingFiles),
+    ...buildFlattenedFeatureViolations(
+      parentPath,
+      siblingDirectories,
+      siblingFiles,
+      project.config.entrypointNames,
+    ),
+    ...buildMixedTypesViolations(
+      parentPath,
+      siblingDirectories,
+      project.files,
+      project.imports,
+    ),
+    ...buildPeerBoundaryConsistencyViolations(
+      parentPath,
+      siblingDirectories,
+      directoryFactsByPath,
+    ),
+  ];
 }

@@ -1,7 +1,7 @@
-import type { ArchitectureProject } from "./types.ts";
+import type { ArchitectureProject } from "../../foundation/index.ts";
 
-import { isSameDirectory } from "./import-rule-paths.ts";
-import { getCodeStem } from "./utils.ts";
+import { getCodeStem } from "../../foundation/index.ts";
+import { isSameDirectory } from "./paths.ts";
 
 /** Records one deep import so repeated offenders can be summarized later. */
 export function addRepeatedImport(

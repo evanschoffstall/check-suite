@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import type { AliasMapping, CodeRoots } from "./types.ts";
+import type { AliasMapping, CodeRoots } from "../foundation/index.ts";
 
-import { normalizePath, trimLeadingDotSlash } from "./utils.ts";
+import { normalizePath, trimLeadingDotSlash } from "../foundation/index.ts";
 
 /** Discovers broad root aliases from tsconfig or jsconfig path mappings. */
 export function discoverAliasMappings(

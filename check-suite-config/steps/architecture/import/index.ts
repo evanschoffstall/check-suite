@@ -1,11 +1,16 @@
-import type { ArchitectureProject, ArchitectureViolation } from "./types.ts";
+import type {
+  ArchitectureProject,
+  ArchitectureViolation,
+} from "../foundation/index.ts";
 
-import { buildImportEntryViolations } from "./import-rule-entry-violations.ts";
+import { dedupeArchitectureViolations } from "../analysis/index.ts";
 import {
+  buildImportEntryViolations,
   collectInternalImports,
   collectSiblingImports,
-} from "./import-rule-violations.ts";
-import { dedupeArchitectureViolations } from "./violation-dedupe.ts";
+} from "./rule/index.ts";
+
+export { collectImports } from "./collection.ts";
 
 /** Applies import-surface architecture rules to the discovered project graph. */
 export function analyzeImportRules(
