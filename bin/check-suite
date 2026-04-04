@@ -1,0 +1,8 @@
+#!/usr/bin/env bun
+
+/**
+ * Bun CLI wrapper for the check-suite source entrypoint.
+ */
+import { main } from "../src/cli/command-line-interface.ts";
+
+void main();
