@@ -1,4 +1,4 @@
-import type { StepConfig } from "../../src/types.ts";
+import type { StepConfig } from "../../src/types/index.ts";
 
 /** Dead-code and dependency reachability check powered by Knip. */
 export const knipStep: StepConfig = {

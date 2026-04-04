@@ -1,4 +1,4 @@
-import type { StepConfig } from "../../src/types.ts";
+import type { StepConfig } from "../../src/types/index.ts";
 
 /** ESLint validation and autofix step. */
 export const lintStep: StepConfig = {

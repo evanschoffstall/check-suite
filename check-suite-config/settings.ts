@@ -1,4 +1,4 @@
-import type { CheckConfig } from "../src/types.ts";
+import type { CheckConfig } from "../src/types/index.ts";
 
 /** User-facing output paths exposed as `{token}` placeholders to step args. */
 export const paths = {
