@@ -28,6 +28,13 @@ export interface FileMetrics {
 
 export type FunctionMetrics = TypeScriptFunctionMetrics;
 
+export type TopLevelDeclaration =
+  | ts.ArrowFunction
+  | ts.ConstructorDeclaration
+  | ts.FunctionDeclaration
+  | ts.FunctionExpression
+  | ts.MethodDeclaration;
+
 export interface TopLevelFunctionNode {
   declaration:
     | ts.ArrowFunction
