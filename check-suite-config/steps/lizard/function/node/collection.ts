@@ -1,8 +1,8 @@
 import ts from "typescript";
 
-import type { TopLevelFunctionNode } from "./contracts.ts";
+import type { TopLevelFunctionNode } from "../../shared/index.ts";
 
-import { collectStatementFunctions } from "./function-node-statement-collection.ts";
+import { collectStatementFunctions } from "./statement-collection.ts";
 
 /** Walks a SourceFile and collects all top-level function/method declarations. */
 export function collectTopLevelFunctionNodes(

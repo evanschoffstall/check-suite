@@ -2,11 +2,11 @@ import type { CliArguments, StepConfig } from "@/types/index.ts";
 
 import { CFG } from "@/config/index.ts";
 
-import { splitSuiteArguments } from "./args-selection-split.ts";
+import { splitSuiteArguments } from "./split.ts";
 import {
   collectSelectionState,
   resolveSuiteFlagDirectStep,
-} from "./args-selection-state.ts";
+} from "./state.ts";
 
 export function createDirectStepArguments(
   command: CliArguments["command"],

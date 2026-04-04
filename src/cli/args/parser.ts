@@ -5,7 +5,7 @@ import {
   createKeysArguments,
   parseSuiteSelectionArguments,
   resolveDirectStepFromArg,
-} from "./args-selection.ts";
+} from "@/cli/args/selection/index.ts";
 
 export function parseCliArguments(argv: string[]): CliArguments {
   const command = argv[2];

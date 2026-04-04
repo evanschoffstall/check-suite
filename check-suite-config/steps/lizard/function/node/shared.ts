@@ -1,6 +1,6 @@
 import ts from "typescript";
 
-import type { TopLevelFunctionNode } from "./contracts.ts";
+import type { TopLevelFunctionNode } from "../../shared/index.ts";
 
 export function getDeclarationName(
   name: ts.BindingName | ts.PropertyName | undefined,

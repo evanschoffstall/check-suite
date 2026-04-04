@@ -1,12 +1,12 @@
 import ts from "typescript";
 
-import type { TopLevelFunctionNode } from "./contracts.ts";
+import type { TopLevelFunctionNode } from "../../shared/index.ts";
 
 import {
   getDeclarationName,
   isFunctionInitializer,
   pushTopLevelFunction,
-} from "./function-node-shared.ts";
+} from "./shared.ts";
 
 export function collectVariableFunctions(
   statement: ts.VariableStatement,

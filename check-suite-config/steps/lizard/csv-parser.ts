@@ -1,4 +1,4 @@
-import type { FunctionMetrics } from "./contracts.ts";
+import type { FunctionMetrics } from "./shared/index.ts";
 
 export function parseLizardCsv(csvOutput: string): FunctionMetrics[] {
   return csvOutput

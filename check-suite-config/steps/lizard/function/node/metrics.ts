@@ -3,14 +3,14 @@ import ts from "typescript";
 import type {
   TopLevelFunctionNode,
   TypeScriptFunctionMetrics,
-} from "./contracts.ts";
+} from "../../shared/index.ts";
 
 import {
   computeCyclomaticComplexity,
   computeMaxNestingDepth,
   countNonCommentLines,
   countTokens,
-} from "./declaration-metrics.ts";
+} from "../../shared/index.ts";
 
 /** Converts collected top-level function nodes into typed metrics objects. */
 export function toTopLevelTypeScriptFunctionMetrics(

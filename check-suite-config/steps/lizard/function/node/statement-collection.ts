@@ -1,13 +1,10 @@
 import ts from "typescript";
 
-import type { TopLevelFunctionNode } from "./contracts.ts";
+import type { TopLevelFunctionNode } from "../../shared/index.ts";
 
-import { collectClassFunctions } from "./function-node-class-collection.ts";
-import {
-  getDeclarationName,
-  pushTopLevelFunction,
-} from "./function-node-shared.ts";
-import { collectVariableFunctions } from "./function-node-variable-collection.ts";
+import { collectClassFunctions } from "./class-collection.ts";
+import { getDeclarationName, pushTopLevelFunction } from "./shared.ts";
+import { collectVariableFunctions } from "./variable-collection.ts";
 
 export function collectStatementFunctions(
   statement: ts.Statement,

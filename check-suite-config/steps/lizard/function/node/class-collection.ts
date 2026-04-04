@@ -1,11 +1,8 @@
 import ts from "typescript";
 
-import type { TopLevelFunctionNode } from "./contracts.ts";
+import type { TopLevelFunctionNode } from "../../shared/index.ts";
 
-import {
-  getDeclarationName,
-  pushTopLevelFunction,
-} from "./function-node-shared.ts";
+import { getDeclarationName, pushTopLevelFunction } from "./shared.ts";
 
 export function collectClassFunctions(
   declaration: ts.ClassDeclaration,
