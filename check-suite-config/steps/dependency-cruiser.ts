@@ -2,7 +2,16 @@ import type { StepConfig } from "../../src/types/index.ts";
 
 /** Module dependency rule verification powered by dependency-cruiser. */
 export const dependencyCruiserStep: StepConfig = {
-  args: ["depcruise", "--no-config", "src", "--output-type", "err"],
+  args: [
+    "depcruise",
+    "--config",
+    ".dependency-cruiser.cjs",
+    "src",
+    "check-suite-config",
+    "check-suite.config.ts",
+    "--output-type",
+    "err",
+  ],
   cmd: "bunx",
   enabled: true,
   failMsg: "dependency-cruiser failed",
