@@ -1,4 +1,4 @@
-import type { StepConfig } from "../../../src/types/index.ts";
+import type { StepConfig } from "@/types/index.ts";
 
 import { junitPostProcess } from "./post-process/index.ts";
 
