@@ -3,9 +3,8 @@
     "target": "ES2022",
     "module": "Preserve",
     "moduleResolution": "Bundler",
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     },
     "allowImportingTsExtensions": true,
     "noEmit": true,
