@@ -1,12 +1,26 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import type { StepConfig } from "../../src/types.ts";
 
 import { playwrightPostProcess } from "../post-process.ts";
+
+function hasPackageScript(scriptName: string): boolean {
+  try {
+    const packageJson = JSON.parse(
+      readFileSync(join(process.cwd(), "package.json"), "utf8"),
+    ) as { scripts?: Record<string, string> };
+    return typeof packageJson.scripts?.[scriptName] === "string";
+  } catch {
+    return false;
+  }
+}
 
 /** Playwright end-to-end and coverage step. */
 export const playwrightStep: StepConfig = {
   args: ["run", "test:e2e:coverage"],
   cmd: "bun",
-  enabled: true,
+  enabled: hasPackageScript("test:e2e:coverage"),
   ensureDirs: ["coverage/playwright"],
   failMsg: "playwright e2e failed",
   key: "playwright",
