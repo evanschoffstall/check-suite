@@ -1,6 +1,7 @@
 import type { Command, StepConfig, SummaryPattern } from "./types.ts";
 
 import { norm, splitLines, stripAnsi } from "./format.ts";
+import { countSafeMatches, execSafeRegExp, testSafeRegExp } from "./regex.ts";
 import { getStepTokens } from "./tokens.ts";
 
 // ---------------------------------------------------------------------------
@@ -110,9 +111,7 @@ function matchSummaryPattern(
 ): null | string {
   switch (pat.type) {
     case "count": {
-      const count = Array.from(
-        normalizedOutput.matchAll(new RegExp(pat.regex, "gim")),
-      ).length;
+      const count = countSafeMatches(normalizedOutput, pat.regex);
       if (count > 0)
         return resolveSummaryTokens(
           pat.format.replaceAll("{count}", String(count)),
@@ -122,12 +121,12 @@ function matchSummaryPattern(
       return null;
     }
     case "literal": {
-      if (new RegExp(pat.regex, "i").test(normalizedOutput))
+      if (testSafeRegExp(normalizedOutput, pat.regex))
         return resolveSummaryTokens(pat.format, null, tokens);
       return null;
     }
     case "match": {
-      const match = new RegExp(pat.regex, "i").exec(normalizedOutput);
+      const match = execSafeRegExp(normalizedOutput, pat.regex);
       if (match) return resolveSummaryTokens(pat.format, match, tokens);
       return null;
     }
