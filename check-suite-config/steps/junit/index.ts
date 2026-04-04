@@ -1,6 +1,6 @@
-import type { StepConfig } from "../../src/types.ts";
+import type { StepConfig } from "../../../src/types/index.ts";
 
-import { junitPostProcess } from "../post-process.ts";
+import { junitPostProcess } from "./post-process/index.ts";
 
 /** Bun unit-test and LCOV coverage step. */
 export const junitStep: StepConfig = {

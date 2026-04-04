@@ -1,4 +1,4 @@
-import type { StepConfig } from "../../src/types.ts";
+import type { StepConfig } from "../../src/types/index.ts";
 
 /** Package vulnerability audit powered by Bun. */
 export const auditStep: StepConfig = {

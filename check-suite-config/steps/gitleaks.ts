@@ -1,4 +1,4 @@
-import type { StepConfig } from "../../src/types.ts";
+import type { StepConfig } from "../../src/types/index.ts";
 
 /** Source-only secret scanning powered by gitleaks. */
 export const gitleaksStep: StepConfig = {

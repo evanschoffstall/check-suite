@@ -1,4 +1,4 @@
-import type { StepConfig } from "../../src/types.ts";
+import type { StepConfig } from "../../src/types/index.ts";
 
 /** Module dependency rule verification powered by dependency-cruiser. */
 export const dependencyCruiserStep: StepConfig = {

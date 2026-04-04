@@ -1,4 +1,4 @@
-import type { StepConfig } from "../../src/types.ts";
+import type { StepConfig } from "../../src/types/index.ts";
 
 /** Duplicate code detection powered by JSCPD. */
 export const jscpdStep: StepConfig = {
