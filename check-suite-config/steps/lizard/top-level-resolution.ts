@@ -74,32 +74,33 @@ function resolvePathEntries(
     sourceText,
     filePath,
   );
-  const astFunctionsByStartLine = new Map(
-    astFunctions.map((entry) => [entry.startLine, entry] as const),
-  );
   const astStartLines = astFunctions
     .map((entry) => entry.startLine)
     .sort((left, right) => left - right);
 
-  return pathEntries.flatMap((lizardFunction) => {
-    const astFunction = astFunctionsByStartLine.get(lizardFunction.startLine);
-    if (!astFunction) return [];
+  return astFunctions.map((astFunction) => {
+    const lizardFunction = pathEntries.find(
+      (entry) => entry.startLine === astFunction.startLine,
+    );
+    if (!lizardFunction) return astFunction;
 
     const overlaps = astStartLines.filter(
       (startLine) =>
         startLine >= lizardFunction.startLine &&
         startLine <= lizardFunction.endLine,
     ).length;
-    if (overlaps > 1) return [];
+    if (overlaps > 1) return astFunction;
 
     return {
       ...lizardFunction,
       endLine: astFunction.endLine,
+      functionName: astFunction.functionName,
       length: astFunction.length,
       location: `${astFunction.functionName}@${astFunction.startLine}-${astFunction.endLine}@${filePath}`,
       nestingDepth: astFunction.nestingDepth,
       nloc: astFunction.nloc,
       parameterCount: astFunction.parameterCount,
+      tokenCount: Math.max(lizardFunction.tokenCount, astFunction.tokenCount),
     } satisfies TypeScriptFunctionMetrics;
   });
 }

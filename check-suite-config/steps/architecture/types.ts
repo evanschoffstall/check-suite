@@ -8,9 +8,21 @@ export interface AliasMapping {
 export interface ArchitectureAnalyzerConfig {
   entrypointNames?: string[];
   ignoredDirectoryNames?: string[];
+  junkDrawerDirectoryNames?: string[];
+  junkDrawerFileStems?: string[];
+  layerGroups?: ArchitectureLayerGroup[];
+  maxEntrypointReExports?: number;
+  maxInternalImportsPerFile?: number;
   maxSiblingImports?: number;
   minRepeatedDeepImports?: number;
+  sharedHomeNames?: string[];
   vendorManagedDirectoryNames?: string[];
+}
+
+/** A normalized layer family used for generic dependency-direction checks. */
+export interface ArchitectureLayerGroup {
+  name: string;
+  patterns: string[];
 }
 
 /** Repository-wide discovery state reused by multiple architecture checks. */
@@ -20,8 +32,10 @@ export interface ArchitectureProject {
   codeRoots: CodeRoots;
   config: Required<ArchitectureAnalyzerConfig>;
   directories: string[];
+  directoryFacts: DirectoryFacts[];
   files: string[];
   imports: ImportRecord[];
+  sourceFacts: SourceFileFacts[];
 }
 
 /** A concrete architecture violation emitted by the analyzer. */
@@ -42,9 +56,27 @@ export interface CodeRoots {
   files: string[];
 }
 
+/** Aggregated code-layout facts for a single directory. */
+export interface DirectoryFacts {
+  childDirectoryPaths: string[];
+  codeFilePaths: string[];
+  entrypointPaths: string[];
+  path: string;
+}
+
 /** Resolved import metadata for a single source file import edge. */
 export interface ImportRecord {
   resolvedPath: null | string;
   sourcePath: string;
   specifier: string;
+}
+
+/** AST-derived source facts used by entrypoint and cohesion rules. */
+export interface SourceFileFacts {
+  directoryPath: string;
+  exportModuleSpecifiers: string[];
+  isEntrypoint: boolean;
+  path: string;
+  stem: string;
+  topLevelDeclarationCount: number;
 }
