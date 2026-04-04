@@ -1,8 +1,8 @@
 import type { Command, RunOptions } from "@/types/index.ts";
 
 import { DECLARED_BUNX_TARGETS } from "@/config/index.ts";
-import { stripAnsi } from "@/format.ts";
-import { parsePositiveTimeoutMs } from "@/timeout.ts";
+import { stripAnsi } from "@/format/index.ts";
+import { parsePositiveTimeoutMs } from "@/timeout/index.ts";
 
 import { createProcessCollectors } from "./collectors.ts";
 import {

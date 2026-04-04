@@ -11,9 +11,9 @@ import type {
 
 import {
   buildCommonCoverageState,
-  collectLineCoverage,
   parseJunitResults,
 } from "../../coverage/index.ts";
+import { applyCoverageStatus, applyReportStatus } from "./status.ts";
 
 interface BuildJunitResultInput {
   displayOutput: string;

@@ -1,9 +1,10 @@
 import type { Command, StepConfig } from "@/types/index.ts";
 
-import { compactDomAssertionNoise } from "./summary-dom.ts";
-import { buildPatternSummary } from "./summary-patterns.ts";
-import { buildSimpleSummary } from "./summary-simple.ts";
-import { getStepTokens } from "./tokens.ts";
+import { getStepTokens } from "@/tokens.ts";
+
+import { compactDomAssertionNoise } from "./dom.ts";
+import { buildPatternSummary } from "./patterns.ts";
+import { buildSimpleSummary } from "./simple.ts";
 
 /** Derives the one-line summary text for a completed step. */
 export function buildSummary(step: StepConfig, cmd: Command): string {

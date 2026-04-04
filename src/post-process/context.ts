@@ -9,9 +9,9 @@ import type {
   StepPostProcessResult,
 } from "@/types/index.ts";
 
-import { stripAnsi } from "@/format.ts";
+import { stripAnsi } from "@/format/index.ts";
 import { toInlineTypeScriptConfig } from "@/inline-ts/index.ts";
-import { compactDomAssertionNoise } from "@/summary.ts";
+import { compactDomAssertionNoise } from "@/summary/index.ts";
 import { getStepTokens, resolveTokenString } from "@/tokens.ts";
 
 export function buildPostProcessContext(

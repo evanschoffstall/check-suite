@@ -5,7 +5,7 @@ import type {
   StepConfig,
 } from "@/types/index.ts";
 
-import { buildSummary } from "@/summary.ts";
+import { buildSummary } from "@/summary/index.ts";
 
 export function buildCheckRows(
   executedMainSteps: StepConfig[],
