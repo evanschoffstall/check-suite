@@ -1,8 +1,12 @@
 import { dirname } from "node:path";
 
-import type { ArchitectureProject, ArchitectureViolation } from "./types.ts";
+import type {
+  ArchitectureProject,
+  ArchitectureViolation,
+  DirectoryFacts,
+} from "./types.ts";
 
-import { getCodeStem } from "./utils.ts";
+import { getCodeStem, getLastPathSegment } from "./utils.ts";
 
 /** Applies folder ownership and file-layout architecture rules. */
 export function analyzeStructureRules(
@@ -11,6 +15,9 @@ export function analyzeStructureRules(
   const violations: ArchitectureViolation[] = [];
   const directoriesByParent = new Map<string, Set<string>>();
   const filesByParent = new Map<string, string[]>();
+  const directoryFactsByPath = new Map(
+    project.directoryFacts.map((fact) => [fact.path, fact]),
+  );
 
   for (const directoryPath of project.directories) {
     const parentPath = dirname(directoryPath).replace(/^\.$/u, "");
@@ -36,6 +43,10 @@ export function analyzeStructureRules(
     }
   }
 
+  for (const directoryFact of project.directoryFacts) {
+    violations.push(...buildDirectoryFactViolations(project, directoryFact));
+  }
+
   for (const [parentPath, siblingDirectories] of directoriesByParent) {
     const siblingFiles = filesByParent.get(parentPath) ?? [];
     violations.push(
@@ -57,9 +68,83 @@ export function analyzeStructureRules(
         project.imports,
       ),
     );
+    violations.push(
+      ...buildPeerBoundaryConsistencyViolations(
+        parentPath,
+        siblingDirectories,
+        directoryFactsByPath,
+      ),
+    );
   }
 
+  violations.push(...buildScatteredFeatureHomeViolations(project));
+  violations.push(...buildJunkDrawerViolations(project));
+  violations.push(...buildBroadBarrelViolations(project));
+
   return dedupeViolations(violations);
+}
+
+function buildBroadBarrelViolations(
+  project: ArchitectureProject,
+): ArchitectureViolation[] {
+  return project.sourceFacts
+    .filter(
+      (fact) =>
+        fact.isEntrypoint &&
+        fact.exportModuleSpecifiers.length >
+          project.config.maxEntrypointReExports,
+    )
+    .map((fact) => ({
+      code: "broad-barrel-surface",
+      message: `${fact.path} re-exports ${fact.exportModuleSpecifiers.length} modules; keep feature barrels intentional instead of turning them into dumping grounds`,
+    }));
+}
+
+function buildDirectoryFactViolations(
+  project: ArchitectureProject,
+  directoryFact: DirectoryFacts,
+): ArchitectureViolation[] {
+  if (isCodeRootDirectory(project, directoryFact.path)) {
+    return [];
+  }
+
+  const implementationFiles = directoryFact.codeFilePaths.filter(
+    (filePath) => !directoryFact.entrypointPaths.includes(filePath),
+  );
+  const hasImplementation =
+    implementationFiles.length > 0 ||
+    directoryFact.childDirectoryPaths.length > 0;
+  const shouldRequireEntrypoint =
+    implementationFiles.length > 1 ||
+    directoryFact.childDirectoryPaths.length > 0;
+  const violations: ArchitectureViolation[] = [];
+
+  if (
+    hasImplementation &&
+    shouldRequireEntrypoint &&
+    directoryFact.entrypointPaths.length === 0
+  ) {
+    violations.push({
+      code: "missing-public-entrypoint",
+      message: `${directoryFact.path} owns implementation files but has no ${project.config.entrypointNames[0]}.ts public entrypoint`,
+    });
+  }
+
+  if (
+    directoryFact.entrypointPaths.length > 0 &&
+    implementationFiles.length === 0 &&
+    directoryFact.childDirectoryPaths.length === 0 &&
+    directoryFact.entrypointPaths.every((entrypointPath) =>
+      isPureBarrelEntrypoint(project, entrypointPath),
+    )
+  ) {
+    violations.push({
+      code: "orphan-public-entrypoint",
+      message: `${directoryFact.path} exposes a public entrypoint without any colocated implementation; remove the orphan barrel or move the owned code under this folder`,
+    });
+  }
+
+  return violations;
 }
 
 function buildFlattenedFeatureViolations(
@@ -80,27 +165,156 @@ function buildFlattenedFeatureViolations(
   }));
 }
 
+function buildJunkDrawerViolations(
+  project: ArchitectureProject,
+): ArchitectureViolation[] {
+  const violations: ArchitectureViolation[] = [];
+
+  for (const directoryFact of project.directoryFacts) {
+    const directoryName = getLastPathSegment(directoryFact.path);
+
+    if (
+      isDirectChildOfCodeRoot(project, directoryFact.path) &&
+      project.config.junkDrawerDirectoryNames.includes(directoryName)
+    ) {
+      violations.push({
+        code: "junk-drawer-directory",
+        message: `${directoryFact.path} uses a broad shared directory name with no ownership boundary; split it into responsibility-based folders`,
+      });
+    }
+  }
+
+  for (const filePath of project.files) {
+    const stem = getCodeStem(filePath.split("/").pop() ?? filePath);
+
+    if (
+      isDirectChildOfCodeRoot(project, filePath) &&
+      project.config.junkDrawerFileStems.includes(stem)
+    ) {
+      violations.push({
+        code: "junk-drawer-file",
+        message: `${filePath} uses a broad catch-all filename; rename it to the responsibility it actually owns or move the code to the correct owner`,
+      });
+    }
+  }
+
+  return violations;
+}
+
 function buildMixedTypesViolations(
   parentPath: string,
   siblingDirectories: Set<string>,
   files: string[],
   imports: ArchitectureProject["imports"],
 ): ArchitectureViolation[] {
-  if (!siblingDirectories.has("types")) return [];
-  const localTypesOwners = collectExternallyConsumedTypeOwners(
-    parentPath,
-    siblingDirectories,
-    files,
-    imports,
-  );
-  if (localTypesOwners.length === 0) return [];
+  const knownSharedHomeNames = ["types", "contracts", "utils"];
 
-  return [
-    {
-      code: "mixed-types-home",
-      message: `${normalizeParentPath(parentPath)} contains a central types/ directory while ${localTypesOwners.join(", ")} also define externally consumed feature-local types.ts files; choose one shared types home`,
-    },
-  ];
+  return knownSharedHomeNames.flatMap((sharedHomeName) => {
+    if (!siblingDirectories.has(sharedHomeName)) return [];
+
+    const localSharedOwners = collectExternallyConsumedSharedOwners(
+      parentPath,
+      siblingDirectories,
+      files,
+      imports,
+      sharedHomeName,
+    );
+
+    if (localSharedOwners.length === 0) return [];
+
+    return [
+      {
+        code: `mixed-${sharedHomeName}-home`,
+        message: `${normalizeParentPath(parentPath)} contains a central ${sharedHomeName}/ directory while ${localSharedOwners.join(", ")} also define externally consumed feature-local ${sharedHomeName} modules; choose one shared ${sharedHomeName} home`,
+      },
+    ];
+  });
+}
+
+function buildPeerBoundaryConsistencyViolations(
+  parentPath: string,
+  siblingDirectories: Set<string>,
+  directoryFactsByPath: Map<string, DirectoryFacts>,
+): ArchitectureViolation[] {
+  const peerFacts = [...siblingDirectories]
+    .map(
+      (directoryName) =>
+        directoryFactsByPath.get(
+          `${parentPath}/${directoryName}`.replace(/^\//u, ""),
+        ) ?? directoryFactsByPath.get(directoryName),
+    )
+    .filter((fact): fact is DirectoryFacts => fact !== undefined)
+    .filter(
+      (fact) =>
+        fact.childDirectoryPaths.length > 0 ||
+        fact.codeFilePaths.filter(
+          (filePath) => !fact.entrypointPaths.includes(filePath),
+        ).length > 1,
+    );
+
+  if (peerFacts.length < 2) {
+    return [];
+  }
+
+  const withEntrypoint = peerFacts.filter(
+    (fact) => fact.entrypointPaths.length > 0,
+  );
+  const withoutEntrypoint = peerFacts.filter(
+    (fact) => fact.entrypointPaths.length === 0,
+  );
+
+  return withEntrypoint.length > 0 && withoutEntrypoint.length > 0
+    ? [
+        {
+          code: "peer-boundary-inconsistency",
+          message: `${normalizeParentPath(parentPath)} mixes peer folders with and without public entrypoints (${withEntrypoint.map((fact) => getLastPathSegment(fact.path)).join(", ")} vs ${withoutEntrypoint.map((fact) => getLastPathSegment(fact.path)).join(", ")}); keep sibling features on one architectural pattern`,
+        },
+      ]
+    : [];
+}
+
+function buildScatteredFeatureHomeViolations(
+  project: ArchitectureProject,
+): ArchitectureViolation[] {
+  return project.directoryFacts
+    .filter(
+      (fact) =>
+        isDirectChildOfCodeRoot(project, fact.path) &&
+        (fact.entrypointPaths.length > 0 ||
+          fact.childDirectoryPaths.length > 0 ||
+          fact.codeFilePaths.filter(
+            (filePath) => !fact.entrypointPaths.includes(filePath),
+          ).length > 1),
+    )
+    .flatMap((fact) => {
+      const directoryName = getLastPathSegment(fact.path);
+
+      if (
+        project.config.sharedHomeNames.includes(directoryName) ||
+        project.config.junkDrawerDirectoryNames.includes(directoryName)
+      ) {
+        return [];
+      }
+
+      const scatteredFiles = project.files.filter(
+        (filePath) =>
+          isDirectChildOfCodeRoot(project, filePath) &&
+          !filePath.startsWith(`${fact.path}/`) &&
+          matchesResponsibilityName(
+            getCodeStem(filePath.split("/").pop() ?? filePath),
+            directoryName,
+          ),
+      );
+
+      return scatteredFiles.length === 0
+        ? []
+        : [
+            {
+              code: "scattered-feature-home",
+              message: `${fact.path} owns ${directoryName}, but ${scatteredFiles.join(", ")} leave the same responsibility in parallel homes`,
+            },
+          ];
+    });
 }
 
 function buildSplitHomeViolations(
@@ -128,30 +342,47 @@ function buildSplitHomeViolations(
     );
 }
 
-function collectExternallyConsumedTypeOwners(
+function collectExternallyConsumedSharedOwners(
   parentPath: string,
   siblingDirectories: Set<string>,
   files: string[],
   imports: ArchitectureProject["imports"],
+  sharedHomeName: string,
 ): string[] {
   const knownFiles = new Set(files);
   const parentPrefix = parentPath.length === 0 ? "" : `${parentPath}/`;
 
   return [...siblingDirectories]
-    .filter((directoryName) => directoryName !== "types")
+    .filter((directoryName) => directoryName !== sharedHomeName)
     .map((directoryName) => ({
       directoryName,
-      typesPath: `${parentPrefix}${directoryName}/types.ts`,
+      localSharedPaths: files.filter(
+        (filePath) =>
+          filePath.startsWith(
+            `${parentPrefix}${directoryName}/${sharedHomeName}`,
+          ) &&
+          (filePath ===
+            `${parentPrefix}${directoryName}/${sharedHomeName}.ts` ||
+            filePath ===
+              `${parentPrefix}${directoryName}/${sharedHomeName}.tsx` ||
+            filePath.startsWith(
+              `${parentPrefix}${directoryName}/${sharedHomeName}/`,
+            )),
+      ),
     }))
-    .filter(({ typesPath }) => knownFiles.has(typesPath))
-    .filter(({ directoryName, typesPath }) =>
-      imports.some(
-        (entry) =>
-          entry.resolvedPath === typesPath &&
-          !entry.sourcePath.startsWith(`${parentPrefix}${directoryName}/`),
+    .filter(({ localSharedPaths }) =>
+      localSharedPaths.some((path) => knownFiles.has(path)),
+    )
+    .filter(({ directoryName, localSharedPaths }) =>
+      localSharedPaths.some((sharedPath) =>
+        imports.some(
+          (entry) =>
+            entry.resolvedPath === sharedPath &&
+            !entry.sourcePath.startsWith(`${parentPrefix}${directoryName}/`),
+        ),
       ),
     )
-    .map(({ directoryName }) => `${directoryName}/types.ts`)
+    .map(({ directoryName }) => `${directoryName}/${sharedHomeName}`)
     .sort((left, right) => left.localeCompare(right));
 }
 
@@ -198,6 +429,47 @@ function dedupeViolations(
     seen.add(key);
     return true;
   });
+}
+
+function isCodeRootDirectory(
+  project: ArchitectureProject,
+  directoryPath: string,
+): boolean {
+  return project.codeRoots.directories.includes(directoryPath);
+}
+
+function isDirectChildOfCodeRoot(
+  project: ArchitectureProject,
+  path: string,
+): boolean {
+  const parentPath = dirname(path).replace(/^\.$/u, "");
+  return project.codeRoots.directories.includes(parentPath);
+}
+
+function isPureBarrelEntrypoint(
+  project: ArchitectureProject,
+  entrypointPath: string,
+): boolean {
+  const sourceFact = project.sourceFacts.find(
+    (fact) => fact.path === entrypointPath,
+  );
+
+  return Boolean(
+    sourceFact &&
+    sourceFact.exportModuleSpecifiers.length > 0 &&
+    sourceFact.topLevelDeclarationCount === 0,
+  );
+}
+
+function matchesResponsibilityName(
+  stem: string,
+  directoryName: string,
+): boolean {
+  return (
+    stem === directoryName ||
+    stem.startsWith(`${directoryName}-`) ||
+    stem.startsWith(`${directoryName}_`)
+  );
 }
 
 function normalizeParentPath(parentPath: string): string {

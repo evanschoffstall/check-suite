@@ -6,9 +6,12 @@ import { architectureStep } from "./inline.ts";
 export const architectureSuiteStep: StepConfig = {
   config: {
     data: {
-      entrypointNames: ["index", "mod"],
+      entrypointNames: ["index"],
+      maxEntrypointReExports: 12,
+      maxInternalImportsPerFile: 12,
       maxSiblingImports: 7,
       minRepeatedDeepImports: 3,
+      sharedHomeNames: ["types", "contracts", "utils"],
       vendorManagedDirectoryNames: ["__generated__", "generated", "vendor"],
     },
     source: architectureStep,

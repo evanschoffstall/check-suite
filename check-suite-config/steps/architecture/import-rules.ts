@@ -1,6 +1,7 @@
 import { basename, dirname } from "node:path";
 
 import type {
+  ArchitectureLayerGroup,
   ArchitectureProject,
   ArchitectureViolation,
   BoundaryDirectory,
@@ -71,6 +72,11 @@ export function analyzeImportRules(
         message: `${entry.sourcePath} uses deep relative import ${entry.specifier}; prefer a public surface or alias boundary`,
       });
     }
+
+    const layerViolation = buildLayerViolation(project, entry);
+    if (layerViolation) {
+      violations.push(layerViolation);
+    }
   }
 
   for (const [targetPath, sources] of repeatedDeepImports) {
@@ -90,6 +96,15 @@ export function analyzeImportRules(
     }
   }
 
+  for (const [sourcePath, imports] of collectInternalImports(project)) {
+    if (imports.size > project.config.maxInternalImportsPerFile) {
+      violations.push({
+        code: "too-many-internal-dependencies",
+        message: `${sourcePath} imports ${imports.size} internal modules; split responsibilities or move shared code behind a smaller public seam`,
+      });
+    }
+  }
+
   return dedupeViolations(violations);
 }
 
@@ -101,6 +116,51 @@ function addRepeatedImport(
   const sources = repeatedImports.get(targetPath) ?? new Set<string>();
   sources.add(sourcePath);
   repeatedImports.set(targetPath, sources);
+}
+
+function buildLayerViolation(
+  project: ArchitectureProject,
+  entry: ArchitectureProject["imports"][number],
+): ArchitectureViolation | null {
+  if (!entry.resolvedPath) {
+    return null;
+  }
+
+  const sourceLayer = inferLayerGroup(
+    entry.sourcePath,
+    project.config.layerGroups,
+  );
+  const targetLayer = inferLayerGroup(
+    entry.resolvedPath,
+    project.config.layerGroups,
+  );
+
+  if (!sourceLayer || !targetLayer || sourceLayer.rank >= targetLayer.rank) {
+    return null;
+  }
+
+  return {
+    code: "layer-direction",
+    message: `${entry.sourcePath} (${sourceLayer.group.name}) depends on ${entry.resolvedPath} (${targetLayer.group.name}); lower layers must not depend on higher layers`,
+  };
+}
+
+function collectInternalImports(
+  project: ArchitectureProject,
+): Map<string, Set<string>> {
+  const internalImports = new Map<string, Set<string>>();
+
+  for (const entry of project.imports) {
+    if (!entry.resolvedPath) {
+      continue;
+    }
+
+    const imports = internalImports.get(entry.sourcePath) ?? new Set<string>();
+    imports.add(entry.resolvedPath);
+    internalImports.set(entry.sourcePath, imports);
+  }
+
+  return internalImports;
 }
 
 function collectSiblingImports(
@@ -175,6 +235,37 @@ function hasAliasForTarget(
   );
 }
 
+function inferLayerGroup(
+  filePath: string,
+  layerGroups: ArchitectureLayerGroup[],
+): null | { group: ArchitectureLayerGroup; rank: number; segment: string } {
+  const segments = filePath
+    .split("/")
+    .flatMap((segment, index, allSegments) =>
+      index === allSegments.length - 1 ? [getCodeStem(segment)] : [segment],
+    );
+
+  for (
+    let segmentIndex = segments.length - 1;
+    segmentIndex >= 0;
+    segmentIndex -= 1
+  ) {
+    const normalizedSegment = segments[segmentIndex].toLowerCase();
+
+    for (const [rank, group] of layerGroups.entries()) {
+      if (
+        group.patterns.some(
+          (pattern) => pattern.toLowerCase() === normalizedSegment,
+        )
+      ) {
+        return { group, rank, segment: segments[segmentIndex] };
+      }
+    }
+  }
+
+  return null;
+}
+
 function isSameDirectory(leftPath: string, rightPath: string): boolean {
   return dirname(leftPath) === dirname(rightPath);
 }
@@ -206,7 +297,7 @@ function shouldPreferAliasImport(
     resolvedPath !== null &&
     specifier.startsWith(".") &&
     project.aliasMappings.length > 0 &&
-    getCodeRoot(project, sourcePath) !== getCodeRoot(project, resolvedPath) &&
+    !isSameDirectory(sourcePath, resolvedPath) &&
     hasAliasForTarget(project, resolvedPath)
   );
 }

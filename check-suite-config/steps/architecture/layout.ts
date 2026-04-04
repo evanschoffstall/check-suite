@@ -4,6 +4,7 @@ import type {
   ArchitectureAnalyzerConfig,
   BoundaryDirectory,
   CodeRoots,
+  DirectoryFacts,
 } from "./types.ts";
 
 import { TEST_DIRECTORY_NAMES } from "./constants.ts";
@@ -40,24 +41,62 @@ export function collectCodeFiles(
   return [...files].sort();
 }
 
-/** Collects all repository directories that contain code below the discovered roots. */
-export function collectDirectories(
+/** Collects directory-level implementation facts for later structure analysis. */
+export function collectDirectoryFacts(
   cwd: string,
   codeRoots: CodeRoots,
   config: Required<ArchitectureAnalyzerConfig>,
-): string[] {
-  const directories = new Set<string>();
+): DirectoryFacts[] {
+  const directoryFacts: DirectoryFacts[] = [];
+
   for (const rootDirectory of codeRoots.directories) {
     visitCodeDirectories(
       cwd,
       rootDirectory,
       config,
       (relativeDirectoryPath) => {
-        directories.add(relativeDirectoryPath);
+        const absoluteDirectoryPath = join(cwd, relativeDirectoryPath);
+        const entries = safeReadDir(absoluteDirectoryPath);
+        const codeFilePaths = entries
+          .filter((entry) => entry.isFile() && isIncludedCodeFile(entry.name))
+          .map((entry) =>
+            normalizePath(`${relativeDirectoryPath}/${entry.name}`),
+          )
+          .sort((left, right) => left.localeCompare(right));
+        const entrypointPaths = codeFilePaths.filter((filePath) =>
+          config.entrypointNames.includes(
+            getCodeStem(filePath.split("/").pop() ?? filePath),
+          ),
+        );
+        const childDirectoryPaths = entries
+          .filter(
+            (entry) =>
+              entry.isDirectory() &&
+              !isIgnoredDirectory(entry.name, config) &&
+              !TEST_DIRECTORY_NAMES.has(entry.name) &&
+              directoryContainsCode(
+                join(absoluteDirectoryPath, entry.name),
+                config,
+              ),
+          )
+          .map((entry) =>
+            normalizePath(`${relativeDirectoryPath}/${entry.name}`),
+          )
+          .sort((left, right) => left.localeCompare(right));
+
+        directoryFacts.push({
+          childDirectoryPaths,
+          codeFilePaths,
+          entrypointPaths,
+          path: relativeDirectoryPath,
+        });
       },
     );
   }
-  return [...directories].sort();
+
+  return directoryFacts.sort((left, right) =>
+    left.path.localeCompare(right.path),
+  );
 }
 
 /** Discovers directories that expose a stable public entrypoint. */
