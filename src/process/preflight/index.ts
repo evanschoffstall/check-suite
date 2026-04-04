@@ -3,7 +3,7 @@ import type { Command } from "@/types/index.ts";
 import {
   getBunxCommandTarget,
   isBunxCommandAvailable,
-} from "./preflight-bunx.ts";
+} from "./bunx.ts";
 
 export function createProcessEnv(
   extraEnv?: Record<string, string>,

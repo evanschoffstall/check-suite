@@ -2,6 +2,10 @@ import type { Command, RunOptions } from "@/types/index.ts";
 
 import { DECLARED_BUNX_TARGETS } from "@/config/index.ts";
 import { stripAnsi } from "@/format/index.ts";
+import {
+  createProcessEnv,
+  getPreflightFailure,
+} from "@/process/preflight/index.ts";
 import { parsePositiveTimeoutMs } from "@/timeout/index.ts";
 
 import { createProcessCollectors } from "./collectors.ts";
@@ -10,7 +14,6 @@ import {
   buildTimedOutCommand,
   waitForProcessOutcome,
 } from "./io.ts";
-import { createProcessEnv, getPreflightFailure } from "./preflight.ts";
 
 const STREAM_FLUSH_GRACE_MS = 250;
 
