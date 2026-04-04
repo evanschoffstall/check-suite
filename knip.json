@@ -1,0 +1,13 @@
+{
+  "entry": ["src/check.ts"],
+  "project": ["src/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts"],
+  "ignoreExportsUsedInFile": true,
+  "ignoreDependencies": [
+    "@0xts/gitleaks-cli",
+    "@secretlint/secretlint-rule-preset-recommend",
+    "dependency-cruiser",
+    "jscpd",
+    "secretlint",
+    "type-coverage"
+  ]
+}
