@@ -2,6 +2,7 @@ import { z, ZodError } from "zod";
 
 import type { CheckConfig } from "./types.ts";
 
+import { isSafeRegExpPattern } from "./regex.ts";
 import { isRecord } from "./types.ts";
 
 const functionSchema = z.custom<(...args: never[]) => unknown>(
@@ -12,7 +13,9 @@ const scalarTokenSchema = z.union([z.number(), z.string()]);
 const recordSchema = z.record(z.string(), z.unknown());
 const outputFilterSchema = z
   .object({
-    pattern: z.string(),
+    pattern: z
+      .string()
+      .refine(isSafeRegExpPattern, "pattern must be a safe regular expression"),
     type: z.literal("stripLines"),
   })
   .strict();
@@ -20,7 +23,9 @@ const summaryPatternSchema = z
   .object({
     cellSep: z.string().optional(),
     format: z.string(),
-    regex: z.string(),
+    regex: z
+      .string()
+      .refine(isSafeRegExpPattern, "regex must be a safe regular expression"),
     type: z.enum(["count", "literal", "match", "table-row"]),
   })
   .strict();
