@@ -29,7 +29,7 @@ import {
   parsePositiveTimeoutMs,
   resolveTimeoutMs,
   withStepTimeout,
-} from "../src/timeout.ts";
+} from "../src/timeout/index.ts";
 
 describe("check CLI", () => {
   test("runs via the sole declared binary entrypoint", async () => {

@@ -4,7 +4,7 @@ import type {
   SuiteExecutionState,
 } from "@/types/index.ts";
 
-import { hasDeadlineExpired } from "@/timeout.ts";
+import { hasDeadlineExpired } from "@/timeout/index.ts";
 
 import { runStepBatch } from "./batch.ts";
 
