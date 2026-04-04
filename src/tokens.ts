@@ -1,6 +1,6 @@
-import type { StepConfig } from "./types.ts";
+import type { StepConfig } from "./types/index.ts";
 
-import { PATH_TOKENS } from "./config.ts";
+import { PATH_TOKENS } from "./config/index.ts";
 
 // ---------------------------------------------------------------------------
 // Token string substitution

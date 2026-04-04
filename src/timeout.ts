@@ -1,4 +1,4 @@
-import type { Command, DelayHandle } from "./types.ts";
+import type { Command, DelayHandle } from "./types/index.ts";
 
 import { formatDuration } from "./format.ts";
 

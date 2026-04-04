@@ -5,11 +5,11 @@ import type { FileMetrics, FunctionMetrics } from "./contracts.ts";
 
 import { LIZARD_EXCLUDED_PATHS, LIZARD_TARGETS } from "./constants.ts";
 import { getAnalyzedTypeScriptFiles } from "./file-discovery.ts";
+import { collectFileMetrics } from "./file-metrics.ts";
 import {
   countSourceFileNonCommentLines,
   countSourceFileTokens,
 } from "./source-file-metrics.ts";
-import { collectFileMetrics } from "./workspace-metrics.ts";
 
 export function collectWorkspaceFileMetrics(
   functions: FunctionMetrics[],
