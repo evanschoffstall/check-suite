@@ -4,6 +4,5 @@
 /.cache/
 /coverage/
 /report/
-/bin/
 .env
 .env.*

@@ -32,39 +32,7 @@ import {
 } from "../src/timeout.ts";
 
 describe("check CLI", () => {
-  test("runs when invoked as bun src/check.ts keys", async () => {
-    const result = Bun.spawnSync(["bun", "src/check.ts", "keys"], {
-      cwd: process.cwd(),
-      stderr: "pipe",
-      stdout: "pipe",
-    });
-
-    const stdout = result.stdout.toString().trim();
-    const stderr = result.stderr.toString().trim();
-
-    expect(result.exitCode).toBe(0);
-    expect(stderr).toBe("");
-    expect(stdout.length).toBeGreaterThan(0);
-    expect(stdout).toContain("knip");
-  });
-
-  test("runs when invoked as bun run start keys", async () => {
-    const result = Bun.spawnSync(["bun", "run", "start", "keys"], {
-      cwd: process.cwd(),
-      stderr: "pipe",
-      stdout: "pipe",
-    });
-
-    const stdout = result.stdout.toString().trim();
-    const stderr = result.stderr.toString().trim();
-
-    expect(result.exitCode).toBe(0);
-    expect(stderr.includes("error:")).toBe(false);
-    expect(stdout.length).toBeGreaterThan(0);
-    expect(stdout).toContain("knip");
-  });
-
-  test("runs when invoked through the declared package binary", async () => {
+  test("runs via the sole declared binary entrypoint", async () => {
     const result = Bun.spawnSync(["./bin/check-suite", "keys"], {
       cwd: process.cwd(),
       stderr: "pipe",
@@ -111,7 +79,7 @@ describe("check CLI", () => {
       );
 
       const result = Bun.spawnSync(
-        ["bun", join(process.cwd(), "src/check.ts"), "demo"],
+        [join(process.cwd(), "bin/check-suite"), "demo"],
         {
           cwd: tempDir,
           stderr: "pipe",
