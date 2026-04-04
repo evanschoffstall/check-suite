@@ -3,14 +3,14 @@ import type {
   StepPostProcessResult,
 } from "@/types/index.ts";
 
-import type { ConfigCheck, ConfigMessage, ConfigSection } from "../../types.ts";
+import type { ConfigCheck, ConfigMessage, ConfigSection } from "../../../types.ts";
 
 import {
   buildCommonCoverageState,
   parseJunitResults,
-} from "../coverage/index.ts";
-import { applyPlaywrightCoverageStatus } from "./post-process-coverage.ts";
-import { applyPlaywrightReportStatus } from "./post-process-report.ts";
+} from "../../coverage/index.ts";
+import { applyPlaywrightCoverageStatus } from "./coverage.ts";
+import { applyPlaywrightReportStatus } from "./report.ts";
 
 /**
  * Post-processes the Playwright step by using console coverage totals when

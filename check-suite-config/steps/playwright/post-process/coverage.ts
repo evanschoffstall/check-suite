@@ -1,11 +1,11 @@
 import type { InlineTypeScriptPostProcessContext } from "@/types/index.ts";
 
-import type { ConfigCheck, ConfigMessage } from "../../types.ts";
+import type { ConfigCheck, ConfigMessage } from "../../../types.ts";
 
 import {
   buildCommonCoverageState,
   collectLineCoverage,
-} from "../coverage/index.ts";
+} from "../../coverage/index.ts";
 
 const CONSOLE_LINE_COVERAGE_PATTERN =
   /(?:^|\n)\s*[│|]\s*Lines\s*[│|]\s*([\d.]+)\s*%\s*[│|]\s*([\d,]+)\s*[│|]\s*[\d,]+\s*[│|]\s*([\d,]+)\s*[│|]/u;

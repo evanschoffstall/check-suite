@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import type { StepConfig } from "@/types/index.ts";
 
-import { playwrightPostProcess } from "./post-process.ts";
+import { playwrightPostProcess } from "./post-process/index.ts";
 
 function hasPackageScript(scriptName: string): boolean {
   try {

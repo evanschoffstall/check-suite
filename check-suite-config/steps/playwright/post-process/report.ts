@@ -1,11 +1,11 @@
 import type { InlineTypeScriptPostProcessContext } from "@/types/index.ts";
 
-import type { ConfigMessage, ConfigSection } from "../../types.ts";
+import type { ConfigMessage, ConfigSection } from "../../../types.ts";
 
 import {
   buildCommonCoverageState,
   parseJunitResults,
-} from "../coverage/index.ts";
+} from "../../coverage/index.ts";
 
 /** Applies Playwright report-file and test-result status rules. */
 export function applyPlaywrightReportStatus(input: {
