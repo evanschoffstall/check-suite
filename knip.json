@@ -1,5 +1,5 @@
 {
-  "entry": ["check-suite.config.ts"],
+  "entry": ["check-suite.config.ts", "src/cli/command-line-interface.ts"],
   "project": ["src/**/*.ts", "check-suite-config/**/*.ts", "tests/**/*.ts"],
   "ignoreExportsUsedInFile": true,
   "ignoreDependencies": [

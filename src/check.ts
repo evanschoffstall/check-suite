@@ -1,21 +1,15 @@
 // ---------------------------------------------------------------------------
 // Public API re-exports — import from sub-modules for tree-shaking; import
-// from here for convenience and backward compatibility.
+// from here for convenience when consuming the package as a library.
+// The sole CLI entrypoint is bin/check-suite.
 // ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Dev script entry guard — `bun src/check.ts [args]`
-// ---------------------------------------------------------------------------
-
-import { main } from "./cli/command-line-interface.ts";
 
 export { parseCliArguments } from "./cli/args.ts";
-export { runInlineTypeScriptStep } from "./inline-ts.ts";
-export { runStepPostProcess } from "./post-process.ts";
-export { applyOutputFilter, run } from "./process.ts";
-export { runStepWithinDeadline } from "./step.ts";
-export { runCheckSuite, runStepBatch } from "./suite.ts";
+export { runInlineTypeScriptStep } from "./inline-ts/index.ts";
+export { runStepPostProcess } from "./post-process-runner/index.ts";
+export { run } from "./process/index.ts";
+export { applyOutputFilter } from "./process/output.ts";
+export { runStepWithinDeadline } from "./step/index.ts";
+export { runCheckSuite, runStepBatch } from "./suite-processing/index.ts";
 export { buildSummary, compactDomAssertionNoise } from "./summary.ts";
 export { resolveTimeoutMs } from "./timeout.ts";
-
-if (import.meta.main) void main();
