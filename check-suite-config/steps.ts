@@ -7,6 +7,7 @@ import { jscpdStep } from "./steps/jscpd.ts";
 import { junitStep } from "./steps/junit.ts";
 import { knipStep } from "./steps/knip.ts";
 import { lintStep } from "./steps/lint.ts";
+import { lizardStep } from "./steps/lizard.ts";
 import { madgeStep } from "./steps/madge.ts";
 import { playwrightStep } from "./steps/playwright.ts";
 import { purgeCssSuiteStep } from "./steps/purgecss.ts";
@@ -28,6 +29,7 @@ export const steps: CheckConfig["steps"] = [
   semgrepStep,
   gitleaksStep,
   typeCoverageStep,
+  lizardStep,
   jscpdStep,
   junitStep,
   playwrightStep,
