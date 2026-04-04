@@ -49,40 +49,21 @@ export function collectWorkspaceFileMetrics(
   const metricsByPath = new Map<string, FileMetrics>(
     collectFileMetrics(functions).map((entry) => [entry.path, entry] as const),
   );
-
-  for (const relativePath of getAnalyzedTypeScriptFiles(
+  const analyzedPaths = getAnalyzedTypeScriptFiles(
     cwd,
     LIZARD_TARGETS,
     LIZARD_EXCLUDED_PATHS,
-  )) {
-    const absolutePath = resolve(cwd, relativePath);
-    const sourceText = ts.sys.readFile(absolutePath, "utf8");
-    if (!sourceText) continue;
+  );
 
-    const sourceFile = ts.createSourceFile(
-      relativePath,
-      sourceText,
-      ts.ScriptTarget.Latest,
-      true,
-      relativePath.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
-    );
-    const existing = metricsByPath.get(relativePath) ?? {
-      ccn: 0,
-      functionCount: 0,
-      nloc: 0,
-      path: relativePath,
-      tokenCount: 0,
-    };
-
-    existing.nloc = Math.max(
-      existing.nloc,
-      countSourceFileNonCommentLines(sourceFile, sourceText),
-    );
-    existing.tokenCount = Math.max(
-      existing.tokenCount,
-      countSourceFileTokens(sourceText),
-    );
-    metricsByPath.set(relativePath, existing);
+  for (const fileMetrics of analyzedPaths
+    .map((relativePath) => scanWorkspaceFileMetrics(cwd, relativePath))
+    .filter((entry): entry is FileMetrics => entry !== null)) {
+    const existing =
+      metricsByPath.get(fileMetrics.path) ??
+      createEmptyFileMetrics(fileMetrics.path);
+    existing.nloc = Math.max(existing.nloc, fileMetrics.nloc);
+    existing.tokenCount = Math.max(existing.tokenCount, fileMetrics.tokenCount);
+    metricsByPath.set(fileMetrics.path, existing);
   }
 
   return [...metricsByPath.values()].sort(
@@ -120,10 +101,6 @@ export function countSourceFileNonCommentLines(
   return lineNumbers.size;
 }
 
-// ---------------------------------------------------------------------------
-// Workspace-wide file metrics scan
-// ---------------------------------------------------------------------------
-
 export function countSourceFileTokens(sourceText: string): number {
   const scanner = ts.createScanner(
     ts.ScriptTarget.Latest,
@@ -147,4 +124,43 @@ export function countSourceFileTokens(sourceText: string): number {
   }
 
   return tokenCount;
+}
+
+function createEmptyFileMetrics(path: string): FileMetrics {
+  return {
+    ccn: 0,
+    functionCount: 0,
+    nloc: 0,
+    path,
+    tokenCount: 0,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Workspace-wide file metrics scan
+// ---------------------------------------------------------------------------
+
+function scanWorkspaceFileMetrics(
+  cwd: string,
+  relativePath: string,
+): FileMetrics | null {
+  const absolutePath = resolve(cwd, relativePath);
+  const sourceText = ts.sys.readFile(absolutePath, "utf8");
+  if (!sourceText) {
+    return null;
+  }
+
+  const sourceFile = ts.createSourceFile(
+    relativePath,
+    sourceText,
+    ts.ScriptTarget.Latest,
+    true,
+    relativePath.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  );
+
+  return {
+    ...createEmptyFileMetrics(relativePath),
+    nloc: countSourceFileNonCommentLines(sourceFile, sourceText),
+    tokenCount: countSourceFileTokens(sourceText),
+  };
 }
