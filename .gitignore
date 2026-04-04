@@ -1,9 +1,9 @@
-node_modules/
-.vscode/
-dist/
+/node_modules/
+/.vscode/
+/dist/
+/.cache/
+/coverage/
+/report/
+/bin/
 .env
 .env.*
-.cache/
-coverage/
-report/
-bin/
