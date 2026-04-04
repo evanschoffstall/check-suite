@@ -6,7 +6,7 @@ import type {
 
 import { isRecord } from "@/types/index.ts";
 
-import { normalizeTone } from "./normalize-result-shared.ts";
+import { normalizeTone } from "./shared.ts";
 
 export function toPostProcessMessage(
   value: unknown,

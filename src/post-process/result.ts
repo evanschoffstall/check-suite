@@ -4,4 +4,4 @@ export {
   toPostProcessSection,
   toProcessedCheck,
   toStepPostProcessResult,
-} from "./normalize-result.ts";
+} from "@/post-process/normalize/index.ts";
