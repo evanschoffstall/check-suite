@@ -1,11 +1,13 @@
-import type { ArchitectureViolation } from "./types.ts";
+import type { ArchitectureViolation } from "./foundation/index.ts";
 
 import {
   discoverArchitectureProject,
   normalizeArchitectureConfig,
-} from "./discovery.ts";
-import { analyzeImportRules } from "./import-rules.ts";
-import { analyzeStructureRules } from "./structure-rules.ts";
+} from "./discovery/index.ts";
+import { analyzeImportRules } from "./import/index.ts";
+import { analyzeStructureRules } from "./structure/index.ts";
+
+export { formatArchitectureViolations } from "./report/index.ts";
 
 /** Analyzes a repository and returns architecture violations derived from its layout. */
 export function analyzeArchitecture(
@@ -21,23 +23,6 @@ export function analyzeArchitecture(
     ...analyzeImportRules(project),
     ...analyzeStructureRules(project),
   ]).sort((left, right) => left.message.localeCompare(right.message));
-}
-
-/** Formats architecture violations for a check-suite step output. */
-export function formatArchitectureViolations(
-  violations: ArchitectureViolation[],
-): string {
-  if (violations.length === 0) {
-    return "architecture: 0 violations\n";
-  }
-
-  return [
-    `architecture: ${violations.length} violations`,
-    ...violations.map(
-      (violation) => `  - [${violation.code}] ${violation.message}`,
-    ),
-    "",
-  ].join("\n");
 }
 
 function dedupeViolations(
