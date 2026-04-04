@@ -77,41 +77,107 @@ export function normalizeArchitectureConfig(
   const record = isRecord(value) ? value : {};
 
   return {
-    entrypointNames: toStringList(record.entrypointNames) ?? [
-      ...DEFAULT_ENTRYPOINT_NAMES,
-    ],
-    ignoredDirectoryNames: toStringList(record.ignoredDirectoryNames) ?? [
-      ...DEFAULT_IGNORED_DIRECTORY_NAMES,
-    ],
-    junkDrawerDirectoryNames: toStringList(record.junkDrawerDirectoryNames) ?? [
-      ...DEFAULT_JUNK_DRAWER_DIRECTORY_NAMES,
-    ],
-    junkDrawerFileStems: toStringList(record.junkDrawerFileStems) ?? [
-      ...DEFAULT_JUNK_DRAWER_FILE_STEMS,
-    ],
-    layerGroups:
-      toLayerPatternGroups(record.layerGroups) ??
-      DEFAULT_LAYER_GROUPS.map((group) => ({
-        name: group.name,
-        patterns: [...group.patterns],
-      })),
-    maxEntrypointReExports:
-      toIntegerAtLeast(record.maxEntrypointReExports, 1) ??
-      DEFAULT_MAX_ENTRYPOINT_RE_EXPORTS,
-    maxInternalImportsPerFile:
-      toIntegerAtLeast(record.maxInternalImportsPerFile, 1) ??
-      DEFAULT_MAX_INTERNAL_IMPORTS,
-    maxSiblingImports:
-      toIntegerAtLeast(record.maxSiblingImports, 1) ??
-      DEFAULT_MAX_SIBLING_IMPORTS,
-    minRepeatedDeepImports:
-      toIntegerAtLeast(record.minRepeatedDeepImports, 2) ??
-      DEFAULT_MIN_REPEATED_DEEP_IMPORTS,
-    sharedHomeNames: toStringList(record.sharedHomeNames) ?? [
-      ...DEFAULT_SHARED_HOME_NAMES,
-    ],
-    vendorManagedDirectoryNames: toStringList(
+    ...normalizeDirectoryNameConfig(record),
+    ...normalizeThresholdConfig(record),
+    layerGroups: normalizeLayerGroups(record.layerGroups),
+  };
+}
+
+function normalizeDirectoryNameConfig(
+  record: Record<string, unknown>,
+): Pick<
+  Required<ArchitectureAnalyzerConfig>,
+  | "entrypointNames"
+  | "ignoredDirectoryNames"
+  | "junkDrawerDirectoryNames"
+  | "junkDrawerFileStems"
+  | "sharedHomeNames"
+  | "vendorManagedDirectoryNames"
+> {
+  return {
+    entrypointNames: normalizeStringListConfig(
+      record.entrypointNames,
+      DEFAULT_ENTRYPOINT_NAMES,
+    ),
+    ignoredDirectoryNames: normalizeStringListConfig(
+      record.ignoredDirectoryNames,
+      DEFAULT_IGNORED_DIRECTORY_NAMES,
+    ),
+    junkDrawerDirectoryNames: normalizeStringListConfig(
+      record.junkDrawerDirectoryNames,
+      DEFAULT_JUNK_DRAWER_DIRECTORY_NAMES,
+    ),
+    junkDrawerFileStems: normalizeStringListConfig(
+      record.junkDrawerFileStems,
+      DEFAULT_JUNK_DRAWER_FILE_STEMS,
+    ),
+    sharedHomeNames: normalizeStringListConfig(
+      record.sharedHomeNames,
+      DEFAULT_SHARED_HOME_NAMES,
+    ),
+    vendorManagedDirectoryNames: normalizeStringListConfig(
       record.vendorManagedDirectoryNames,
-    ) ?? [...DEFAULT_VENDOR_MANAGED_DIRECTORY_NAMES],
+      DEFAULT_VENDOR_MANAGED_DIRECTORY_NAMES,
+    ),
+  };
+}
+
+function normalizeIntegerConfig(
+  value: unknown,
+  minimum: number,
+  fallback: number,
+): number {
+  return toIntegerAtLeast(value, minimum) ?? fallback;
+}
+
+function normalizeLayerGroups(
+  value: unknown,
+): Required<ArchitectureAnalyzerConfig>["layerGroups"] {
+  return (
+    toLayerPatternGroups(value) ??
+    DEFAULT_LAYER_GROUPS.map((group) => ({
+      name: group.name,
+      patterns: [...group.patterns],
+    }))
+  );
+}
+
+function normalizeStringListConfig(
+  value: unknown,
+  fallback: readonly string[],
+): string[] {
+  return toStringList(value) ?? [...fallback];
+}
+
+function normalizeThresholdConfig(
+  record: Record<string, unknown>,
+): Pick<
+  Required<ArchitectureAnalyzerConfig>,
+  | "maxEntrypointReExports"
+  | "maxInternalImportsPerFile"
+  | "maxSiblingImports"
+  | "minRepeatedDeepImports"
+> {
+  return {
+    maxEntrypointReExports: normalizeIntegerConfig(
+      record.maxEntrypointReExports,
+      1,
+      DEFAULT_MAX_ENTRYPOINT_RE_EXPORTS,
+    ),
+    maxInternalImportsPerFile: normalizeIntegerConfig(
+      record.maxInternalImportsPerFile,
+      1,
+      DEFAULT_MAX_INTERNAL_IMPORTS,
+    ),
+    maxSiblingImports: normalizeIntegerConfig(
+      record.maxSiblingImports,
+      1,
+      DEFAULT_MAX_SIBLING_IMPORTS,
+    ),
+    minRepeatedDeepImports: normalizeIntegerConfig(
+      record.minRepeatedDeepImports,
+      2,
+      DEFAULT_MIN_REPEATED_DEEP_IMPORTS,
+    ),
   };
 }

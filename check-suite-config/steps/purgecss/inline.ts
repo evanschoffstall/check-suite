@@ -12,23 +12,12 @@ export async function purgeCssStep({
   join,
   ok,
 }: InlineTypeScriptContext): Promise<Command> {
-  const cssFiles = data.cssFiles;
-  const contentGlobs = data.contentGlobs;
-  const safelists = data.safelists;
-  const selectorPrefix = data.selectorPrefix;
-
-  if (
-    !isStringList(cssFiles) ||
-    !isStringList(contentGlobs) ||
-    !isStringList(safelists) ||
-    typeof selectorPrefix !== "string"
-  ) {
+  const config = readPurgeCssConfig(data);
+  if (!config) {
     return fail("purgecss config is invalid\n");
   }
 
-  const safelistPatterns = safelists.map((pattern) => new RegExp(pattern));
-  const safeSelectorPattern =
-    safelists.length > 0 ? new RegExp(safelists.join("|")) : null;
+  const safeSelectorPattern = buildSafeSelectorPattern(config.safelists);
   const purgeCssModule = (await importModule("purgecss")) as {
     PurgeCSS: new () => {
       purge: (options: {
@@ -40,10 +29,12 @@ export async function purgeCssStep({
     };
   };
   const [result] = await new purgeCssModule.PurgeCSS().purge({
-    content: contentGlobs.map((file) => join(cwd, file)),
-    css: cssFiles.map((file) => join(cwd, file)),
+    content: config.contentGlobs.map((file) => join(cwd, file)),
+    css: config.cssFiles.map((file) => join(cwd, file)),
     rejected: true,
-    safelist: { greedy: safelistPatterns },
+    safelist: {
+      greedy: config.safelists.map((pattern) => new RegExp(pattern)),
+    },
   });
 
   const rejectedSelectors = Array.isArray(result?.rejected)
@@ -51,7 +42,7 @@ export async function purgeCssStep({
     : [];
   const unusedSelectors = rejectedSelectors.filter(
     (selector) =>
-      selector.startsWith(selectorPrefix) &&
+      selector.startsWith(config.selectorPrefix) &&
       !(safeSelectorPattern?.test(selector) ?? false),
   );
 
@@ -59,13 +50,42 @@ export async function purgeCssStep({
     return ok("no unused CSS selectors found\n");
   }
 
-  return fail(
-    `${unusedSelectors.map((selector) => `  unused: ${selector}`).join("\n")}\nfound ${unusedSelectors.length} unused CSS selector(s)\n`,
-  );
+  return fail(formatUnusedSelectorOutput(unusedSelectors));
+}
+
+function buildSafeSelectorPattern(safelists: string[]): null | RegExp {
+  return safelists.length > 0 ? new RegExp(safelists.join("|")) : null;
+}
+
+function formatUnusedSelectorOutput(unusedSelectors: string[]): string {
+  return `${unusedSelectors.map((selector) => `  unused: ${selector}`).join("\n")}\nfound ${unusedSelectors.length} unused CSS selector(s)\n`;
 }
 
 function isStringList(value: unknown): value is string[] {
   return (
     Array.isArray(value) && value.every((entry) => typeof entry === "string")
   );
+}
+
+function readPurgeCssConfig(data: InlineTypeScriptContext["data"]): null | {
+  contentGlobs: string[];
+  cssFiles: string[];
+  safelists: string[];
+  selectorPrefix: string;
+} {
+  const cssFiles = data.cssFiles;
+  const contentGlobs = data.contentGlobs;
+  const safelists = data.safelists;
+  const selectorPrefix = data.selectorPrefix;
+
+  if (
+    !isStringList(cssFiles) ||
+    !isStringList(contentGlobs) ||
+    !isStringList(safelists) ||
+    typeof selectorPrefix !== "string"
+  ) {
+    return null;
+  }
+
+  return { contentGlobs, cssFiles, safelists, selectorPrefix };
 }
