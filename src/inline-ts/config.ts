@@ -2,9 +2,9 @@ import type {
   InlineTypeScriptConfig,
   InlineTypeScriptSource,
   StepConfig,
-} from "./types.ts";
+} from "../types/index.ts";
 
-import { isRecord } from "./types.ts";
+import { isRecord } from "../types/index.ts";
 
 export function toInlineTypeScriptConfig(
   config: StepConfig["config"] | StepConfig["postProcess"],

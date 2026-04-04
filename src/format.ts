@@ -2,7 +2,7 @@ import type {
   PostProcessMessage,
   PostProcessSection,
   PostProcessTone,
-} from "./types.ts";
+} from "./types/index.ts";
 
 // ---------------------------------------------------------------------------
 // ANSI escape codes
