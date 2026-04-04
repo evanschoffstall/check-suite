@@ -96,7 +96,7 @@ function buildInlineTypeScriptContext(
     join,
     ok: (output, durationMs) => makeInlineResult(0, output, durationMs),
     readFileSync,
-    step,
+    step: step as unknown as Record<string, unknown>,
   };
 }
 

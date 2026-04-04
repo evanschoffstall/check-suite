@@ -1,0 +1,62 @@
+import type {
+  Command,
+  InlineTypeScriptPostProcessContext,
+  InlineTypeScriptPostProcessor,
+  StepConfig,
+  StepPostProcessResult,
+} from "../types/index.ts";
+
+import { resolveInlineTypeScriptRunner } from "../inline-ts/index.ts";
+import { toStepPostProcessResult } from "../post-process-result/index.ts";
+import {
+  buildPostProcessContext,
+  getRunnablePostProcessConfig,
+} from "./context.ts";
+import { makePostProcessFailure } from "./failure.ts";
+
+export async function runStepPostProcess(
+  step: StepConfig,
+  command: Command,
+  displayOutput: string,
+): Promise<null | StepPostProcessResult> {
+  const inlineConfig = getRunnablePostProcessConfig(step, command);
+  if (!inlineConfig || command.notFound || command.timedOut) return null;
+
+  return executePostProcessor(step, command, displayOutput, inlineConfig);
+}
+
+async function executePostProcessor(
+  step: StepConfig,
+  command: Command,
+  displayOutput: string,
+  inlineConfig: {
+    data?: Record<string, unknown>;
+    source: InlineTypeScriptPostProcessor | string;
+  },
+): Promise<StepPostProcessResult> {
+  try {
+    const postProcessor = (await resolveInlineTypeScriptRunner<
+      InlineTypeScriptPostProcessContext,
+      StepPostProcessResult
+    >(inlineConfig.source)) as InlineTypeScriptPostProcessor;
+    const normalizedResult = toStepPostProcessResult(
+      await postProcessor(
+        buildPostProcessContext(
+          step,
+          command,
+          displayOutput,
+          inlineConfig.data ?? {},
+        ),
+      ),
+    );
+    return (
+      normalizedResult ??
+      makePostProcessFailure(step.label, "returned an invalid result")
+    );
+  } catch (error) {
+    return makePostProcessFailure(
+      step.label,
+      `failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}

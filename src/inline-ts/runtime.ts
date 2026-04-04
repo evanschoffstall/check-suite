@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-import type { InlineTypeScriptSource } from "./types.ts";
+import type { InlineTypeScriptSource } from "../types/index.ts";
 
 const INLINE_TS_FUNCTION_CACHE = new Map<
   string,
