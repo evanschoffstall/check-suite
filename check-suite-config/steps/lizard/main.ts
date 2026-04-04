@@ -4,7 +4,7 @@ import { LIZARD_THRESHOLDS } from "./constants.ts";
 import { parseLizardCsv } from "./csv-parser.ts";
 import { runLizardAnalysis } from "./lizard-analysis.ts";
 import { buildLizardReportWithFiles } from "./report.ts";
-import { resolveTopLevelFunctionMetrics } from "./top-level-metrics.ts";
+import { resolveTopLevelFunctionMetrics } from "./top-level-resolution.ts";
 import { collectWorkspaceFileMetrics } from "./workspace-metrics.ts";
 
 export function main(): void {
