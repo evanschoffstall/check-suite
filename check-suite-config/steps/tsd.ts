@@ -1,4 +1,4 @@
-import type { StepConfig } from "../../src/types.ts";
+import type { StepConfig } from "../../src/types/index.ts";
 
 /** Public typing contract verification powered by tsd. */
 export const tsdStep: StepConfig = {

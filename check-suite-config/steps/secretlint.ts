@@ -1,4 +1,4 @@
-import type { StepConfig } from "../../src/types.ts";
+import type { StepConfig } from "../../src/types/index.ts";
 
 /** Secret scanning powered by Secretlint. */
 export const secretlintStep: StepConfig = {

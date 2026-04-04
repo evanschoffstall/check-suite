@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import type { StepConfig } from "../../src/types.ts";
+import type { StepConfig } from "../../../src/types/index.ts";
 
-import { playwrightPostProcess } from "../post-process.ts";
+import { playwrightPostProcess } from "./post-process.ts";
 
 function hasPackageScript(scriptName: string): boolean {
   try {

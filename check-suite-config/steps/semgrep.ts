@@ -1,4 +1,4 @@
-import type { StepConfig } from "../../src/types.ts";
+import type { StepConfig } from "../../src/types/index.ts";
 
 /** Static application security scan powered by Semgrep. */
 export const semgrepStep: StepConfig = {

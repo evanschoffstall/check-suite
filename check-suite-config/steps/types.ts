@@ -1,4 +1,4 @@
-import type { StepConfig } from "../../src/types.ts";
+import type { StepConfig } from "../../src/types/index.ts";
 
 /** TypeScript compiler verification step. */
 export const typesStep: StepConfig = {

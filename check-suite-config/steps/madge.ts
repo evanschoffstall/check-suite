@@ -1,4 +1,4 @@
-import type { StepConfig } from "../../src/types.ts";
+import type { StepConfig } from "../../src/types/index.ts";
 
 /** Circular dependency detection powered by Madge. */
 export const madgeStep: StepConfig = {

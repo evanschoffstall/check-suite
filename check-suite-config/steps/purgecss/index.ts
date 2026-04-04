@@ -1,6 +1,6 @@
-import type { StepConfig } from "../../src/types.ts";
+import type { StepConfig } from "../../../src/types/index.ts";
 
-import { purgeCssStep } from "../inline-steps.ts";
+import { purgeCssStep } from "./inline.ts";
 
 /** Project CSS selector reachability check powered by PurgeCSS. */
 export const purgeCssSuiteStep: StepConfig = {

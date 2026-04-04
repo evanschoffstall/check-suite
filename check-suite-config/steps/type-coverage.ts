@@ -1,4 +1,4 @@
-import type { StepConfig } from "../../src/types.ts";
+import type { StepConfig } from "../../src/types/index.ts";
 
 /** Type-coverage threshold enforcement. */
 export const typeCoverageStep: StepConfig = {
