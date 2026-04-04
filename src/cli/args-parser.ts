@@ -3,9 +3,9 @@ import type { CliArguments } from "../types/index.ts";
 import {
   createDirectStepArguments,
   createKeysArguments,
+  parseSuiteSelectionArguments,
   resolveDirectStepFromArg,
-} from "./args-direct.ts";
-import { parseSuiteSelectionArguments } from "./args-selection.ts";
+} from "./args-selection.ts";
 
 export function parseCliArguments(argv: string[]): CliArguments {
   const command = argv[2];
