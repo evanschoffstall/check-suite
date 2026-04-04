@@ -1,18 +1,18 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 
-import type { Command, StepConfig } from "../types/index.ts";
+import type { Command, StepConfig } from "@/types/index.ts";
 
-import { runInlineTypeScriptStep } from "../inline-ts/runner.ts";
-import { runLint } from "../lint.ts";
-import { run } from "../process/runner.ts";
+import { runInlineTypeScriptStep } from "@/inline-ts/index.ts";
+import { runLint } from "@/lint.ts";
+import { run } from "@/process/index.ts";
 import {
   getRemainingTimeoutMs,
   makeTimedOutCommand,
   parsePositiveTimeoutMs,
   withStepTimeout,
-} from "../timeout.ts";
-import { getStepTokens, resolveArgs, resolveTokenString } from "../tokens.ts";
+} from "@/timeout.ts";
+import { getStepTokens, resolveArgs, resolveTokenString } from "@/tokens.ts";
 
 export function runStepWithinDeadline(
   step: StepConfig,

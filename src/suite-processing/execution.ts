@@ -1,8 +1,11 @@
-import type { SuiteExecutionState } from "@/types/index.ts";
+import type {
+  Command,
+  StepConfig,
+  SuiteExecutionState,
+} from "@/types/index.ts";
 
-import type { Command, StepConfig } from "../types/index.ts";
+import { hasDeadlineExpired } from "@/timeout.ts";
 
-import { hasDeadlineExpired } from "../timeout.ts";
 import { runStepBatch } from "./batch.ts";
 
 export async function executeSuiteSteps(

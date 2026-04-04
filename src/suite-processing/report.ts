@@ -1,6 +1,9 @@
-import type { CheckRow, ProcessedResultEntry } from "@/types/index.ts";
-
-import type { Command, StepConfig } from "../types/index.ts";
+import type {
+  CheckRow,
+  Command,
+  ProcessedResultEntry,
+  StepConfig,
+} from "@/types/index.ts";
 
 import {
   buildProcessedResults,

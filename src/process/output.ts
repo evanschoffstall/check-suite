@@ -1,7 +1,7 @@
-import type { OutputFilter } from "../types/index.ts";
+import type { OutputFilter } from "@/types/index.ts";
 
-import { stripAnsi } from "../format.ts";
-import { testSafeRegExp } from "../regex.ts";
+import { stripAnsi } from "@/format.ts";
+import { testSafeRegExp } from "@/regex.ts";
 
 /** Applies the configured output filter rule to raw step output. */
 export function applyOutputFilter(

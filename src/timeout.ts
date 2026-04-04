@@ -1,6 +1,6 @@
-import type { Command, DelayHandle } from "./types/index.ts";
+import type { Command, DelayHandle } from "@/types/index.ts";
 
-import { formatDuration } from "./format.ts";
+import { formatDuration } from "@/format.ts";
 
 // ---------------------------------------------------------------------------
 // Positive integer timeout parsing

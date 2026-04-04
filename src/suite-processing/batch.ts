@@ -1,6 +1,6 @@
-import type { Command, StepConfig } from "../types/index.ts";
+import type { Command, StepConfig } from "@/types/index.ts";
 
-import { runStepWithinDeadline } from "../step/index.ts";
+import { runStepWithinDeadline } from "@/step/index.ts";
 
 /** Runs a batch in config order while refusing to start steps after the deadline. */
 export async function runStepBatch(

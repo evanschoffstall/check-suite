@@ -1,10 +1,11 @@
-import type { Command, KillableProcess } from "../types/index.ts";
+import type { Command, KillableProcess } from "@/types/index.ts";
 
 import {
   appendTimedOutDrainMessage,
   appendTimedOutMessage,
   createDelay,
-} from "../timeout.ts";
+} from "@/timeout.ts";
+
 import { flushCollectors, type ProcessCollectors } from "./collectors.ts";
 import { terminateProcess } from "./termination.ts";
 

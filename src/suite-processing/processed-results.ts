@@ -1,9 +1,11 @@
-import type { ProcessedResultEntry } from "@/types/index.ts";
+import type {
+  Command,
+  ProcessedResultEntry,
+  StepConfig,
+} from "@/types/index.ts";
 
-import type { Command, StepConfig } from "../types/index.ts";
-
-import { runStepPostProcess } from "../post-process/index.ts";
-import { applyOutputFilter } from "../process/output.ts";
+import { runStepPostProcess } from "@/post-process/index.ts";
+import { applyOutputFilter } from "@/process/index.ts";
 
 export async function buildProcessedResults(
   allExecutedSteps: StepConfig[],

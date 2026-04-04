@@ -1,4 +1,4 @@
-import type { Command, StepConfig, SummaryPattern } from "./types/index.ts";
+import type { Command, StepConfig, SummaryPattern } from "@/types/index.ts";
 
 import { norm, splitLines, stripAnsi } from "./format.ts";
 import { countSafeMatches, execSafeRegExp, testSafeRegExp } from "./regex.ts";

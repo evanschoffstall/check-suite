@@ -1,4 +1,4 @@
-import type { StepConfig } from "../types/index.ts";
+import type { StepConfig } from "@/types/index.ts";
 
 export function selectSuiteSteps(
   steps: StepConfig[],

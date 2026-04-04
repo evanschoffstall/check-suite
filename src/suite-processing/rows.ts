@@ -1,8 +1,11 @@
-import type { CheckRow, ProcessedResultEntry } from "@/types/index.ts";
+import type {
+  CheckRow,
+  Command,
+  ProcessedResultEntry,
+  StepConfig,
+} from "@/types/index.ts";
 
-import type { Command, StepConfig } from "../types/index.ts";
-
-import { buildSummary } from "../summary.ts";
+import { buildSummary } from "@/summary.ts";
 
 export function buildCheckRows(
   executedMainSteps: StepConfig[],

@@ -1,4 +1,5 @@
-import { CFG, SUITE_LABEL, SUITE_TIMEOUT_MS } from "../config/runtime.ts";
+import { CFG, SUITE_LABEL, SUITE_TIMEOUT_MS } from "@/config/index.ts";
+
 import {
   printSuiteOutputs,
   printSuitePostProcessFeedback,
