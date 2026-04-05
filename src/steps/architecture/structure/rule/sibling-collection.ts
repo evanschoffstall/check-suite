@@ -1,6 +1,6 @@
 import { dirname } from "node:path";
 
-import type { ArchitectureProject } from "../../foundation/index.ts";
+import type { ArchitectureProject } from "@/steps/architecture/foundation/index.ts";
 
 /** Collects directory and file sibling names grouped by their parent path. */
 export function collectSiblingsByParent(project: ArchitectureProject): {

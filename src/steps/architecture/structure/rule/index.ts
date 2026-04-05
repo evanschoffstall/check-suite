@@ -2,18 +2,18 @@ export {
   buildBroadBarrelViolations,
   buildDirectoryFactViolations,
   buildPeerBoundaryConsistencyViolations,
-} from "./boundary-violations.ts";
+} from "./boundary-violations";
 export {
   isDirectChildOfCodeRoot,
   matchesResponsibilityName,
   normalizeParentPath,
-} from "./helpers.ts";
+} from "./helpers";
 export {
   buildFlattenedFeatureViolations,
   buildJunkDrawerViolations,
   buildSameNameFileDirectoryViolations,
   buildScatteredFeatureHomeViolations,
   buildSplitHomeViolations,
-} from "./layout-violations.ts";
-export { buildMixedTypesViolations } from "./shared-home-violations.ts";
-export { collectSiblingsByParent } from "./sibling-collection.ts";
+} from "./layout-violations";
+export { buildMixedTypesViolations } from "./shared-home-violations";
+export { collectSiblingsByParent } from "./sibling-collection";

@@ -1,14 +1,15 @@
 import type {
   ArchitectureProject,
   ArchitectureViolation,
-} from "../../foundation/index.ts";
+} from "@/steps/architecture/foundation/index.ts";
 
-import { getCodeStem, getLastPathSegment } from "../../foundation/index.ts";
+import { getCodeStem, getLastPathSegment } from "@/steps/architecture/foundation/index.ts";
+
 import {
   isDirectChildOfCodeRoot,
   matchesResponsibilityName,
   normalizeParentPath,
-} from "./helpers.ts";
+} from "./helpers";
 
 /** Detects flattened file groups that should live under a feature directory. */
 export function buildFlattenedFeatureViolations(
