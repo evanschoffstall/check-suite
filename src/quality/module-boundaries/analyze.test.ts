@@ -1,0 +1,442 @@
+import { afterEach, describe, expect, test } from "bun:test";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { analyzeArchitecture } from "@/quality/module-boundaries/analyze.ts";
+
+const tempDirectories: string[] = [];
+
+afterEach(() => {
+  for (const directoryPath of tempDirectories.splice(0)) {
+    rmSync(directoryPath, { force: true, recursive: true });
+  }
+});
+
+describe("architecture analyzer", () => {
+  test("flags unowned root files beneath a code root", () => {
+    const repoDir = createTempRepo({
+      "src/rogue.ts": "export const rogue = true;\n",
+    });
+
+    const violations = analyzeArchitecture(repoDir, {
+      allowedRootFileStems: [],
+      includeRootFiles: false,
+      rootDirectories: ["src"],
+    });
+
+    expect(
+      violations.some(
+        (violation) =>
+          violation.code === "root-file-ownership" &&
+          violation.message.includes("src/rogue.ts"),
+      ),
+    ).toBe(true);
+  });
+
+  test("flags imports that violate explicit dependency policies", () => {
+    const repoDir = createTempRepo({
+      "src/process/index.ts": 'export { run } from "./runner.ts";\n',
+      "src/process/runner.ts":
+        'import { summarize } from "../summary/index.ts";\nexport const run = () => summarize();\n',
+      "src/summary/index.ts": "export const summarize = () => 'done';\n",
+    });
+
+    const violations = analyzeArchitecture(repoDir, {
+      dependencyPolicies: [
+        {
+          mayDependOn: [],
+          name: "process",
+          pathPrefixes: ["src/process"],
+        },
+        {
+          mayDependOn: [],
+          name: "summary",
+          pathPrefixes: ["src/summary"],
+        },
+      ],
+      includeRootFiles: false,
+      rootDirectories: ["src"],
+    });
+
+    expect(
+      violations.some((violation) => violation.code === "dependency-policy"),
+    ).toBe(true);
+  });
+
+  test("uses configured shared-home names instead of hardcoded ones", () => {
+    const repoDir = createTempRepo({
+      "src/bar/index.ts":
+        'import { shared } from "../foo/shared-types.ts";\nexport const read = () => shared;\n',
+      "src/foo/index.ts": "export const foo = true;\n",
+      "src/foo/shared-types.ts": "export const shared = 'feature';\n",
+      "src/shared-types/index.ts": "export const canonical = 'root';\n",
+    });
+
+    const violations = analyzeArchitecture(repoDir, {
+      includeRootFiles: false,
+      rootDirectories: ["src"],
+      sharedHomeNames: ["shared-types"],
+    });
+
+    expect(
+      violations.some(
+        (violation) => violation.code === "mixed-shared-types-home",
+      ),
+    ).toBe(true);
+  });
+
+  test("flags directories that exceed the configured depth budget", () => {
+    const repoDir = createTempRepo({
+      "src/a/b/c/d/index.ts": "export const value = 1;\n",
+      "src/a/index.ts": 'export { value } from "./b/c/d/index.ts";\n',
+    });
+
+    const violations = analyzeArchitecture(repoDir, {
+      includeRootFiles: false,
+      maxDirectoryDepth: 3,
+      rootDirectories: ["src"],
+    });
+
+    expect(
+      violations.some(
+        (violation) =>
+          violation.code === "directory-depth" &&
+          violation.message.includes("src/a/b/c/d"),
+      ),
+    ).toBe(true);
+  });
+
+  test("flags wildcard exports on explicit public surfaces", () => {
+    const repoDir = createTempRepo({
+      "src/check.ts": 'export * from "./types/index.ts";\n',
+      "src/types/index.ts": "export const value = 1;\n",
+    });
+
+    const violations = analyzeArchitecture(repoDir, {
+      explicitPublicSurfacePaths: ["src/check.ts"],
+      includeRootFiles: false,
+      maxWildcardExportsPerPublicSurface: 0,
+      rootDirectories: ["src"],
+    });
+
+    expect(
+      violations.some(
+        (violation) => violation.code === "public-surface-wildcard-export",
+      ),
+    ).toBe(true);
+  });
+
+  test("flags impure explicit public surfaces", () => {
+    const repoDir = createTempRepo({
+      "src/check.ts": "const value = 1;\nexport { value };\n",
+    });
+
+    const violations = analyzeArchitecture(repoDir, {
+      explicitPublicSurfacePaths: ["src/check.ts"],
+      includeRootFiles: false,
+      rootDirectories: ["src"],
+    });
+
+    expect(
+      violations.some(
+        (violation) => violation.code === "public-surface-purity",
+      ),
+    ).toBe(true);
+  });
+
+  test("flags public-surface re-export chains across top-level owners", () => {
+    const repoDir = createTempRepo({
+      "src/check.ts": 'export { runCli } from "./cli/index.ts";\n',
+      "src/cli/index.ts": 'export { runCli } from "./runner.ts";\n',
+      "src/cli/runner.ts": "export const runCli = () => true;\n",
+    });
+
+    const violations = analyzeArchitecture(repoDir, {
+      allowPublicSurfaceReExportChains: false,
+      explicitPublicSurfacePaths: ["src/check.ts"],
+      includeRootFiles: false,
+      rootDirectories: ["src"],
+    });
+
+    expect(
+      violations.some(
+        (violation) => violation.code === "public-surface-re-export-chain",
+      ),
+    ).toBe(true);
+  });
+
+  test("flags runtime operations outside allowed runtime modules", () => {
+    const repoDir = createTempRepo({
+      "src/inline-ts/runtime.ts":
+        "const cwd = process.cwd();\nexport { cwd };\n",
+    });
+
+    const violations = analyzeArchitecture(repoDir, {
+      includeRootFiles: false,
+      rootDirectories: ["src"],
+    });
+
+    expect(
+      violations.some((violation) => violation.code === "runtime-only-path"),
+    ).toBe(true);
+  });
+
+  test("flags uncovered top-level directories when policy coverage is required", () => {
+    const repoDir = createTempRepo({
+      "src/cli/index.ts": "export const runCli = () => true;\n",
+    });
+
+    const violations = analyzeArchitecture(repoDir, {
+      dependencyPolicies: [],
+      includeRootFiles: false,
+      requireCompleteDependencyPolicyCoverage: true,
+      rootDirectories: ["src"],
+    });
+
+    expect(
+      violations.some(
+        (violation) => violation.code === "dependency-policy-coverage",
+      ),
+    ).toBe(true);
+  });
+
+  test("flags dependency policy cycles when owner graphs must stay acyclic", () => {
+    const repoDir = createTempRepo({
+      "src/a/index.ts": 'export { a } from "./runner.ts";\n',
+      "src/a/runner.ts":
+        'import { b } from "../b/index.ts";\nexport const a = () => b();\n',
+      "src/b/index.ts": 'export { b } from "./runner.ts";\n',
+      "src/b/runner.ts":
+        'import { a } from "../a/index.ts";\nexport const b = () => a();\n',
+    });
+
+    const violations = analyzeArchitecture(repoDir, {
+      dependencyPolicies: [
+        { mayDependOn: ["b"], name: "a", pathPrefixes: ["src/a"] },
+        { mayDependOn: ["a"], name: "b", pathPrefixes: ["src/b"] },
+      ],
+      includeRootFiles: false,
+      requireAcyclicDependencyPolicies: true,
+      rootDirectories: ["src"],
+    });
+
+    expect(
+      violations.some(
+        (violation) => violation.code === "dependency-policy-cycle",
+      ),
+    ).toBe(true);
+  });
+
+  test("flags owner fan-out beyond the configured budget", () => {
+    const repoDir = createTempRepo({
+      "src/a/index.ts": 'export { a } from "./runner.ts";\n',
+      "src/a/runner.ts": [
+        'import { b } from "../b/index.ts";',
+        'import { c } from "../c/index.ts";',
+        'import { d } from "../d/index.ts";',
+        "export const a = () => [b(), c(), d()];",
+        "",
+      ].join("\n"),
+      "src/b/index.ts": "export const b = () => true;\n",
+      "src/c/index.ts": "export const c = () => true;\n",
+      "src/d/index.ts": "export const d = () => true;\n",
+    });
+
+    const violations = analyzeArchitecture(repoDir, {
+      dependencyPolicies: [
+        { mayDependOn: ["b", "c", "d"], name: "a", pathPrefixes: ["src/a"] },
+        { mayDependOn: [], name: "b", pathPrefixes: ["src/b"] },
+        { mayDependOn: [], name: "c", pathPrefixes: ["src/c"] },
+        { mayDependOn: [], name: "d", pathPrefixes: ["src/d"] },
+      ],
+      includeRootFiles: false,
+      maxPolicyFanOut: 2,
+      rootDirectories: ["src"],
+    });
+
+    expect(
+      violations.some(
+        (violation) => violation.code === "dependency-policy-fan-out",
+      ),
+    ).toBe(true);
+  });
+
+  test("flags inbound dependency violations against target allowlists", () => {
+    const repoDir = createTempRepo(createProcessToConfigRepo());
+
+    const violations = analyzeArchitecture(repoDir, {
+      dependencyPolicies: createProcessToConfigPolicies({
+        allowedDependents: ["cli"],
+      }),
+      includeRootFiles: false,
+      rootDirectories: ["src"],
+    });
+
+    expect(
+      violations.some(
+        (violation) => violation.code === "dependency-dependent-allowlist",
+      ),
+    ).toBe(true);
+  });
+
+  test("flags runtime-only imports from undeclared importer owners", () => {
+    const repoDir = createTempRepo({
+      ...createProcessToConfigRepo(),
+      "src/process/runner.ts":
+        'import { cfg } from "../runtime-config/index.ts";\nexport const run = () => cfg;\n',
+      "src/runtime-config/index.ts": "export const cfg = process.cwd();\n",
+    });
+
+    const violations = analyzeArchitecture(repoDir, {
+      dependencyPolicies: createProcessToConfigPolicies({
+        allowedRuntimeImporters: ["config"],
+      }),
+      includeRootFiles: false,
+      rootDirectories: ["src"],
+    });
+
+    expect(
+      violations.some(
+        (violation) => violation.code === "runtime-importer-allowlist",
+      ),
+    ).toBe(true);
+  });
+
+  test("flags value imports from type-only policies", () => {
+    const repoDir = createTempRepo({
+      "src/process/index.ts": 'export { run } from "./runner.ts";\n',
+      "src/process/runner.ts":
+        'import { Thing } from "../types/index.ts";\nexport const run = (input: Thing) => input;\n',
+      "src/types/index.ts": "export interface Thing { value: string }\n",
+    });
+
+    const violations = analyzeArchitecture(repoDir, {
+      dependencyPolicies: [
+        {
+          mayDependOn: ["types"],
+          name: "process",
+          pathPrefixes: ["src/process"],
+        },
+        {
+          isTypeOnly: true,
+          mayDependOn: [],
+          name: "types",
+          pathPrefixes: ["src/types"],
+        },
+      ],
+      includeRootFiles: false,
+      requireTypeOnlyImportsForTypeOnlyPolicies: true,
+      rootDirectories: ["src"],
+    });
+
+    expect(
+      violations.some(
+        (violation) => violation.code === "type-only-policy-import",
+      ),
+    ).toBe(true);
+  });
+
+  test("flags explicit public surfaces that are not owned by public-tier policies", () => {
+    const repoDir = createTempRepo({
+      "src/check.ts": 'export { run } from "./process/index.ts";\n',
+      "src/process/index.ts": "export const run = () => true;\n",
+    });
+
+    const violations = analyzeArchitecture(repoDir, {
+      dependencyPolicies: [
+        {
+          mayDependOn: ["process"],
+          name: "public-api",
+          pathPrefixes: ["src/check.ts"],
+          surfaceTier: "internal-public",
+        },
+        {
+          mayDependOn: [],
+          name: "process",
+          pathPrefixes: ["src/process"],
+          surfaceTier: "internal-public",
+        },
+      ],
+      explicitPublicSurfacePaths: ["src/check.ts"],
+      includeRootFiles: false,
+      rootDirectories: ["src"],
+    });
+
+    expect(
+      violations.some((violation) => violation.code === "public-surface-tier"),
+    ).toBe(true);
+  });
+});
+
+function createProcessToConfigPolicies(overrides: {
+  allowedDependents?: string[];
+  allowedRuntimeImporters?: string[];
+}): {
+  allowedDependents?: string[];
+  allowedRuntimeImporters?: string[];
+  mayDependOn: string[];
+  name: string;
+  pathPrefixes: string[];
+  surfaceTier?: "internal-public" | "private-runtime";
+}[] {
+  return [
+    {
+      mayDependOn: ["config", "runtime-config"],
+      name: "process",
+      pathPrefixes: ["src/process"],
+      surfaceTier: "internal-public",
+    },
+    {
+      mayDependOn: [],
+      name: "config",
+      pathPrefixes: ["src/config"],
+      surfaceTier: "internal-public",
+    },
+    {
+      ...overrides,
+      mayDependOn: ["config"],
+      name: "runtime-config",
+      pathPrefixes: ["src/runtime-config"],
+      surfaceTier: "private-runtime",
+    },
+  ];
+}
+
+function createProcessToConfigRepo(): Record<string, string> {
+  return {
+    "src/config/index.ts": "export const config = true;\n",
+    "src/process/index.ts": 'export { run } from "./runner.ts";\n',
+    "src/process/runner.ts":
+      'import { config } from "../config/index.ts";\nexport const run = () => config;\n',
+  };
+}
+
+function createTempRepo(files: Record<string, string>): string {
+  const repoDir = mkdtempSync(join(tmpdir(), "check-suite-architecture-"));
+  tempDirectories.push(repoDir);
+
+  writeFileSync(
+    join(repoDir, "tsconfig.json"),
+    JSON.stringify(
+      {
+        compilerOptions: {
+          allowImportingTsExtensions: true,
+          module: "Preserve",
+          moduleResolution: "Bundler",
+          target: "ES2022",
+        },
+      },
+      null,
+      2,
+    ),
+  );
+
+  for (const [relativePath, contents] of Object.entries(files)) {
+    const absolutePath = join(repoDir, relativePath);
+    mkdirSync(join(absolutePath, ".."), { recursive: true });
+    writeFileSync(absolutePath, contents);
+  }
+
+  return repoDir;
+}

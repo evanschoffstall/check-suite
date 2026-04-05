@@ -10,7 +10,6 @@ import type {
 import {
   getCodeStem,
   normalizePath,
-  TEST_DIRECTORY_NAMES,
 } from "@/quality/module-boundaries/foundation/index.ts";
 import {
   directoryContainsCode,
@@ -76,7 +75,7 @@ export function collectDirectoryFacts(
             (entry) =>
               entry.isDirectory() &&
               !isIgnoredDirectory(entry.name, config) &&
-              !TEST_DIRECTORY_NAMES.has(entry.name) &&
+              !config.testDirectoryNames.includes(entry.name) &&
               directoryContainsCode(
                 join(absoluteDirectoryPath, entry.name),
                 config,
@@ -131,7 +130,7 @@ export function discoverBoundaryDirectories(
           (entry) =>
             entry.isDirectory() &&
             !isIgnoredDirectory(entry.name, config) &&
-            !TEST_DIRECTORY_NAMES.has(entry.name) &&
+            !config.testDirectoryNames.includes(entry.name) &&
             directoryContainsCode(
               join(absoluteDirectoryPath, entry.name),
               config,

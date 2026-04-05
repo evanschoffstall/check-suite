@@ -4,5 +4,6 @@ export {
   collectDirectoryFacts,
   discoverBoundaryDirectories,
 } from "./layout";
+export { resolveModulePath } from "./module-resolution";
 export { collectSourceFacts } from "./source-analysis";
 export { dedupeArchitectureViolations } from "./violation-dedupe";
