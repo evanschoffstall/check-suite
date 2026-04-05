@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import process from "node:process";
 
@@ -24,6 +24,7 @@ export interface ReleaseLock {
 export async function acquireReleaseLock(): Promise<ReleaseLock> {
   const gitDirectory = await getGitDirectory();
   const lockDirectoryPath = join(process.cwd(), gitDirectory, CICD_LOCK_NAME);
+  const metadataPath = join(lockDirectoryPath, "metadata.json");
 
   try {
     await mkdir(lockDirectoryPath);
@@ -33,32 +34,22 @@ export async function acquireReleaseLock(): Promise<ReleaseLock> {
       "code" in error_ &&
       error_.code === "EEXIST"
     ) {
-      failRelease(
-        `Another CI/CD run already holds ${lockDirectoryPath}. Remove it only after confirming the previous process is gone.`,
-      );
+      if (await releaseLockIsStale(metadataPath)) {
+        await rm(lockDirectoryPath, { force: true, recursive: true });
+        await mkdir(lockDirectoryPath);
+        logRelease(`Recovered stale CI/CD lock at ${lockDirectoryPath}.`);
+        return buildReleaseLock(lockDirectoryPath, metadataPath);
+      } else {
+        failRelease(
+          `Another CI/CD run already holds ${lockDirectoryPath}. Remove it only after confirming the previous process is gone.`,
+        );
+      }
     }
 
     throw error_;
   }
 
-  await writeFile(
-    join(lockDirectoryPath, "metadata.json"),
-    JSON.stringify(
-      {
-        acquiredAt: new Date().toISOString(),
-        pid: process.pid,
-      },
-      null,
-      2,
-    ),
-    "utf8",
-  );
-
-  return {
-    release: async (): Promise<void> => {
-      await rm(lockDirectoryPath, { force: true, recursive: true });
-    },
-  };
+  return buildReleaseLock(lockDirectoryPath, metadataPath);
 }
 
 /**
@@ -186,6 +177,33 @@ export async function shouldProceedWithRelease(): Promise<boolean> {
 }
 
 /**
+ * Persist lock metadata and return the matching cleanup callback.
+ */
+async function buildReleaseLock(
+  lockDirectoryPath: string,
+  metadataPath: string,
+): Promise<ReleaseLock> {
+  await writeFile(
+    metadataPath,
+    JSON.stringify(
+      {
+        acquiredAt: new Date().toISOString(),
+        pid: process.pid,
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+
+  return {
+    release: async (): Promise<void> => {
+      await rm(lockDirectoryPath, { force: true, recursive: true });
+    },
+  };
+}
+
+/**
  * Return the current branch name and fail when the repository is detached.
  */
 async function getCurrentBranchName(): Promise<string> {
@@ -234,6 +252,38 @@ async function hasStagedChanges(): Promise<boolean> {
   );
 
   return stagedOutput.length > 0;
+}
+
+/**
+ * Treat a lock as stale when its recorded process no longer exists.
+ */
+async function releaseLockIsStale(metadataPath: string): Promise<boolean> {
+  try {
+    const metadata = JSON.parse(await readFile(metadataPath, "utf8")) as {
+      pid?: number;
+    };
+
+    if (typeof metadata.pid !== "number") {
+      return false;
+    }
+
+    try {
+      process.kill(metadata.pid, 0);
+      return false;
+    } catch (error_) {
+      if (
+        error_ instanceof Error &&
+        "code" in error_ &&
+        error_.code === "ESRCH"
+      ) {
+        return true;
+      }
+
+      return false;
+    }
+  } catch {
+    return false;
+  }
 }
 
 /**
