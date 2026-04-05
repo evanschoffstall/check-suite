@@ -1,15 +1,15 @@
-import type { LizardConfig } from "@/quality/index.ts";
-import type { GitFileScanOptions } from "@/step/index.ts";
+import type { LizardConfig } from "check-suite/src/quality/index.ts";
+import type { GitFileScanOptions } from "check-suite/src/step/index.ts";
 import type {
   CheckConfig,
   Command,
   InlineTypeScriptContext,
   StepConfig,
-} from "@/types/index.ts";
+} from "check-suite/src/types/index.ts";
 
-import { defineCheckSuiteConfig } from "@/config-schema/index.ts";
-import { hasPackageScript } from "@/config/index.ts";
-import { buildTestCoveragePostProcess } from "@/post-process/index.ts";
+import { defineCheckSuiteConfig } from "check-suite/src/config-schema/index.ts";
+import { hasPackageScript } from "check-suite/src/config/index.ts";
+import { buildTestCoveragePostProcess } from "check-suite/src/post-process/index.ts";
 import {
   analyzeArchitecture,
   analyzePurgeCss,
@@ -19,12 +19,12 @@ import {
   readPurgeCssConfig,
   runDependencyCruiserCheck,
   runLizardCheck,
-} from "@/quality/index.ts";
+} from "check-suite/src/quality/index.ts";
 import {
   defineCommandStep,
   defineInlineStep,
   runGitFileScan,
-} from "@/step/index.ts";
+} from "check-suite/src/step/index.ts";
 
 /** User-facing output paths exposed as `{token}` placeholders to step args. */
 const paths = {
