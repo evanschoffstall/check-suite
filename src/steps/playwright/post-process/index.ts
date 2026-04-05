@@ -1,16 +1,19 @@
 import type {
   InlineTypeScriptPostProcessContext,
+  PostProcessMessage,
+  PostProcessSection,
+  ProcessedCheck,
   StepPostProcessResult,
 } from "@/types/index.ts";
 
-import type { ConfigCheck, ConfigMessage, ConfigSection } from "../../../types.ts";
-
 import {
   buildCommonCoverageState,
+  buildTestSummary,
   parseJunitResults,
-} from "../../coverage/index.ts";
-import { applyPlaywrightCoverageStatus } from "./coverage.ts";
-import { applyPlaywrightReportStatus } from "./report.ts";
+} from "@/steps/coverage/index.ts";
+
+import { applyPlaywrightCoverageStatus } from "./coverage";
+import { applyPlaywrightReportStatus } from "./report";
 
 /**
  * Post-processes the Playwright step by using console coverage totals when
@@ -56,11 +59,11 @@ export function playwrightPostProcess({
 function buildPlaywrightResult(input: {
   displayOutput: string;
   exitCode: number;
-  extraChecks: ConfigCheck[];
+  extraChecks: ProcessedCheck[];
   helpers: InlineTypeScriptPostProcessContext["helpers"];
   junitResults: ReturnType<typeof parseJunitResults>;
-  messages: ConfigMessage[];
-  sections: ConfigSection[];
+  messages: PostProcessMessage[];
+  sections: PostProcessSection[];
   status: "fail" | "pass";
 }): StepPostProcessResult {
   return {
@@ -69,7 +72,7 @@ function buildPlaywrightResult(input: {
     output: input.helpers.compactDomAssertionNoise(input.displayOutput),
     sections: input.sections,
     status: input.status,
-    summary: `${input.junitResults.passed} passed · ${input.junitResults.failed} failed · ${input.junitResults.skipped} skipped${input.exitCode === 0 ? "" : ` · runner exit ${input.exitCode}`}`,
+    summary: buildTestSummary(input.junitResults, input.exitCode),
   };
 }
 
@@ -81,10 +84,10 @@ function createPlaywrightState(
   resolveTokenString: (value: string) => string,
 ): {
   coverageState: ReturnType<typeof buildCommonCoverageState>;
-  extraChecks: ConfigCheck[];
+  extraChecks: ProcessedCheck[];
   junitResults: ReturnType<typeof parseJunitResults>;
-  messages: ConfigMessage[];
-  sections: ConfigSection[];
+  messages: PostProcessMessage[];
+  sections: PostProcessSection[];
 } {
   const coverageState = buildCommonCoverageState(data, resolveTokenString, 0);
 

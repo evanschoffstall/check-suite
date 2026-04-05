@@ -1,11 +1,14 @@
-import type { InlineTypeScriptPostProcessContext } from "@/types/index.ts";
-
-import type { ConfigCheck, ConfigMessage } from "../../../types.ts";
+import type {
+  InlineTypeScriptPostProcessContext,
+  PostProcessMessage,
+  ProcessedCheck,
+} from "@/types/index.ts";
 
 import {
+  appendCoverageCheckResult,
   buildCommonCoverageState,
   collectLineCoverage,
-} from "../../coverage/index.ts";
+} from "@/steps/coverage/index.ts";
 
 const CONSOLE_LINE_COVERAGE_PATTERN =
   /(?:^|\n)\s*[│|]\s*Lines\s*[│|]\s*([\d.]+)\s*%\s*[│|]\s*([\d,]+)\s*[│|]\s*[\d,]+\s*[│|]\s*([\d,]+)\s*[│|]/u;
@@ -21,8 +24,8 @@ export function applyPlaywrightCoverageStatus(input: {
   coverageState: ReturnType<typeof buildCommonCoverageState>;
   displayOutput: string;
   existsSync: InlineTypeScriptPostProcessContext["existsSync"];
-  extraChecks: ConfigCheck[];
-  messages: ConfigMessage[];
+  extraChecks: ProcessedCheck[];
+  messages: PostProcessMessage[];
   readFileSync: InlineTypeScriptPostProcessContext["readFileSync"];
   status: "fail" | "pass";
 }): "fail" | "pass" {
@@ -66,43 +69,23 @@ function appendCoverageResult(
     coverageThreshold: number;
     totals: CoverageResult | null;
   },
-  extraChecks: ConfigCheck[],
-  messages: ConfigMessage[],
+  extraChecks: ProcessedCheck[],
+  messages: PostProcessMessage[],
   status: "fail" | "pass",
   coveragePath?: string,
 ): "fail" | "pass" {
-  if (!input.totals) {
-    messages.push({
-      text: `Coverage report not found: ${coveragePath || "(unset)"}`,
-      tone: "fail",
-    });
-    extraChecks.push({
-      details: `0.00% (0/0) · threshold ${input.coverageThreshold.toFixed(1)}%`,
-      label: input.coverageLabel,
-      status: "fail",
-    });
-    return "fail";
-  }
-
-  const coverageStatus: "fail" | "pass" =
-    input.totals.found > 0 && input.totals.pct >= input.coverageThreshold
-      ? "pass"
-      : "fail";
-
-  extraChecks.push({
-    details: `${input.totals.pct.toFixed(2)}% (${input.totals.covered}/${input.totals.found}) · threshold ${input.coverageThreshold.toFixed(1)}%`,
-    label: input.coverageLabel,
-    status: coverageStatus,
-  });
-
-  if (input.totals.found === 0) {
-    messages.push({
-      text: "No executable lines found in coverage report",
-      tone: "fail",
-    });
-  }
-
-  return coverageStatus === "fail" ? "fail" : status;
+  return appendCoverageCheckResult(
+    {
+      coverageLabel: input.coverageLabel,
+      coveragePath,
+      coverageThreshold: input.coverageThreshold,
+      totals: input.totals,
+    },
+    messages,
+    extraChecks,
+  )
+    ? "fail"
+    : status;
 }
 
 function collectArtifactCoverageTotals(input: {
@@ -133,21 +116,20 @@ function hasCoveragePathFilters(
 function parseConsoleLineCoverage(
   displayOutput: string,
 ): CoverageResult | null {
-  const consoleLineCoverageMatch = displayOutput.match(
-    CONSOLE_LINE_COVERAGE_PATTERN,
-  );
+  const consoleLineCoverageMatch =
+    CONSOLE_LINE_COVERAGE_PATTERN.exec(displayOutput);
 
   return consoleLineCoverageMatch
     ? {
         covered: Number.parseInt(
-          (consoleLineCoverageMatch[2] ?? "0").replace(/,/g, ""),
+          consoleLineCoverageMatch[2].replace(/,/g, ""),
           10,
         ),
         found: Number.parseInt(
-          (consoleLineCoverageMatch[3] ?? "0").replace(/,/g, ""),
+          consoleLineCoverageMatch[3].replace(/,/g, ""),
           10,
         ),
-        pct: Number.parseFloat(consoleLineCoverageMatch[1] ?? "0"),
+        pct: Number.parseFloat(consoleLineCoverageMatch[1]),
       }
     : null;
 }
