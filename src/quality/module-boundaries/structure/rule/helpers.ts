@@ -2,6 +2,22 @@ import { dirname } from "node:path";
 
 import type { ArchitectureProject } from "@/quality/module-boundaries/foundation/index.ts";
 
+/** Returns the direct child owner beneath the code root for a file or directory path. */
+export function getTopLevelOwner(
+  project: ArchitectureProject,
+  path: string,
+): string {
+  const rootDirectory = project.codeRoots.directories.find(
+    (candidate) => path === candidate || path.startsWith(`${candidate}/`),
+  );
+
+  if (!rootDirectory || path === rootDirectory) {
+    return path;
+  }
+
+  return path.slice(rootDirectory.length + 1).split("/")[0] ?? path;
+}
+
 /** Returns whether the directory path is one of the discovered code roots. */
 export function isCodeRootDirectory(
   project: ArchitectureProject,

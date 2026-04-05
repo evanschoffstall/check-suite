@@ -1,14 +1,13 @@
 import { readFileSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { join } from "node:path";
 import ts from "typescript";
 
-import type { AliasMapping, ImportRecord } from "@/quality/module-boundaries/foundation/index.ts";
-
-import {
-  CODE_EXTENSIONS,
-  normalizePath,
-  trimLeadingDotSlash,
+import type {
+  AliasMapping,
+  ImportRecord,
 } from "@/quality/module-boundaries/foundation/index.ts";
+
+import { resolveModulePath } from "@/quality/module-boundaries/analysis/index.ts";
 
 /** Collects import edges for all scanned source files. */
 export function collectImports(
@@ -29,70 +28,85 @@ function collectFileImports(
   aliasMappings: AliasMapping[],
 ): ImportRecord[] {
   const sourceText = readFileSync(join(cwd, sourcePath), "utf8");
-  const preProcessedFile = ts.preProcessFile(sourceText, true, true);
-  return preProcessedFile.importedFiles.map(({ fileName }) => ({
-    resolvedPath: resolveImportPath(
-      cwd,
-      sourcePath,
-      fileName,
-      knownFiles,
-      aliasMappings,
-    ),
+  const sourceFile = ts.createSourceFile(
     sourcePath,
-    specifier: fileName,
-  }));
+    sourceText,
+    ts.ScriptTarget.Latest,
+    true,
+  );
+
+  return sourceFile.statements.flatMap((statement) => {
+    if (
+      ts.isImportDeclaration(statement) &&
+      ts.isStringLiteralLike(statement.moduleSpecifier)
+    ) {
+      return [
+        createImportRecord(
+          cwd,
+          sourcePath,
+          statement.moduleSpecifier.text,
+          knownFiles,
+          aliasMappings,
+          {
+            isReExport: false,
+            isSideEffectOnly: statement.importClause === undefined,
+            isTypeOnly:
+              statement.importClause?.phaseModifier ===
+              ts.SyntaxKind.TypeKeyword,
+          },
+        ),
+      ];
+    }
+
+    if (
+      ts.isExportDeclaration(statement) &&
+      statement.moduleSpecifier &&
+      ts.isStringLiteralLike(statement.moduleSpecifier)
+    ) {
+      return [
+        createImportRecord(
+          cwd,
+          sourcePath,
+          statement.moduleSpecifier.text,
+          knownFiles,
+          aliasMappings,
+          {
+            isReExport: true,
+            isSideEffectOnly: false,
+            isTypeOnly: false,
+          },
+        ),
+      ];
+    }
+
+    return [];
+  });
 }
 
-function resolveCandidatePath(
-  targetPath: string,
-  knownFiles: Set<string>,
-): null | string {
-  const normalizedTargetPath = trimLeadingDotSlash(normalizePath(targetPath));
-  const candidates = [
-    normalizedTargetPath,
-    ...CODE_EXTENSIONS.map(
-      (extension) => `${normalizedTargetPath}${extension}`,
-    ),
-    ...CODE_EXTENSIONS.map(
-      (extension) => `${normalizedTargetPath}/index${extension}`,
-    ),
-    ...CODE_EXTENSIONS.map(
-      (extension) => `${normalizedTargetPath}/main${extension}`,
-    ),
-    ...CODE_EXTENSIONS.map(
-      (extension) => `${normalizedTargetPath}/mod${extension}`,
-    ),
-  ];
-  return candidates.find((candidate) => knownFiles.has(candidate)) ?? null;
-}
-
-function resolveImportPath(
+function createImportRecord(
   cwd: string,
   sourcePath: string,
   specifier: string,
   knownFiles: Set<string>,
   aliasMappings: AliasMapping[],
-): null | string {
-  if (specifier.startsWith(".")) {
-    return resolveCandidatePath(
-      normalizePath(
-        relative(cwd, resolve(cwd, dirname(sourcePath), specifier)),
-      ),
+  options: {
+    isReExport: boolean;
+    isSideEffectOnly: boolean;
+    isTypeOnly: boolean;
+  },
+): ImportRecord {
+  return {
+    isReExport: options.isReExport,
+    isSideEffectOnly: options.isSideEffectOnly,
+    isTypeOnly: options.isTypeOnly,
+    resolvedPath: resolveModulePath(
+      cwd,
+      sourcePath,
+      specifier,
       knownFiles,
-    );
-  }
-
-  for (const aliasMapping of aliasMappings) {
-    if (!specifier.startsWith(aliasMapping.prefix)) continue;
-    const remainder = specifier.slice(aliasMapping.prefix.length);
-    for (const targetRoot of aliasMapping.targetRoots) {
-      const resolvedPath = resolveCandidatePath(
-        `${targetRoot}/${remainder}`,
-        knownFiles,
-      );
-      if (resolvedPath) return resolvedPath;
-    }
-  }
-
-  return null;
+      aliasMappings,
+    ),
+    sourcePath,
+    specifier,
+  };
 }

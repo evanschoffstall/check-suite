@@ -3,6 +3,7 @@ export {
   collectInternalImports,
   collectSiblingImports,
 } from "./collections";
+export { inferDependencyPolicy } from "./dependency-policy-violations";
 export { buildImportEntryViolations } from "./entry-violations";
 export {
   getCodeRoot,
@@ -14,3 +15,4 @@ export {
   shouldPreferAliasImport,
 } from "./helpers";
 export { buildLayerViolation } from "./layer-violations";
+export { buildPolicyImportViolations } from "./policy-import-violations";

@@ -8,6 +8,7 @@ import {
   shouldFlagDeepRelativeImport,
   shouldPreferAliasImport,
 } from "./helpers";
+import { buildPolicyImportViolations } from "./policy-import-violations";
 import { addRepeatedImport, buildLayerViolation } from "./violations";
 
 /** Builds all import-edge violations for a single resolved import record. */
@@ -25,7 +26,12 @@ export function buildImportEntryViolations(
     : null;
 
   return [
-    ...buildPublicEntrypointViolations(entry, targetBoundary, sourceBoundary),
+    ...buildPublicEntrypointViolations(
+      project,
+      entry,
+      targetBoundary,
+      sourceBoundary,
+    ),
     ...buildAliasPreferenceViolations(project, entry),
     ...buildDeepRelativeViolations(
       project,
@@ -33,6 +39,7 @@ export function buildImportEntryViolations(
       targetBoundary,
       sourceBoundary,
     ),
+    ...buildDependencyPolicyViolations(project, entry),
     ...buildLayerDirectionViolations(project, entry),
   ].map((violation) => {
     if (violation.code === "public-entrypoint" && entry.resolvedPath) {
@@ -89,6 +96,13 @@ function buildDeepRelativeViolations(
     : [];
 }
 
+function buildDependencyPolicyViolations(
+  project: ArchitectureProject,
+  entry: ArchitectureProject["imports"][number],
+): ArchitectureViolation[] {
+  return buildPolicyImportViolations(project, entry);
+}
+
 function buildLayerDirectionViolations(
   project: ArchitectureProject,
   entry: ArchitectureProject["imports"][number],
@@ -98,10 +112,15 @@ function buildLayerDirectionViolations(
 }
 
 function buildPublicEntrypointViolations(
+  project: ArchitectureProject,
   entry: ArchitectureProject["imports"][number],
   targetBoundary: ReturnType<typeof getContainingBoundary>,
   sourceBoundary: ReturnType<typeof getContainingBoundary>,
 ): ArchitectureViolation[] {
+  if (project.config.explicitPublicSurfacePaths.includes(entry.sourcePath)) {
+    return [];
+  }
+
   return entry.resolvedPath &&
     targetBoundary &&
     sourceBoundary?.path !== targetBoundary.path &&

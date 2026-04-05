@@ -3,7 +3,6 @@ import type { ArchitectureAnalyzerConfig } from "@/quality/module-boundaries/fou
 import {
   CODE_FILE_REGEX,
   DECLARATION_FILE_REGEX,
-  TEST_DIRECTORY_NAMES,
   TEST_FILE_REGEX,
 } from "@/quality/module-boundaries/foundation/index.ts";
 
@@ -31,6 +30,6 @@ export function shouldSkipDirectory(
 ): boolean {
   return (
     isIgnoredDirectory(directoryName, config) ||
-    TEST_DIRECTORY_NAMES.has(directoryName)
+    config.testDirectoryNames.includes(directoryName)
   );
 }
