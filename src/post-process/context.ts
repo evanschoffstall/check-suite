@@ -11,8 +11,8 @@ import type {
 
 import { stripAnsi } from "@/format/index.ts";
 import { toInlineTypeScriptConfig } from "@/inline-ts/index.ts";
+import { getStepTokens, resolveTokenString } from "@/runtime-config/index.ts";
 import { compactDomAssertionNoise } from "@/summary/index.ts";
-import { getStepTokens, resolveTokenString } from "@/tokens.ts";
 
 export function buildPostProcessContext(
   step: StepConfig,

@@ -10,12 +10,6 @@ const INLINE_TS_FUNCTION_CACHE = new Map<
 >();
 
 const INLINE_TS_TRANSPILE = new Bun.Transpiler({ loader: "ts" });
-const INLINE_TS_CACHE_DIR = join(
-  process.cwd(),
-  ".cache",
-  "check-suite",
-  "inline-ts",
-);
 
 export function compileInlineTypeScriptFunction<TResult>(
   source: string,
@@ -30,10 +24,10 @@ export function compileInlineTypeScriptFunction<TResult>(
       `const __runner = (${source});\nexport default __runner;`,
     );
     const modulePath = join(
-      INLINE_TS_CACHE_DIR,
+      getInlineTypeScriptCacheDirectory(),
       `${Bun.hash(source).toString(16)}.mjs`,
     );
-    mkdirSync(INLINE_TS_CACHE_DIR, { recursive: true });
+    mkdirSync(getInlineTypeScriptCacheDirectory(), { recursive: true });
     writeFileSync(modulePath, jsSource);
 
     const inlineModule = (await import(pathToFileURL(modulePath).href)) as {
@@ -63,4 +57,8 @@ export function resolveInlineTypeScriptRunner<TContext, TResult>(
     : (compileInlineTypeScriptFunction<TResult>(source) as Promise<
         (context: TContext) => Promise<TResult> | TResult
       >);
+}
+
+function getInlineTypeScriptCacheDirectory(): string {
+  return join(process.cwd(), ".cache", "check-suite", "inline-ts");
 }
