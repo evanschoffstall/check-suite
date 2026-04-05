@@ -21,6 +21,16 @@ interface CommandResult {
 
 type OutputMode = "capture" | "inherit";
 
+export class ReleaseWorkflowError extends Error {
+  readonly exitCode: number;
+
+  constructor(message: string, exitCode = 1) {
+    super(message);
+    this.exitCode = exitCode;
+    this.name = "ReleaseWorkflowError";
+  }
+}
+
 /**
  * Prompt for explicit confirmation before mutating repository state.
  */
@@ -44,7 +54,7 @@ export async function askYesNo(question: string): Promise<boolean> {
  */
 export function failRelease(message: string): never {
   logRelease(message);
-  process.exit(1);
+  throw new ReleaseWorkflowError(message);
 }
 
 /**
@@ -102,7 +112,7 @@ export async function runStepOrExit(
     logRelease(
       `Failed: ${step.label} (exit code ${result.exitCode} after ${result.durationInMilliseconds}ms)`,
     );
-    process.exit(result.exitCode);
+    throw new ReleaseWorkflowError(step.label, result.exitCode);
   }
 
   logRelease(`Completed: ${step.label} (${result.durationInMilliseconds}ms)`);
