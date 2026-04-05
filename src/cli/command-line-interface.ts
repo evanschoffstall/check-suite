@@ -20,8 +20,8 @@ const HELP_TEXT = [
   "Examples:",
   "  check-suite",
   "  check-suite --output=all",
-  "  check-suite summary --eslint",
-  "  check-suite junit -- --watch",
+  "  check-suite summary --<step-key>",
+  "  check-suite <step-key> -- --watch",
 ].join("\n");
 
 // ---------------------------------------------------------------------------

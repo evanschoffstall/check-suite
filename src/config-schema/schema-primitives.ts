@@ -50,6 +50,8 @@ export const inlineTypeScriptConfigSchema = z
 export const lintConfigSchema = z
   .object({
     args: z.array(z.string()),
+    concurrencyArgs: z.array(z.string()).optional(),
+    concurrencyEnvVar: z.string().min(1).optional(),
     globExtensions: z.array(z.string()),
     maxFiles: z.number().int().nonnegative(),
     skipDirs: z.array(z.string()),
