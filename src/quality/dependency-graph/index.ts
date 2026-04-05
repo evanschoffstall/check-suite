@@ -3,13 +3,12 @@ import type {
   IForbiddenRuleType,
   IReporterOutput,
 } from "dependency-cruiser";
+import type { existsSync } from "node:fs";
 
 import { cruise } from "dependency-cruiser";
 import extractTSConfig from "dependency-cruiser/config-utl/extract-ts-config";
 import { readdirSync } from "node:fs";
 import { extname, join } from "node:path";
-
-import type { Command, InlineTypeScriptContext } from "@/types/index.ts";
 
 /**
  * Generic dependency-cruiser policy for repository-agnostic dependency checks.
@@ -63,21 +62,25 @@ const GENERIC_DEPENDENCY_CRUISER_RULES: IForbiddenRuleType[] = [
   },
 ];
 
+/** Result of running the dependency-cruiser analysis. */
+export interface DependencyCruiserCheckResult {
+  exitCode: number;
+  output: string;
+}
+
 interface DependencyCruiserTarget {
   kind: "directory" | "file";
   path: string;
 }
 
 /** Runs dependency-cruiser with dynamically discovered repository targets. */
-export async function runDependencyCruiserStep({
-  cwd,
-  existsSync,
-  fail,
-  ok,
-}: InlineTypeScriptContext): Promise<Command> {
+export async function runDependencyCruiserCheck(
+  cwd: string,
+  pathExists: typeof existsSync,
+): Promise<DependencyCruiserCheckResult> {
   const targets = discoverDependencyCruiserTargets(cwd);
   if (targets.length === 0) {
-    return ok("no dependency-cruiser targets found\n");
+    return { exitCode: 0, output: "no dependency-cruiser targets found\n" };
   }
 
   const targetPaths = targets.map((target) => target.path);
@@ -87,13 +90,15 @@ export async function runDependencyCruiserStep({
     targetPaths,
     options,
     undefined,
-    existsSync(tsConfigFilePath)
+    pathExists(tsConfigFilePath)
       ? { tsConfig: extractTSConfig(tsConfigFilePath) }
       : undefined,
   );
-  const output = normalizeDependencyCruiserOutput(result);
 
-  return result.exitCode === 0 ? ok(output) : fail(output);
+  return {
+    exitCode: result.exitCode,
+    output: normalizeDependencyCruiserOutput(result),
+  };
 }
 
 /** Builds the generic dependency-cruiser options for the discovered targets. */
