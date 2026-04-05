@@ -2,7 +2,7 @@ import type {
   ComplexityThresholds,
   FileMetrics,
   TypeScriptFunctionMetrics,
-} from "@/steps/lizard/shared/index.ts";
+} from "@/quality/complexity/shared/index.ts";
 
 import { ANSI, paint } from "@/format/index.ts";
 

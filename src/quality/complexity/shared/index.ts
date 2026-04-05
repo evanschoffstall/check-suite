@@ -1,7 +1,7 @@
 export {
   buildLizardAnalysisArgs,
   LIZARD_DEFAULT_THRESHOLDS,
-} from "./constants.ts";
+} from "./constants";
 export type {
   ComplexityThresholds,
   ComplexityViolation,
@@ -10,7 +10,7 @@ export type {
   TopLevelDeclaration,
   TopLevelFunctionNode,
   TypeScriptFunctionMetrics,
-} from "./contracts.ts";
+} from "./contracts";
 export {
   collectExcludedRanges,
   computeCyclomaticComplexity,
@@ -18,8 +18,8 @@ export {
   countNonCommentLines,
   countTokens,
   isPositionInsideRanges,
-} from "./declaration-metrics.ts";
+} from "./declaration-metrics";
 export {
   collectMeaningfulTokenLineNumbers,
   countMeaningfulTokens,
-} from "./token-scanner.ts";
+} from "./token-scanner";

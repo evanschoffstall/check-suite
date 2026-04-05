@@ -1,4 +1,4 @@
-import type { FunctionMetrics } from "@/steps/lizard/shared/index.ts";
+import type { FunctionMetrics } from "@/quality/complexity/shared/index.ts";
 
 export function parseLizardCsv(csvOutput: string): FunctionMetrics[] {
   return csvOutput

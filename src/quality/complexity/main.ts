@@ -1,15 +1,24 @@
-import type { ComplexityThresholds, FunctionMetrics } from "@/steps/lizard/shared/index.ts";
+import type {
+  ComplexityThresholds,
+  FunctionMetrics,
+} from "@/quality/complexity/shared/index.ts";
 
-import { buildLizardReportWithFiles } from "@/steps/lizard/report/index.ts";
+import { buildLizardReportWithFiles } from "@/quality/complexity/report/index.ts";
 import {
   buildLizardAnalysisArgs,
   LIZARD_DEFAULT_THRESHOLDS,
-} from "@/steps/lizard/shared/index.ts";
+} from "@/quality/complexity/shared/index.ts";
 
-import { parseLizardCsv } from "./csv-parser.ts";
-import { runLizardAnalysis } from "./lizard-analysis.ts";
-import { resolveTopLevelFunctionMetrics } from "./top-level-resolution.ts";
-import { collectWorkspaceFileMetrics } from "./workspace-metrics.ts";
+import { parseLizardCsv } from "./csv-parser";
+import { runLizardAnalysis } from "./lizard-analysis";
+import { resolveTopLevelFunctionMetrics } from "./top-level-resolution";
+import { collectWorkspaceFileMetrics } from "./workspace-metrics";
+
+/** Result of a lizard complexity analysis run. */
+export interface LizardCheckResult {
+  exitCode: 0 | 1;
+  output: string;
+}
 
 /** Runtime configuration for the lizard complexity analysis. */
 export interface LizardConfig {
@@ -21,8 +30,8 @@ export interface LizardConfig {
   thresholds?: Partial<ComplexityThresholds>;
 }
 
-/** Runs the lizard complexity analysis and writes results to stdout, exiting non-zero on violations. */
-export function main(config: LizardConfig): void {
+/** Runs the lizard complexity analysis and returns the normalized result. */
+export function runLizardCheck(config: LizardConfig): LizardCheckResult {
   const thresholds: ComplexityThresholds = {
     ...LIZARD_DEFAULT_THRESHOLDS,
     ...config.thresholds,
@@ -41,12 +50,10 @@ export function main(config: LizardConfig): void {
     thresholds,
   );
 
-  if (report.exitCode === 0) {
-    process.stdout.write(`${report.output}\n`);
-    return;
-  }
-
-  failWithOutput(report.output, report.exitCode);
+  return {
+    exitCode: report.exitCode,
+    output: report.output.endsWith("\n") ? report.output : `${report.output}\n`,
+  };
 }
 
 function buildLizardReport(
@@ -54,10 +61,7 @@ function buildLizardReport(
   targets: readonly string[],
   excludedPaths: readonly string[],
   thresholds: ComplexityThresholds,
-): {
-  exitCode: 0 | 1;
-  output: string;
-} {
+): LizardCheckResult {
   return buildLizardReportWithFiles(
     functions,
     collectWorkspaceFileMetrics(functions, targets, excludedPaths),
@@ -65,7 +69,6 @@ function buildLizardReport(
   );
 }
 
-function failWithOutput(output: string, exitCode = 1): never {
-  process.stdout.write(output.endsWith("\n") ? output : `${output}\n`);
-  process.exit(exitCode);
+function failWithOutput(output: string): never {
+  throw new Error(output);
 }

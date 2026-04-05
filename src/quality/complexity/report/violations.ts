@@ -3,7 +3,7 @@ import type {
   ComplexityViolation,
   FileMetrics,
   TypeScriptFunctionMetrics,
-} from "@/steps/lizard/shared/index.ts";
+} from "@/quality/complexity/shared/index.ts";
 
 type FunctionMetrics = TypeScriptFunctionMetrics;
 

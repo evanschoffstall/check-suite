@@ -1,4 +1,4 @@
-import type { ComplexityThresholds } from "./contracts.ts";
+import type { ComplexityThresholds } from "./contracts";
 
 const PYTHON_LIZARD_MODULE = "lizard";
 

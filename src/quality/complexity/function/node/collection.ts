@@ -1,6 +1,6 @@
 import ts from "typescript";
 
-import type { TopLevelFunctionNode } from "@/steps/lizard/shared/index.ts";
+import type { TopLevelFunctionNode } from "@/quality/complexity/shared/index.ts";
 
 import { collectStatementFunctions } from "./statement-collection";
 

@@ -4,14 +4,14 @@ import ts from "typescript";
 import type {
   FileMetrics,
   FunctionMetrics,
-} from "@/steps/lizard/shared/index.ts";
+} from "@/quality/complexity/shared/index.ts";
 
 import {
   collectMeaningfulTokenLineNumbers,
   countMeaningfulTokens,
-} from "@/steps/lizard/shared/index.ts";
+} from "@/quality/complexity/shared/index.ts";
 
-import { getAnalyzedTypeScriptFiles } from "./file-scanning.ts";
+import { getAnalyzedTypeScriptFiles } from "./file-scanning";
 
 // ---------------------------------------------------------------------------
 // Per-file metric aggregation from lizard function rows

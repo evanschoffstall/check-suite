@@ -1,11 +1,11 @@
 import ts from "typescript";
 
-import type { TypeScriptFunctionMetrics } from "@/steps/lizard/shared/index.ts";
+import type { TypeScriptFunctionMetrics } from "@/quality/complexity/shared/index.ts";
 
 import {
   collectTopLevelFunctionNodes,
   toTopLevelTypeScriptFunctionMetrics,
-} from "@/steps/lizard/function/index.ts";
+} from "@/quality/complexity/function/index.ts";
 
 // ---------------------------------------------------------------------------
 // Single-file: collect top-level TypeScript function metrics via the AST
