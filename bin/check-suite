@@ -3,6 +3,6 @@
 // Execute the published CLI entrypoint through Bun so linked and installed
 // consumers can invoke `check-suite` via the declared package binary.
 
-import { main } from "../src/cli/index.ts";
+import { main } from "../src/cli/command-line-interface.ts";
 
 void main();
