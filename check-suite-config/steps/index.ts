@@ -32,24 +32,73 @@ import {
 export const steps: CheckConfig["steps"] = [
   knipStep,
   madgeStep,
-  createDependencyCruiserStep(),
-  createArchitectureStep({
-    entrypointNames: ["index"],
-    maxEntrypointReExports: 12,
-    maxInternalImportsPerFile: 12,
-    maxSiblingImports: 7,
-    minRepeatedDeepImports: 3,
-    sharedHomeNames: ["types", "contracts", "utils"],
-    vendorManagedDirectoryNames: ["__generated__", "generated", "vendor"],
+  defineInlineStep({
+    failMsg: "dependency violations found",
+    key: "dependency-cruiser",
+    label: "dependency-cruiser",
+    source: runDependencyCruiserStep,
+    summary: {
+      default: "dependency cruise completed",
+      patterns: [
+        {
+          format: "0 dependency violations · {1} modules · {2} dependencies",
+          regex:
+            "no dependency violations found \\((\\d+) modules, (\\d+) dependencies cruised\\)",
+          type: "match",
+        },
+      ],
+      type: "pattern",
+    },
   }),
-  createPurgeCssStep({
-    contentGlobs: ["src/**/*.{tsx,ts,jsx,js}", "src/components/components.css"],
-    cssFiles: ["src/app/globals.css"],
-    safelists: ["^dark$", "^motion-profile-"],
-    selectorPrefix: ".",
+  defineInlineStep({
+    data: {
+      entrypointNames: ["index"],
+      maxEntrypointReExports: 12,
+      maxInternalImportsPerFile: 12,
+      maxSiblingImports: 7,
+      minRepeatedDeepImports: 3,
+      sharedHomeNames: ["types", "contracts", "utils"],
+      vendorManagedDirectoryNames: ["__generated__", "generated", "vendor"],
+    },
+    failMsg: "architecture violations found",
+    key: "architecture",
+    label: "architecture",
+    source: architectureStep,
+  }),
+  defineInlineStep({
+    data: {
+      contentGlobs: [
+        "src/**/*.{tsx,ts,jsx,js}",
+        "src/components/components.css",
+      ],
+      cssFiles: ["src/app/globals.css"],
+      safelists: ["^dark$", "^motion-profile-"],
+      selectorPrefix: ".",
+    },
+    failMsg: "unused CSS selectors found",
+    key: "purgecss",
+    label: "purgecss",
+    source: purgeCssStep,
   }),
   tsdStep,
-  createSecretlintStep(),
+  createGitFileScanStep({
+    command: "bunx",
+    failMsg: "secretlint failed",
+    fallbackArgs: [
+      "secretlint",
+      "**/*",
+      "--secretlintignore",
+      ".secretlintignore",
+    ],
+    fileArgs: [
+      "secretlint",
+      "--no-glob",
+      "--secretlintignore",
+      ".secretlintignore",
+    ],
+    key: "secretlint",
+    label: "secretlint",
+  }),
   auditStep,
   semgrepStep,
   gitleaksStep,
