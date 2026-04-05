@@ -4,8 +4,6 @@ import type {
   StepPostProcessResult,
 } from "./step-runtime-types.ts";
 
-export * from "./step-runtime-types.ts";
-
 export interface CheckConfig {
   paths: Record<string, string>;
   steps: StepConfig[];
@@ -76,6 +74,22 @@ export interface SuiteExecutionState {
   timedOut: boolean;
 }
 
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
+export type {
+  Command,
+  InlineTypeScriptConfig,
+  InlineTypeScriptContext,
+  InlineTypeScriptOverrides,
+  InlineTypeScriptPostProcessContext,
+  InlineTypeScriptPostProcessor,
+  InlineTypeScriptSource,
+  LintConfig,
+  OutputFilter,
+  PostProcessMessage,
+  PostProcessSection,
+  PostProcessTone,
+  ProcessedCheck,
+  StepConfig,
+  StepPostProcessResult,
+  Summary,
+  SummaryPattern,
+} from "./step-runtime-types.ts";
