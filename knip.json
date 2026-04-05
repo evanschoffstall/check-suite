@@ -1,11 +1,19 @@
 {
-  "entry": ["check-suite.config.ts", "src/cli/command-line-interface.ts"],
-  "project": ["src/**/*.ts", "check-suite-config/**/*.ts", "tests/**/*.ts"],
+  "entry": [
+    "check-suite.config.ts",
+    "src/cli/command-line-interface.ts"
+  ],
+  "project": [
+    "src/**/*.ts",
+    "check-suite-config/**/*.ts",
+    "scripts/release/**/*.ts",
+    "scripts/release/**/*.cjs",
+    "tests/**/*.ts"
+  ],
   "ignoreExportsUsedInFile": true,
   "ignoreDependencies": [
     "@0xts/gitleaks-cli",
     "@secretlint/secretlint-rule-preset-recommend",
-    "dependency-cruiser",
     "jscpd",
     "@semantic-release/github",
     "secretlint",

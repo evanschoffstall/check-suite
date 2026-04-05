@@ -13,7 +13,8 @@
     "check": "bun ./bin/check-suite",
     "check-suite": "bun ./bin/check-suite",
     "test": "bun test",
-    "release": "bun scripts/release.ts"
+    "cicd": "bun scripts/cicd/index.ts",
+    "release": "bun run cicd"
   },
   "files": [
     "bin",
