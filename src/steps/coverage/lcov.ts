@@ -3,7 +3,7 @@ import type { InlineTypeScriptPostProcessContext } from "@/types/index.ts";
 import {
   normalizeCoverageFilePath,
   shouldIncludeCoverageFile,
-} from "./state.ts";
+} from "./state";
 
 /** Aggregates LCOV line coverage totals after applying include and exclude filters. */
 export function collectLineCoverage(options: {

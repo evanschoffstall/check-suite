@@ -1,9 +1,9 @@
 import type { InlineTypeScriptPostProcessContext } from "@/types/index.ts";
 
-import type { JunitResults } from "./types.ts";
+import type { JunitResults } from "./types";
 
-import { buildConsoleOnlyJunitResults } from "./console-results.ts";
-import { formatTestResult, readXmlAttributes } from "./xml.ts";
+import { buildConsoleOnlyJunitResults } from "./console-results";
+import { formatTestResult, readXmlAttributes } from "./xml";
 
 /** Parses JUnit XML when present and falls back to console counts when absent. */
 export function parseJunitResults(
@@ -37,7 +37,7 @@ function collectCaseResults(
   for (const match of report.matchAll(
     /<testcase\b([^>]*?)(?:\/>|>([\s\S]*?)<\/testcase>)/g,
   )) {
-    const body = match[2] ?? "";
+    const body = match[0].endsWith("/>") ? "" : match[2];
     if (!matchesResultType(body, resultType)) {
       continue;
     }
@@ -49,14 +49,13 @@ function collectCaseResults(
 }
 
 function formatCaseResult(match: RegExpMatchArray, body: string): string {
-  const test = readXmlAttributes(match[1] ?? "");
+  const failureMatch = /<(?:failure|error)\b([^>]*)>/.exec(body);
+  const test = readXmlAttributes(match[1]);
 
   return formatTestResult({
     file: test.file,
     line: test.line,
-    message: readXmlAttributes(
-      body.match(/<(?:failure|error)\b([^>]*)>/)?.[1] ?? "",
-    ).message,
+    message: readXmlAttributes(failureMatch ? failureMatch[1] : "").message,
     name: test.name,
     suite: test.classname,
   });
@@ -78,7 +77,7 @@ function parseReportSummary(report: string): {
   skipped: number;
 } {
   const suitesAttributes = readXmlAttributes(
-    report.match(/<testsuites\b([^>]*)>/)?.[1] ?? "",
+    /<testsuites\b([^>]*)>/.exec(report)?.[1] ?? "",
   );
   const totalTests = Number.parseInt(suitesAttributes.tests ?? "0", 10);
   const failed = Number.parseInt(suitesAttributes.failures ?? "0", 10);

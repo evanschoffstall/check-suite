@@ -1,19 +1,18 @@
 import type {
   InlineTypeScriptPostProcessContext,
+  PostProcessMessage,
+  PostProcessSection,
+  ProcessedCheck,
   StepPostProcessResult,
 } from "@/types/index.ts";
 
-import type {
-  ConfigCheck,
-  ConfigMessage,
-  ConfigSection,
-} from "../../../types.ts";
-
 import {
   buildCommonCoverageState,
+  buildTestSummary,
   parseJunitResults,
-} from "../../coverage/index.ts";
-import { applyCoverageStatus, applyReportStatus } from "./status.ts";
+} from "@/steps/coverage/index.ts";
+
+import { applyCoverageStatus, applyReportStatus } from "./status";
 
 interface BuildJunitResultInput {
   displayOutput: string;
@@ -25,11 +24,11 @@ interface BuildJunitResultInput {
 
 interface JunitState {
   coverageState: ReturnType<typeof buildCommonCoverageState>;
-  extraChecks: ConfigCheck[];
+  extraChecks: ProcessedCheck[];
   junitResults: ReturnType<typeof parseJunitResults>;
-  messages: ConfigMessage[];
+  messages: PostProcessMessage[];
   reportExists: boolean;
-  sections: ConfigSection[];
+  sections: PostProcessSection[];
 }
 
 export function junitPostProcess({
@@ -73,7 +72,7 @@ function buildJunitResult(input: BuildJunitResultInput): StepPostProcessResult {
     output: helpers.compactDomAssertionNoise(displayOutput),
     sections: state.sections,
     status,
-    summary: `${state.junitResults.passed} passed · ${state.junitResults.failed} failed · ${state.junitResults.skipped} skipped${exitCode === 0 ? "" : ` · runner exit ${exitCode}`}`,
+    summary: buildTestSummary(state.junitResults, exitCode),
   };
 }
 

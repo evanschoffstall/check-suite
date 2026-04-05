@@ -1,22 +1,24 @@
-import type { InlineTypeScriptPostProcessContext } from "@/types/index.ts";
-
 import type {
-  ConfigCheck,
-  ConfigMessage,
-  ConfigSection,
-} from "../../../types.ts";
+  InlineTypeScriptPostProcessContext,
+  PostProcessMessage,
+  PostProcessSection,
+  ProcessedCheck,
+} from "@/types/index.ts";
 
 import {
+  appendCoverageCheckResult,
+  appendMissingReportMessage,
+  appendTestResultSections,
   buildCommonCoverageState,
   collectLineCoverage,
-} from "../../coverage/index.ts";
+} from "@/steps/coverage/index.ts";
 
 interface CoverageStatusInput {
   currentStatus: "fail" | "pass";
   data: Record<string, unknown>;
   existsSync: InlineTypeScriptPostProcessContext["existsSync"];
-  extraChecks: ConfigCheck[];
-  messages: ConfigMessage[];
+  extraChecks: ProcessedCheck[];
+  messages: PostProcessMessage[];
   readFileSync: InlineTypeScriptPostProcessContext["readFileSync"];
   resolveTokenString: (value: string) => string;
 }
@@ -24,10 +26,10 @@ interface CoverageStatusInput {
 interface ReportStatusInput {
   currentStatus: "fail" | "pass";
   failedTests: string[];
-  messages: ConfigMessage[];
+  messages: PostProcessMessage[];
   reportExists: boolean;
   reportPath: string;
-  sections: ConfigSection[];
+  sections: PostProcessSection[];
   skippedTests: string[];
 }
 
@@ -68,18 +70,14 @@ export function applyReportStatus(input: ReportStatusInput): "fail" | "pass" {
   let status = input.currentStatus;
 
   if (!input.reportExists) {
-    input.messages.push({
-      text: `Report file not found: ${input.reportPath || "(unset)"}`,
-      tone: "fail",
-    });
+    appendMissingReportMessage(input.messages, input.reportPath);
     status = "fail";
   }
 
   if (
-    appendJunitSections(
+    appendTestResultSections(
       input.reportExists,
-      input.failedTests,
-      input.skippedTests,
+      { failedTests: input.failedTests, skippedTests: input.skippedTests },
       input.sections,
     )
   ) {
@@ -96,65 +94,8 @@ function appendCoverageCheck(
     coverageThreshold: number;
     totals: null | { covered: number; found: number; pct: number };
   },
-  messages: ConfigMessage[],
-  extraChecks: ConfigCheck[],
+  messages: PostProcessMessage[],
+  extraChecks: ProcessedCheck[],
 ): boolean {
-  const { coverageLabel, coveragePath, coverageThreshold, totals } = input;
-  if (!totals) {
-    messages.push({
-      text: `Coverage report not found: ${coveragePath || "(unset)"}`,
-      tone: "fail",
-    });
-    extraChecks.push({
-      details: `0.00% (0/0) · threshold ${coverageThreshold.toFixed(1)}%`,
-      label: coverageLabel,
-      status: "fail",
-    });
-    return true;
-  }
-
-  const coverageStatus: "fail" | "pass" =
-    totals.found > 0 && totals.pct >= coverageThreshold ? "pass" : "fail";
-
-  extraChecks.push({
-    details: `${totals.pct.toFixed(2)}% (${totals.covered}/${totals.found}) · threshold ${coverageThreshold.toFixed(1)}%`,
-    label: coverageLabel,
-    status: coverageStatus,
-  });
-
-  if (totals.found === 0) {
-    messages.push({
-      text: "No executable lines found in coverage report",
-      tone: "fail",
-    });
-  }
-
-  return coverageStatus === "fail";
-}
-
-function appendJunitSections(
-  reportExists: boolean,
-  failedTests: string[],
-  skippedTests: string[],
-  sections: ConfigSection[],
-): boolean {
-  let failed = false;
-  if (!reportExists) {
-    return failed;
-  }
-
-  if (failedTests.length > 0) {
-    sections.push({ items: failedTests, title: "Failed tests", tone: "fail" });
-    failed = true;
-  }
-
-  if (skippedTests.length > 0) {
-    sections.push({
-      items: skippedTests,
-      title: "Skipped tests",
-      tone: "warn",
-    });
-  }
-
-  return failed;
+  return appendCoverageCheckResult(input, messages, extraChecks);
 }

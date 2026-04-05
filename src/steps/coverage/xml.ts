@@ -10,10 +10,10 @@ export function formatTestResult(test: {
 }
 
 /** Parses a shallow set of XML attributes from a raw tag fragment. */
-export function readXmlAttributes(raw: string): Record<string, string> {
+export function readXmlAttributes(
+  raw: string,
+): Partial<Record<string, string>> {
   return Object.fromEntries(
-    [...raw.matchAll(/(\w+)="([^"]*)"/g)].flatMap((match) =>
-      match[1] ? [[match[1], match[2] ?? ""]] : [],
-    ),
+    [...raw.matchAll(/(\w+)="([^"]*)"/g)].map((match) => [match[1], match[2]]),
   );
 }
