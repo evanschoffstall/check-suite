@@ -1,19 +1,23 @@
-import type { InlineTypeScriptPostProcessContext } from "@/types/index.ts";
-
-import type { ConfigMessage, ConfigSection } from "../../../types.ts";
+import type {
+  InlineTypeScriptPostProcessContext,
+  PostProcessMessage,
+  PostProcessSection,
+} from "@/types/index.ts";
 
 import {
+  appendMissingReportMessage,
+  appendTestResultSections,
   buildCommonCoverageState,
   parseJunitResults,
-} from "../../coverage/index.ts";
+} from "@/steps/coverage/index.ts";
 
 /** Applies Playwright report-file and test-result status rules. */
 export function applyPlaywrightReportStatus(input: {
   coverageState: ReturnType<typeof buildCommonCoverageState>;
   existsSync: InlineTypeScriptPostProcessContext["existsSync"];
   junitResults: ReturnType<typeof parseJunitResults>;
-  messages: ConfigMessage[];
-  sections: ConfigSection[];
+  messages: PostProcessMessage[];
+  sections: PostProcessSection[];
   status: "fail" | "pass";
 }): "fail" | "pass" {
   const reportExists =
@@ -29,35 +33,18 @@ export function applyPlaywrightReportStatus(input: {
 
 function appendPlaywrightResultSections(input: {
   junitResults: ReturnType<typeof parseJunitResults>;
-  sections: ConfigSection[];
+  sections: PostProcessSection[];
   status: "fail" | "pass";
 }): "fail" | "pass" {
-  let status = input.status;
-
-  if (input.junitResults.failedTests.length > 0) {
-    input.sections.push({
-      items: input.junitResults.failedTests,
-      title: "Failed tests",
-      tone: "fail",
-    });
-    status = "fail";
-  }
-
-  if (input.junitResults.skippedTests.length > 0) {
-    input.sections.push({
-      items: input.junitResults.skippedTests,
-      title: "Skipped tests",
-      tone: "warn",
-    });
-  }
-
-  return status;
+  return appendTestResultSections(true, input.junitResults, input.sections)
+    ? "fail"
+    : input.status;
 }
 
 function applyMissingReportStatus(input: {
   coverageState: ReturnType<typeof buildCommonCoverageState>;
   junitResults: ReturnType<typeof parseJunitResults>;
-  messages: ConfigMessage[];
+  messages: PostProcessMessage[];
   status: "fail" | "pass";
 }): "fail" | "pass" {
   if (
@@ -65,10 +52,7 @@ function applyMissingReportStatus(input: {
     input.junitResults.failed === 0 &&
     input.junitResults.skipped === 0
   ) {
-    input.messages.push({
-      text: `Report file not found: ${input.coverageState.reportPath || "(unset)"}`,
-      tone: "fail",
-    });
+    appendMissingReportMessage(input.messages, input.coverageState.reportPath);
     return "fail";
   }
 
