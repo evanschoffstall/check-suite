@@ -1,8 +1,6 @@
 export {
-  LIZARD_ANALYSIS_ARGS,
-  LIZARD_EXCLUDED_PATHS,
-  LIZARD_TARGETS,
-  LIZARD_THRESHOLDS,
+  buildLizardAnalysisArgs,
+  LIZARD_DEFAULT_THRESHOLDS,
 } from "./constants.ts";
 export type {
   ComplexityThresholds,
@@ -21,3 +19,7 @@ export {
   countTokens,
   isPositionInsideRanges,
 } from "./declaration-metrics.ts";
+export {
+  collectMeaningfulTokenLineNumbers,
+  countMeaningfulTokens,
+} from "./token-scanner.ts";

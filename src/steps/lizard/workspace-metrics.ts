@@ -1,10 +1,17 @@
 import { resolve } from "node:path";
 import ts from "typescript";
 
-import type { FileMetrics, FunctionMetrics } from "./shared/index.ts";
+import type {
+  FileMetrics,
+  FunctionMetrics,
+} from "@/steps/lizard/shared/index.ts";
+
+import {
+  collectMeaningfulTokenLineNumbers,
+  countMeaningfulTokens,
+} from "@/steps/lizard/shared/index.ts";
 
 import { getAnalyzedTypeScriptFiles } from "./file-scanning.ts";
-import { LIZARD_EXCLUDED_PATHS, LIZARD_TARGETS } from "./shared/index.ts";
 
 // ---------------------------------------------------------------------------
 // Per-file metric aggregation from lizard function rows
@@ -44,16 +51,14 @@ export function collectFileMetrics(
 /** Builds per-file metrics for all analyzed workspace files, merging lizard function-row aggregates with direct source-file scans for NLOC and token counts. */
 export function collectWorkspaceFileMetrics(
   functions: FunctionMetrics[],
+  targets: readonly string[],
+  excludedPaths: readonly string[],
   cwd = process.cwd(),
 ): FileMetrics[] {
   const metricsByPath = new Map<string, FileMetrics>(
     collectFileMetrics(functions).map((entry) => [entry.path, entry] as const),
   );
-  const analyzedPaths = getAnalyzedTypeScriptFiles(
-    cwd,
-    LIZARD_TARGETS,
-    LIZARD_EXCLUDED_PATHS,
-  );
+  const analyzedPaths = getAnalyzedTypeScriptFiles(cwd, targets, excludedPaths);
 
   for (const fileMetrics of analyzedPaths
     .map((relativePath) => scanWorkspaceFileMetrics(cwd, relativePath))
@@ -75,55 +80,19 @@ export function countSourceFileNonCommentLines(
   sourceFile: ts.SourceFile,
   sourceText: string,
 ): number {
-  const scanner = ts.createScanner(
-    sourceFile.languageVersion,
-    true,
-    sourceFile.languageVariant,
+  return collectMeaningfulTokenLineNumbers(sourceFile, {
+    languageVariant: sourceFile.languageVariant,
+    languageVersion: sourceFile.languageVersion,
     sourceText,
-  );
-  const lineNumbers = new Set<number>();
-
-  for (
-    let token = scanner.scan();
-    token !== ts.SyntaxKind.EndOfFileToken;
-    token = scanner.scan()
-  ) {
-    if (
-      token === ts.SyntaxKind.NewLineTrivia ||
-      token === ts.SyntaxKind.WhitespaceTrivia
-    )
-      continue;
-    lineNumbers.add(
-      sourceFile.getLineAndCharacterOfPosition(scanner.getTokenPos()).line + 1,
-    );
-  }
-
-  return lineNumbers.size;
+  }).size;
 }
 
 export function countSourceFileTokens(sourceText: string): number {
-  const scanner = ts.createScanner(
-    ts.ScriptTarget.Latest,
-    true,
-    ts.LanguageVariant.Standard,
+  return countMeaningfulTokens({
+    languageVariant: ts.LanguageVariant.Standard,
+    languageVersion: ts.ScriptTarget.Latest,
     sourceText,
-  );
-  let tokenCount = 0;
-
-  for (
-    let token = scanner.scan();
-    token !== ts.SyntaxKind.EndOfFileToken;
-    token = scanner.scan()
-  ) {
-    if (
-      token === ts.SyntaxKind.NewLineTrivia ||
-      token === ts.SyntaxKind.WhitespaceTrivia
-    )
-      continue;
-    tokenCount += 1;
-  }
-
-  return tokenCount;
+  });
 }
 
 function createEmptyFileMetrics(path: string): FileMetrics {

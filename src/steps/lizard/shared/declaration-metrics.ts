@@ -1,6 +1,11 @@
 import ts from "typescript";
 
-import type { TopLevelDeclaration } from "./contracts.ts";
+import type { TopLevelDeclaration } from "./contracts";
+
+import {
+  collectMeaningfulTokenLineNumbers,
+  countMeaningfulTokens,
+} from "./token-scanner";
 
 // ---------------------------------------------------------------------------
 // Excluded ranges — positions inside nested functions / JSX that should be
@@ -102,7 +107,9 @@ export function computeMaxNestingDepth(
       if (nextDepth > maxDepth) maxDepth = nextDepth;
     }
 
-    ts.forEachChild(node, (child) => visit(child, nextDepth));
+    ts.forEachChild(node, (child) => {
+      visit(child, nextDepth);
+    });
   };
 
   if (declaration.body) visit(declaration.body, 0);
@@ -120,33 +127,15 @@ export function countNonCommentLines(
 ): number {
   const declarationStart = declaration.getStart(sourceFile);
   const excludedRanges = collectExcludedRanges(declaration, sourceFile);
-  const scanner = ts.createScanner(
-    sourceFile.languageVersion,
-    true,
-    sourceFile.languageVariant,
-    sourceText.slice(declarationStart, declaration.getEnd()),
-  );
-  const lineNumbers = new Set<number>();
-
-  for (
-    let token = scanner.scan();
-    token !== ts.SyntaxKind.EndOfFileToken;
-    token = scanner.scan()
-  ) {
-    if (
-      token === ts.SyntaxKind.NewLineTrivia ||
-      token === ts.SyntaxKind.WhitespaceTrivia
-    ) {
-      continue;
-    }
-
-    const absolutePosition = declarationStart + scanner.getTokenPos();
-    if (isPositionInsideRanges(absolutePosition, excludedRanges)) continue;
-
-    lineNumbers.add(
-      sourceFile.getLineAndCharacterOfPosition(absolutePosition).line + 1,
-    );
-  }
+  const lineNumbers = collectMeaningfulTokenLineNumbers(sourceFile, {
+    getAbsoluteTokenStart: (scanner) =>
+      declarationStart + scanner.getTokenStart(),
+    languageVariant: sourceFile.languageVariant,
+    languageVersion: sourceFile.languageVersion,
+    shouldIgnorePosition: (absolutePosition) =>
+      isPositionInsideRanges(absolutePosition, excludedRanges),
+    sourceText: sourceText.slice(declarationStart, declaration.getEnd()),
+  });
 
   return lineNumbers.size;
 }
@@ -162,32 +151,15 @@ export function countTokens(
 ): number {
   const declarationStart = declaration.getStart(sourceFile);
   const excludedRanges = collectExcludedRanges(declaration, sourceFile);
-  const scanner = ts.createScanner(
-    ts.ScriptTarget.Latest,
-    true,
-    ts.LanguageVariant.Standard,
-    sourceText.slice(declarationStart, declaration.getEnd()),
-  );
-  let tokenCount = 0;
-
-  for (
-    let token = scanner.scan();
-    token !== ts.SyntaxKind.EndOfFileToken;
-    token = scanner.scan()
-  ) {
-    if (
-      token === ts.SyntaxKind.NewLineTrivia ||
-      token === ts.SyntaxKind.WhitespaceTrivia
-    ) {
-      continue;
-    }
-
-    const absolutePosition = declarationStart + scanner.getTokenPos();
-    if (isPositionInsideRanges(absolutePosition, excludedRanges)) continue;
-    tokenCount += 1;
-  }
-
-  return tokenCount;
+  return countMeaningfulTokens({
+    getAbsoluteTokenStart: (scanner) =>
+      declarationStart + scanner.getTokenStart(),
+    languageVariant: ts.LanguageVariant.Standard,
+    languageVersion: ts.ScriptTarget.Latest,
+    shouldIgnorePosition: (absolutePosition) =>
+      isPositionInsideRanges(absolutePosition, excludedRanges),
+    sourceText: sourceText.slice(declarationStart, declaration.getEnd()),
+  });
 }
 
 // ---------------------------------------------------------------------------
