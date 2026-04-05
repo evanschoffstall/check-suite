@@ -22,13 +22,15 @@ export interface CheckRow {
 }
 
 export interface CliArguments {
-  command: "keys" | "run-suite" | "summary";
+  command: "help" | "keys" | "run-suite" | "summary";
   directStep?: StepConfig;
   directStepArgs: string[];
   excludedKeys: Set<string>;
+  invalidOptions: string[];
   invalidSuiteExclusions: string[];
   invalidSuiteFlags: string[];
   keyFilter: null | Set<string>;
+  outputMode: SuiteOutputMode;
 }
 
 export interface DelayHandle<T> {
@@ -73,6 +75,8 @@ export interface SuiteExecutionState {
   suiteExpiredBeforeOutput: boolean;
   timedOut: boolean;
 }
+
+export type SuiteOutputMode = "all" | "failures-only";
 
 export type {
   Command,

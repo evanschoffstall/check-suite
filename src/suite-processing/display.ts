@@ -3,6 +3,7 @@ import type {
   Command,
   ProcessedResultEntry,
   StepConfig,
+  SuiteOutputMode,
 } from "@/types/index.ts";
 
 import {
@@ -15,11 +16,17 @@ import {
   row,
 } from "@/format/index.ts";
 
+interface SuiteDetailDisplayOptions {
+  outputMode: SuiteOutputMode;
+  runs: Record<string, Command>;
+}
+
 /** Prints each executed step's display output to stdout. */
 export function printSuiteOutputs(
   allExecutedSteps: StepConfig[],
   runs: Record<string, Command>,
   processedResults: Record<string, ProcessedResultEntry>,
+  outputMode: SuiteOutputMode,
   suiteExpiredBeforeOutput: boolean,
   summaryOnly: boolean,
 ): void {
@@ -27,6 +34,9 @@ export function printSuiteOutputs(
 
   for (const step of allExecutedSteps) {
     if (runs[step.key].notFound) continue;
+    if (!shouldPrintStepDetails(step.key, runs, processedResults, outputMode)) {
+      continue;
+    }
     const postProcessedOutput = processedResults[step.key].postProcess?.output;
     printStepOutput(
       step.label,
@@ -39,6 +49,7 @@ export function printSuiteOutputs(
 export function printSuitePostProcessFeedback(
   executedMainSteps: StepConfig[],
   processedResults: Record<string, ProcessedResultEntry>,
+  detailOptions: SuiteDetailDisplayOptions,
   suiteExpiredBeforeOutput: boolean,
   summaryOnly: boolean,
   missingSteps: string[],
@@ -52,6 +63,16 @@ export function printSuitePostProcessFeedback(
 
   for (const step of executedMainSteps) {
     if (suiteExpiredBeforeOutput) break;
+    if (
+      !shouldPrintStepDetails(
+        step.key,
+        detailOptions.runs,
+        processedResults,
+        detailOptions.outputMode,
+      )
+    ) {
+      continue;
+    }
     const processed = processedResults[step.key].postProcess;
     if (processed?.messages?.length) {
       printPostProcessMessages(processed.messages);
@@ -97,5 +118,29 @@ export function printSuiteSummary(
   );
   console.info(divider());
   return allOk;
+}
+
+function getStepStatus(
+  stepKey: string,
+  runs: Record<string, Command>,
+  processedResults: Record<string, ProcessedResultEntry>,
+): "fail" | "pass" {
+  return (
+    processedResults[stepKey].postProcess?.status ??
+    (runs[stepKey].exitCode === 0 ? "pass" : "fail")
+  );
+}
+
+function shouldPrintStepDetails(
+  stepKey: string,
+  runs: Record<string, Command>,
+  processedResults: Record<string, ProcessedResultEntry>,
+  outputMode: SuiteOutputMode,
+): boolean {
+  if (outputMode === "all") {
+    return true;
+  }
+
+  return getStepStatus(stepKey, runs, processedResults) === "fail";
 }
 

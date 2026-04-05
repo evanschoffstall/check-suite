@@ -1,4 +1,5 @@
 import type { CheckingIndicatorController } from "@/suite-processing/checking-indicator/index.ts";
+import type { SuiteOutputMode } from "@/types/index.ts";
 
 import { CFG, SUITE_LABEL, SUITE_TIMEOUT_MS } from "@/runtime-config/index.ts";
 import {
@@ -21,11 +22,13 @@ export async function runCheckSuite(
   options: {
     excludedKeys?: ReadonlySet<string>;
     indicator?: CheckingIndicatorController;
+    outputMode?: SuiteOutputMode;
     summaryOnly?: boolean;
   } = {},
 ): Promise<void> {
   const startedAtMs = Date.now();
   const deadlineMs = startedAtMs + SUITE_TIMEOUT_MS;
+  const outputMode = options.outputMode ?? "failures-only";
   const summaryOnly = options.summaryOnly === true;
   const loadSuiteReport = async () => {
     const excludedKeys = options.excludedKeys ?? new Set<string>();
@@ -52,6 +55,7 @@ export async function runCheckSuite(
   printSuiteReport(
     executionState,
     report.processedResults,
+    outputMode,
     summaryOnly,
     report.missingSteps,
   );
@@ -77,6 +81,7 @@ function printSuiteReport(
   processedResults: Awaited<
     ReturnType<typeof prepareSuiteReport>
   >["processedResults"],
+  outputMode: SuiteOutputMode,
   summaryOnly: boolean,
   missingSteps: Awaited<ReturnType<typeof prepareSuiteReport>>["missingSteps"],
 ): void {
@@ -84,12 +89,17 @@ function printSuiteReport(
     executionState.allExecutedSteps,
     executionState.runs,
     processedResults,
+    outputMode,
     executionState.suiteExpiredBeforeOutput,
     summaryOnly,
   );
   printSuitePostProcessFeedback(
     executionState.executedMainSteps,
     processedResults,
+    {
+      outputMode,
+      runs: executionState.runs,
+    },
     executionState.suiteExpiredBeforeOutput,
     summaryOnly,
     missingSteps,

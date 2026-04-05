@@ -9,6 +9,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { parseCliOptions } from "../src/cli/args/selection/options.ts";
 import {
   ANSI,
   divider,
@@ -42,6 +43,9 @@ import {
   startCheckingIndicator,
   withCheckingIndicator,
 } from "../src/suite-processing/checking-indicator/index.ts";
+import {
+  printSuiteOutputs,
+} from "../src/suite-processing/display.ts";
 import {
   appendTimedOutDrainMessage,
   appendTimedOutMessage,
@@ -91,6 +95,49 @@ describe("check CLI", () => {
     expect(stderr).toBe("");
     expect(stdout.length).toBeGreaterThan(0);
     expect(stdout).toContain("knip");
+  });
+
+  test("prints help with the output option instead of treating it as a suite flag", async () => {
+    const result = Bun.spawnSync(["./bin/check-suite", "--help"], {
+      cwd: process.cwd(),
+      stderr: "pipe",
+      stdout: "pipe",
+    });
+
+    const stdout = result.stdout.toString().trim();
+    const stderr = result.stderr.toString().trim();
+
+    expect(result.exitCode).toBe(0);
+    expect(stderr).toBe("");
+    expect(stdout).toContain("Usage: check-suite [command] [options]");
+    expect(stdout).toContain("--output=all");
+    expect(stdout).toContain("--output=failures");
+  });
+
+  test("prints help for summary --help", async () => {
+    const result = Bun.spawnSync(["./bin/check-suite", "summary", "--help"], {
+      cwd: process.cwd(),
+      stderr: "pipe",
+      stdout: "pipe",
+    });
+
+    const stdout = result.stdout.toString().trim();
+
+    expect(result.exitCode).toBe(0);
+    expect(stdout).toContain("Suite Options:");
+  });
+
+  test("defaults suite output mode to failures-only and accepts --output=all", () => {
+    expect(parseCliOptions([]).outputMode).toBe("failures-only");
+    expect(parseCliOptions(["--output=all", "--lint"]).outputMode).toBe(
+      "all",
+    );
+    expect(parseCliOptions(["--output=failures"]).outputMode).toBe(
+      "failures-only",
+    );
+    expect(parseCliOptions(["--output=nope"]).invalidOptions).toEqual([
+      "--output=nope",
+    ]);
   });
 
   test("loads a TypeScript config module with multiline inline functions", async () => {
@@ -211,6 +258,70 @@ describe("format helpers", () => {
       infoLines.some((line) => stripAnsi(line).includes("(no output)")),
     ).toBe(true);
     expect(writeLines.some((line) => line === "payload\n")).toBe(true);
+  });
+
+  test("suite outputs only failing steps by default and can print all output", () => {
+    const infoLines: string[] = [];
+    const writeLines: string[] = [];
+    const originalConsoleInfo = console.info;
+    const originalStdoutWrite = process.stdout.write;
+
+    console.info = ((...args: unknown[]) => {
+      infoLines.push(args.join(" "));
+    }) as typeof console.info;
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      writeLines.push(
+        typeof chunk === "string" ? chunk : Buffer.from(chunk).toString("utf8"),
+      );
+      return true;
+    }) as typeof process.stdout.write;
+
+    try {
+      const allExecutedSteps = [
+        { key: "pass-step", label: "pass step" },
+        { key: "fail-step", label: "fail step" },
+      ];
+      const runs = {
+        "fail-step": { exitCode: 1, output: "fail raw", timedOut: false },
+        "pass-step": { exitCode: 0, output: "pass raw", timedOut: false },
+      };
+      const processedResults = {
+        "fail-step": { displayOutput: "fail output", postProcess: null },
+        "pass-step": { displayOutput: "pass output", postProcess: null },
+      };
+
+      printSuiteOutputs(
+        allExecutedSteps,
+        runs,
+        processedResults,
+        "failures-only",
+        false,
+        false,
+      );
+      expect(writeLines).toEqual(["fail output\n"]);
+      expect(infoLines.some((line) => stripAnsi(line).includes("fail step"))).toBe(
+        true,
+      );
+
+      infoLines.length = 0;
+      writeLines.length = 0;
+
+      printSuiteOutputs(
+        allExecutedSteps,
+        runs,
+        processedResults,
+        "all",
+        false,
+        false,
+      );
+      expect(writeLines).toEqual(["pass output\n", "fail output\n"]);
+      expect(infoLines.some((line) => stripAnsi(line).includes("pass step"))).toBe(
+        true,
+      );
+    } finally {
+      console.info = originalConsoleInfo;
+      process.stdout.write = originalStdoutWrite;
+    }
   });
 
   test("checking indicator renders Checking frames and restores the terminal", async () => {

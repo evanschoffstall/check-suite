@@ -1,5 +1,29 @@
 import { startCheckingIndicator } from "@/suite-processing/checking-indicator/index.ts";
 
+const HELP_FLAGS = new Set(["--help", "-h", "help"]);
+const HELP_TEXT = [
+  "Usage: check-suite [command] [options]",
+  "",
+  "Commands:",
+  "  keys                 List enabled step keys",
+  "  summary [flags]      Run the suite without detailed step output",
+  "  <step-key> [args]    Run a single step directly",
+  "  help                 Show this help text",
+  "",
+  "Suite Options:",
+  "  --output=failures    Show detailed output only for failing steps (default)",
+  "  --output=all         Show detailed output for all steps",
+  "  ---no=<step-key>     Exclude a suite step",
+  "  --<step-key>         Run only the named suite step(s)",
+  "  --help, -h           Show this help text",
+  "",
+  "Examples:",
+  "  check-suite",
+  "  check-suite --output=all",
+  "  check-suite summary --eslint",
+  "  check-suite junit -- --watch",
+].join("\n");
+
 // ---------------------------------------------------------------------------
 // Output helper
 // ---------------------------------------------------------------------------
@@ -7,13 +31,30 @@ import { startCheckingIndicator } from "@/suite-processing/checking-indicator/in
 /** Parses CLI arguments and dispatches to the appropriate runner. */
 export async function main(): Promise<void> {
   const argv = Bun.argv;
+  if (isHelpRequest(argv)) {
+    writeOut(HELP_TEXT);
+    return;
+  }
   const indicator = shouldShowCheckingIndicator(argv) ? startCheckingIndicator() : null;
 
   try {
     const cliArguments = await loadCliArguments(argv);
 
+    if (cliArguments.command === "help") {
+      writeOut(HELP_TEXT);
+      return;
+    }
+
     if (cliArguments.command === "keys") {
       await handleKeysCommand(); return;
+    }
+
+    if (cliArguments.invalidOptions.length > 0) {
+      await exitWithMessage(
+        indicator,
+        `unknown option(s): ${cliArguments.invalidOptions.join(", ")}`,
+        1,
+      ); return;
     }
 
     if (cliArguments.invalidSuiteFlags.length > 0) {
@@ -64,6 +105,14 @@ async function handleKeysCommand(): Promise<void> {
   process.exit(0);
 }
 
+function isHelpRequest(argv: string[]): boolean {
+  const args = argv.slice(2);
+  const passthroughSeparatorIndex = args.indexOf("--");
+  const parsedArgs =
+    passthroughSeparatorIndex >= 0 ? args.slice(0, passthroughSeparatorIndex) : args;
+  return parsedArgs.some((arg) => HELP_FLAGS.has(arg));
+}
+
 async function loadCliArguments(argv: string[]) {
   const { parseCliArguments } = await import("@/cli/args/parser.ts");
   return parseCliArguments(argv);
@@ -96,12 +145,13 @@ async function runSuiteCommand(
   await runCheckSuite(cliArguments.keyFilter, {
     excludedKeys: cliArguments.excludedKeys,
     indicator: indicator ?? undefined,
+    outputMode: cliArguments.outputMode,
     summaryOnly: cliArguments.command === "summary",
   });
 }
 
 function shouldShowCheckingIndicator(argv: string[]): boolean {
-  return argv[2] !== "keys";
+  return argv[2] !== "keys" && !isHelpRequest(argv);
 }
 
 // ---------------------------------------------------------------------------

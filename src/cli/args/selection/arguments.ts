@@ -2,6 +2,7 @@ import type { CliArguments, StepConfig } from "@/types/index.ts";
 
 import { CFG } from "@/runtime-config/index.ts";
 
+import { parseCliOptions } from "./options";
 import { splitSuiteArguments } from "./split.ts";
 import { collectSelectionState, resolveSuiteFlagDirectStep } from "./state.ts";
 
@@ -15,9 +16,11 @@ export function createDirectStepArguments(
     directStep,
     directStepArgs,
     excludedKeys: new Set<string>(),
+    invalidOptions: [],
     invalidSuiteExclusions: [],
     invalidSuiteFlags: [],
     keyFilter: null,
+    outputMode: "all",
   };
 }
 
@@ -27,9 +30,11 @@ export function createKeysArguments(): CliArguments {
     directStep: undefined,
     directStepArgs: [],
     excludedKeys: new Set<string>(),
+    invalidOptions: [],
     invalidSuiteExclusions: [],
     invalidSuiteFlags: [],
     keyFilter: null,
+    outputMode: "all",
   };
 }
 
@@ -45,7 +50,8 @@ export function parseSuiteSelectionArguments(
   suiteCommand: CliArguments["command"],
 ): CliArguments {
   const parsedArguments = splitSuiteArguments(argv, suiteArgStartIndex);
-  const selectionState = collectSelectionState(parsedArguments.selectionArgs);
+  const cliOptions = parseCliOptions(parsedArguments.selectionArgs);
+  const selectionState = collectSelectionState(cliOptions.selectionArgs);
 
   const directStep = resolveSuiteFlagDirectStep(
     selectionState.suiteFlags,
@@ -67,12 +73,14 @@ export function parseSuiteSelectionArguments(
     directStep: undefined,
     directStepArgs: [],
     excludedKeys: new Set<string>(selectionState.exclusions),
+    invalidOptions: cliOptions.invalidOptions,
     invalidSuiteExclusions: selectionState.invalidSuiteExclusions,
     invalidSuiteFlags: selectionState.invalidSuiteFlags,
     keyFilter:
       selectionState.suiteFlags.length > 0
         ? new Set(selectionState.suiteFlags)
         : null,
+    outputMode: cliOptions.outputMode,
   };
 }
 
