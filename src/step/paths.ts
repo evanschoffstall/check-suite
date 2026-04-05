@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import type { StepConfig } from "@/types/index.ts";
 
-import { getStepTokens, resolveTokenString } from "@/tokens.ts";
+import { getStepTokens, resolveTokenString } from "@/runtime-config/index.ts";
 
 export function ensureStepDirectories(step: StepConfig): void {
   const tokens = getStepTokens(step);

@@ -1,10 +1,10 @@
 import type { StepConfig } from "@/types/index.ts";
 
+import { getStepTokens, resolveTokenString } from "@/runtime-config/index.ts";
 import {
   getRemainingTimeoutMs,
   parsePositiveTimeoutMs,
 } from "@/timeout/index.ts";
-import { getStepTokens, resolveTokenString } from "@/tokens.ts";
 
 export function getStepTimeoutMs(step: StepConfig, deadlineMs: number): number {
   const remainingMs = getRemainingTimeoutMs(deadlineMs);

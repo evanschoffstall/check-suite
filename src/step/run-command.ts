@@ -1,7 +1,7 @@
 import type { Command, StepConfig } from "@/types/index.ts";
 
 import { run } from "@/process/index.ts";
-import { getStepTokens, resolveArgs } from "@/tokens.ts";
+import { getStepTokens, resolveArgs } from "@/runtime-config/index.ts";
 
 import { ensureStepDirectories } from "./paths.ts";
 import { resolveStepTimeoutDrainMsValue } from "./timeouts.ts";

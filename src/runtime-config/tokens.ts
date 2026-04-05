@@ -1,10 +1,6 @@
 import type { StepConfig } from "@/types/index.ts";
 
-import { PATH_TOKENS } from "@/config/index.ts";
-
-// ---------------------------------------------------------------------------
-// Token string substitution
-// ---------------------------------------------------------------------------
+import { PATH_TOKENS } from "./state.ts";
 
 /**
  * Resolves `{token}` placeholders in a string via the provided token map.
@@ -23,10 +19,6 @@ export function resolveTokenString(
 /** Resolves `{token}` placeholders in each element of an args array. */
 export const resolveArgs = (args: string[], tokens: Record<string, string>) =>
   args.map((argument) => resolveTokenString(argument, tokens));
-
-// ---------------------------------------------------------------------------
-// Step token map construction
-// ---------------------------------------------------------------------------
 
 /**
  * Builds the full token map for a step by merging suite-level path tokens
