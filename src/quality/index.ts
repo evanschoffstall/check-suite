@@ -46,12 +46,3 @@ export {
   inferExplicitPublicSurfacePaths,
 } from "@/quality/module-boundaries/index.ts";
 export type { ArchitectureAnalyzerConfig } from "@/quality/module-boundaries/index.ts";
-export {
-  analyzePurgeCss,
-  formatUnusedSelectorOutput,
-  readPurgeCssConfig,
-} from "@/quality/selector-usage/index.ts";
-export type {
-  PurgeCssCheckResult,
-  PurgeCssConfig,
-} from "@/quality/selector-usage/index.ts";
