@@ -1,17 +1,10 @@
-import { afterEach, describe, expect, test } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { describe, expect, test } from "bun:test";
 
 import { analyzeArchitecture } from "@/quality/module-boundaries/analyze.ts";
 
-const tempDirectories: string[] = [];
+import { createTempRepoFactory } from "./temp-repo";
 
-afterEach(() => {
-  for (const directoryPath of tempDirectories.splice(0)) {
-    rmSync(directoryPath, { force: true, recursive: true });
-  }
-});
+const createTempRepo = createTempRepoFactory("check-suite-architecture-");
 
 describe("architecture analyzer", () => {
   test("flags unowned root files beneath a code root", () => {
@@ -267,7 +260,7 @@ describe("architecture analyzer", () => {
 
     const violations = analyzeArchitecture(repoDir, {
       dependencyPolicies: createProcessToConfigPolicies({
-        allowedDependents: ["cli"],
+        configAllowedDependents: ["cli"],
       }),
       includeRootFiles: false,
       rootDirectories: ["src"],
@@ -369,9 +362,10 @@ describe("architecture analyzer", () => {
   });
 });
 
+/** Builds a reusable policy graph for tests that exercise inbound allowlists. */
 function createProcessToConfigPolicies(overrides: {
-  allowedDependents?: string[];
   allowedRuntimeImporters?: string[];
+  configAllowedDependents?: string[];
 }): {
   allowedDependents?: string[];
   allowedRuntimeImporters?: string[];
@@ -388,13 +382,14 @@ function createProcessToConfigPolicies(overrides: {
       surfaceTier: "internal-public",
     },
     {
+      allowedDependents: overrides.configAllowedDependents,
       mayDependOn: [],
       name: "config",
       pathPrefixes: ["src/config"],
       surfaceTier: "internal-public",
     },
     {
-      ...overrides,
+      allowedRuntimeImporters: overrides.allowedRuntimeImporters,
       mayDependOn: ["config"],
       name: "runtime-config",
       pathPrefixes: ["src/runtime-config"],
@@ -403,6 +398,7 @@ function createProcessToConfigPolicies(overrides: {
   ];
 }
 
+/** Creates a minimal process-to-config repository fixture shared by multiple tests. */
 function createProcessToConfigRepo(): Record<string, string> {
   return {
     "src/config/index.ts": "export const config = true;\n",
@@ -410,33 +406,4 @@ function createProcessToConfigRepo(): Record<string, string> {
     "src/process/runner.ts":
       'import { config } from "../config/index.ts";\nexport const run = () => config;\n',
   };
-}
-
-function createTempRepo(files: Record<string, string>): string {
-  const repoDir = mkdtempSync(join(tmpdir(), "check-suite-architecture-"));
-  tempDirectories.push(repoDir);
-
-  writeFileSync(
-    join(repoDir, "tsconfig.json"),
-    JSON.stringify(
-      {
-        compilerOptions: {
-          allowImportingTsExtensions: true,
-          module: "Preserve",
-          moduleResolution: "Bundler",
-          target: "ES2022",
-        },
-      },
-      null,
-      2,
-    ),
-  );
-
-  for (const [relativePath, contents] of Object.entries(files)) {
-    const absolutePath = join(repoDir, relativePath);
-    mkdirSync(join(absolutePath, ".."), { recursive: true });
-    writeFileSync(absolutePath, contents);
-  }
-
-  return repoDir;
 }
