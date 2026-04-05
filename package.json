@@ -5,7 +5,14 @@
   "main": "src/check.ts",
   "exports": {
     ".": "./src/check.ts",
-    "./cli": "./src/cli/index.ts"
+    "./cli": "./src/cli/index.ts",
+    "./config": "./src/config/index.ts",
+    "./config-schema": "./src/config-schema/index.ts",
+    "./post-process": "./src/post-process/index.ts",
+    "./quality": "./src/quality/index.ts",
+    "./recipes": "./src/recipes/index.ts",
+    "./step": "./src/step/index.ts",
+    "./types": "./src/types/index.ts"
   },
   "bin": {
     "check-suite": "bin/check-suite"
@@ -17,7 +24,7 @@
     "check": "bun ./bin/check-suite",
     "check-suite": "bun ./bin/check-suite",
     "test": "bun test",
-    "cicd": "bun scripts/cicd/index.ts",
+    "cicd": "bun scripts/cicd.ts",
     "release": "bun run cicd"
   },
   "files": [
