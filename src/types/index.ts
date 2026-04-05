@@ -48,6 +48,7 @@ export interface PackageManifest {
   devDependencies?: Record<string, string>;
   optionalDependencies?: Record<string, string>;
   peerDependencies?: Record<string, string>;
+  scripts?: Record<string, string>;
 }
 
 export interface ProcessedResultEntry {
