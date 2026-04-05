@@ -4,6 +4,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import {
+  appendCoverageCheckResult,
+  appendMissingReportMessage,
+  appendTestResultSections,
+  buildTestSummary,
+} from "../src/coverage/post-process.ts";
+import {
   ANSI,
   divider,
   formatDuration,
@@ -24,12 +30,6 @@ import {
   escapeRegExpLiteral,
   isSafeRegExpPattern,
 } from "../src/regex.ts";
-import {
-  appendCoverageCheckResult,
-  appendMissingReportMessage,
-  appendTestResultSections,
-  buildTestSummary,
-} from "../src/steps/coverage/post-process.ts";
 import {
   appendTimedOutDrainMessage,
   appendTimedOutMessage,
