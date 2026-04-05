@@ -65,7 +65,7 @@ export function runBufferedCommand(
   });
 
   return {
-    exitCode: result.exitCode ?? 1,
+    exitCode: result.exitCode,
     output: `${result.stdout.toString("utf8")}${result.stderr.toString("utf8")}`,
   };
 }

@@ -20,25 +20,21 @@ const SECRETLINT_GLOB_ARGS = [
   ".secretlintignore",
 ] as const;
 
-/** Secret scanning powered by Secretlint. */
-export const secretlintStep: StepConfig = {
-  config: {
-    source: runSecretlintStep,
-  },
-  enabled: true,
-  failMsg: "secretlint failed",
-  handler: "inline-ts",
-  key: "secretlint",
-  label: "secretlint",
-  passMsg: "",
-  summary: {
-    type: "simple",
-  },
-};
+/** Creates a StepConfig for secret scanning powered by Secretlint. */
+export function createSecretlintStep(): StepConfig {
+  return {
+    config: { source: runSecretlintStep },
+    enabled: true,
+    failMsg: "secretlint failed",
+    handler: "inline-ts",
+    key: "secretlint",
+    label: "secretlint",
+    passMsg: "",
+    summary: { type: "simple" },
+  };
+}
 
-async function runSecretlintStep({
-  cwd,
-}: InlineTypeScriptContext): Promise<Command> {
+function runSecretlintStep({ cwd }: InlineTypeScriptContext): Command {
   const startedAt = Date.now();
   const gitVisibleFiles = resolveGitVisibleFiles(cwd);
 

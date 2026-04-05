@@ -1,4 +1,4 @@
-import { runBufferedCommand } from "./command.ts";
+import { runBufferedCommand } from "./command";
 
 const GIT_VISIBLE_FILES_ARGS = [
   "ls-files",
