@@ -80,20 +80,6 @@ export async function commitPendingChangesIfRequested(): Promise<void> {
     command: ["gitaicmt", "--no-token-check", "-y"],
     label: "Create commit with gitaicmt",
   });
-
-  await ensureCleanWorkingTree();
-}
-
-/**
- * Ensure the worktree stays clean after the optional auto-commit step so the
- * workflow runs against one stable revision.
- */
-export async function ensureCleanWorkingTree(): Promise<void> {
-  if (await hasPendingChanges()) {
-    failRelease(
-      "CI/CD flow requires a clean worktree. Commit, stash, or discard changes before continuing.",
-    );
-  }
 }
 
 /**
@@ -124,6 +110,18 @@ export async function ensureHeadMatchesOriginMain(): Promise<string> {
   }
 
   return headRevision;
+}
+
+/**
+ * Ensure the staged release candidate was fully consumed by the commit step so
+ * the workflow does not proceed with partially committed release content.
+ */
+export async function ensureNoStagedChangesRemain(): Promise<void> {
+  if (await hasStagedChanges()) {
+    failRelease(
+      "CI/CD flow still has staged changes after commit creation. Commit or unstage the remaining release candidate before continuing.",
+    );
+  }
 }
 
 /**

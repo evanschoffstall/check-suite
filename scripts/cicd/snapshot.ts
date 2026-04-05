@@ -3,7 +3,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
 
-import { failRelease, logRelease, runStepOrExit } from "./runtime.ts";
+import {
+  failRelease,
+  logRelease,
+  type ReleaseStep,
+  runStepOrExit,
+} from "./runtime.ts";
 
 interface ReleaseSnapshot {
   cleanup: () => Promise<void>;
@@ -29,6 +34,54 @@ export async function runBunCheckAgainstIndexSnapshot(): Promise<void> {
   } finally {
     await snapshot.cleanup();
   }
+}
+
+/**
+ * Run a step from a detached HEAD worktree so local unstaged edits in the main
+ * checkout cannot affect release publishing.
+ */
+export async function runStepAgainstHeadWorktree(
+  step: ReleaseStep,
+): Promise<void> {
+  const worktree = await createHeadWorktree();
+
+  try {
+    logRelease(
+      `Running ${step.label} in detached HEAD worktree ${worktree.path}`,
+    );
+    await runStepOrExit(step, { cwd: worktree.path });
+  } finally {
+    await worktree.cleanup();
+  }
+}
+
+/**
+ * Materialize the current HEAD commit into a detached temporary worktree so
+ * post-commit CI/CD steps run against the committed revision only.
+ */
+async function createHeadWorktree(): Promise<ReleaseSnapshot> {
+  const worktreePath = await mkdtemp(join(tmpdir(), "check-suite-cicd-head-"));
+
+  try {
+    await runStepOrExit({
+      command: ["git", "worktree", "add", "--detach", worktreePath, "HEAD"],
+      label: "Materialize the committed HEAD worktree",
+    });
+    await linkNodeModulesIntoSnapshot(worktreePath);
+  } catch (error_) {
+    await rm(worktreePath, { force: true, recursive: true });
+    throw error_;
+  }
+
+  return {
+    cleanup: async (): Promise<void> => {
+      await runStepOrExit({
+        command: ["git", "worktree", "remove", "--force", worktreePath],
+        label: "Remove the detached HEAD worktree",
+      });
+    },
+    path: worktreePath,
+  };
 }
 
 /**
@@ -61,7 +114,9 @@ async function createIndexSnapshot(): Promise<ReleaseSnapshot> {
  * Reuse the repository dependency tree inside the isolated snapshot so staged
  * validation does not reinstall packages on each run.
  */
-async function linkNodeModulesIntoSnapshot(snapshotPath: string): Promise<void> {
+async function linkNodeModulesIntoSnapshot(
+  snapshotPath: string,
+): Promise<void> {
   const nodeModulesPath = join(process.cwd(), "node_modules");
 
   try {

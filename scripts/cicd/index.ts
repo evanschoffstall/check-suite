@@ -33,12 +33,12 @@ async function main(): Promise<void> {
     await ensureOnMainBranch();
     await runBunCheckAgainstIndexSnapshot();
     await commitPendingChangesIfRequested();
-    await ensureCleanWorkingTree();
+    await ensureNoStagedChangesRemain();
     await pushMainBranch();
 
     const releaseRevision = await ensureHeadMatchesOriginMain();
 
-    await runStepOrExit({
+    await runStepAgainstHeadWorktree({
       command: ["bunx", "semantic-release", "--no-ci", "--dry-run"],
       label: "Run semantic-release dry-run",
     });
@@ -48,10 +48,9 @@ async function main(): Promise<void> {
       return;
     }
 
-    await ensureCleanWorkingTree();
     await ensureReleaseRevisionUnchanged(releaseRevision);
     await ensureHeadMatchesOriginMain();
-    await runStepOrExit({
+    await runStepAgainstHeadWorktree({
       command: ["bunx", "semantic-release", "--no-ci"],
       label: "Run semantic-release",
     });
