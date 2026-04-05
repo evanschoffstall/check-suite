@@ -1,12 +1,6 @@
 {
   "entry": ["check-suite.config.ts", "src/cli/command-line-interface.ts"],
-  "project": [
-    "src/**/*.ts",
-    "check-suite-config/**/*.ts",
-    "scripts/release/**/*.ts",
-    "scripts/release/**/*.cjs",
-    "tests/**/*.ts"
-  ],
+  "project": ["src/**/*.ts", "tests/**/*.ts"],
   "ignoreExportsUsedInFile": true,
   "ignoreDependencies": [
     "@0xts/gitleaks-cli",

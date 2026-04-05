@@ -52,3 +52,7 @@ export const DECLARED_BUNX_TARGETS: Set<string> = (() => {
 
   return targets;
 })();
+
+export function hasPackageScript(scriptName: string): boolean {
+  return typeof PROJECT_MANIFEST.scripts?.[scriptName] === "string";
+}
