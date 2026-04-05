@@ -1,6 +1,10 @@
 import { ANSI, paint } from "./base.ts";
 
 const SUMMARY_LABEL_WIDTH = 13;
+const ANSI_ESCAPE_PATTERN = new RegExp(
+  String.raw`\u001B\[[0-?]*[ -/]*[@-~]`,
+  "gu",
+);
 
 /** Pads or truncates `label` to a fixed display width. */
 export const formatSummaryLabel = (label: string): string => {
@@ -19,15 +23,7 @@ export const formatDuration = (ms: number): string => {
 
 /** Strips ANSI escape sequences from a string. */
 export const stripAnsi = (value: string): string => {
-  let stripped = value;
-  for (;;) {
-    const startIndex = stripped.indexOf("\u001B[");
-    if (startIndex < 0) return stripped;
-    const remainder = stripped.slice(startIndex + 2);
-    const match = /^[0-9;]*m/.exec(remainder);
-    if (!match) return stripped;
-    stripped = stripped.slice(0, startIndex) + remainder.slice(match[0].length);
-  }
+  return value.replace(ANSI_ESCAPE_PATTERN, "");
 };
 
 /** Strips ANSI codes, trims whitespace, and normalises CR. */
