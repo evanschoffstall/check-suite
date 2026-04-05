@@ -8,6 +8,7 @@ export interface AliasMapping {
 export interface ArchitectureAnalyzerConfig {
   entrypointNames?: string[];
   ignoredDirectoryNames?: string[];
+  includeRootFiles?: boolean;
   junkDrawerDirectoryNames?: string[];
   junkDrawerFileStems?: string[];
   layerGroups?: ArchitectureLayerGroup[];
@@ -15,6 +16,7 @@ export interface ArchitectureAnalyzerConfig {
   maxInternalImportsPerFile?: number;
   maxSiblingImports?: number;
   minRepeatedDeepImports?: number;
+  rootDirectories?: string[];
   sharedHomeNames?: string[];
   vendorManagedDirectoryNames?: string[];
 }

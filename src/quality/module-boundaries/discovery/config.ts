@@ -35,6 +35,13 @@ export function collectRootEntry(
 ): void {
   if (entry.isDirectory()) {
     if (
+      config.rootDirectories.length > 0 &&
+      !config.rootDirectories.includes(entry.name)
+    ) {
+      return;
+    }
+
+    if (
       isIgnoredDirectory(entry.name, config) ||
       TEST_DIRECTORY_NAMES.has(entry.name)
     ) {
@@ -46,7 +53,11 @@ export function collectRootEntry(
     return;
   }
 
-  if (entry.isFile() && isIncludedCodeFile(entry.name)) {
+  if (
+    config.includeRootFiles &&
+    entry.isFile() &&
+    isIncludedCodeFile(entry.name)
+  ) {
     roots.files.push(entry.name);
   }
 }
@@ -74,6 +85,7 @@ export function normalizeArchitectureConfig(
   const record = isRecord(value) ? value : {};
 
   return {
+    ...normalizeRootScopeConfig(record),
     ...normalizeDirectoryNameConfig(record),
     ...normalizeThresholdConfig(record),
     layerGroups: normalizeLayerGroups(record.layerGroups),
@@ -141,6 +153,18 @@ function normalizeLayerGroups(
       patterns: [...group.patterns],
     }))
   );
+}
+
+function normalizeRootScopeConfig(
+  record: Record<string, unknown>,
+): Pick<Required<ArchitectureAnalyzerConfig>, "includeRootFiles" | "rootDirectories"> {
+  return {
+    includeRootFiles:
+      typeof record.includeRootFiles === "boolean"
+        ? record.includeRootFiles
+        : true,
+    rootDirectories: normalizeStringListConfig(record.rootDirectories, []),
+  };
 }
 
 function normalizeStringListConfig(

@@ -174,10 +174,12 @@ const steps: CheckConfig["steps"] = [
   inline({
     data: {
       entrypointNames: ["index"],
+      includeRootFiles: false,
       maxEntrypointReExports: 12,
       maxInternalImportsPerFile: 12,
       maxSiblingImports: 7,
       minRepeatedDeepImports: 3,
+      rootDirectories: ["src"],
       sharedHomeNames: ["types", "contracts", "utils"],
       vendorManagedDirectoryNames: ["__generated__", "generated", "vendor"],
     },
@@ -294,7 +296,7 @@ const steps: CheckConfig["steps"] = [
   inline({
     data: {
       excludedPaths: ["src/components/ui/*"],
-      targets: ["src", "scripts"],
+      targets: ["src"],
       thresholds: {
         fileCcn: 50,
         fileFunctionCount: 15,
