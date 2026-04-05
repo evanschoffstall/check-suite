@@ -8,7 +8,6 @@
     "jscpd",
     "@semantic-release/github",
     "secretlint",
-    "semantic-release",
     "type-coverage"
   ]
 }
