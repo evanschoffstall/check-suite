@@ -1,10 +1,15 @@
+import type { CheckingIndicatorController } from "@/suite-processing/checking-indicator/index.ts";
+
 import { CFG, SUITE_LABEL, SUITE_TIMEOUT_MS } from "@/runtime-config/index.ts";
+import {
+  waitForIndicatorPaint,
+  withCheckingIndicator,
+} from "@/suite-processing/checking-indicator/index.ts";
 
 import {
   printSuiteOutputs,
   printSuitePostProcessFeedback,
   printSuiteSummary,
-  startSuiteProgress,
 } from "./display.ts";
 import { executeSuiteSteps } from "./execution.ts";
 import { prepareSuiteReport } from "./report.ts";
@@ -13,24 +18,36 @@ import { selectSuiteSteps } from "./selection.ts";
 /** Runs the configured quality suite with optional step filtering and summary mode. */
 export async function runCheckSuite(
   keyFilter?: null | Set<string>,
-  options: { excludedKeys?: ReadonlySet<string>; summaryOnly?: boolean } = {},
+  options: {
+    excludedKeys?: ReadonlySet<string>;
+    indicator?: CheckingIndicatorController;
+    summaryOnly?: boolean;
+  } = {},
 ): Promise<void> {
   const startedAtMs = Date.now();
   const deadlineMs = startedAtMs + SUITE_TIMEOUT_MS;
-  const excludedKeys = options.excludedKeys ?? new Set<string>();
   const summaryOnly = options.summaryOnly === true;
-  startSuiteProgress(summaryOnly);
-  const { mainSteps, preRunSteps } = selectSuiteSteps(
-    CFG.steps,
-    keyFilter,
-    excludedKeys,
-  );
-  const executionState = await executeSuiteSteps(
-    preRunSteps,
-    mainSteps,
-    deadlineMs,
-  );
-  const report = await prepareSuiteReport(executionState);
+  const loadSuiteReport = async () => {
+    const excludedKeys = options.excludedKeys ?? new Set<string>();
+    const { mainSteps, preRunSteps } = selectSuiteSteps(
+      CFG.steps,
+      keyFilter,
+      excludedKeys,
+    );
+    const executionState = await executeSuiteSteps(
+      preRunSteps,
+      mainSteps,
+      deadlineMs,
+    );
+    const report = await prepareSuiteReport(executionState);
+    return { executionState, report };
+  };
+  const { executionState, report } =
+    options.indicator === undefined
+      ? await withCheckingIndicator(loadSuiteReport, {
+          enabled: !summaryOnly,
+        })
+      : await runSuiteWithIndicator(options.indicator, loadSuiteReport);
 
   printSuiteReport(
     executionState,
@@ -77,4 +94,16 @@ function printSuiteReport(
     summaryOnly,
     missingSteps,
   );
+}
+
+async function runSuiteWithIndicator<T>(
+  indicator: CheckingIndicatorController,
+  task: () => Promise<T>,
+): Promise<T> {
+  try {
+    await waitForIndicatorPaint();
+    return await task();
+  } finally {
+    await indicator.stop();
+  }
 }

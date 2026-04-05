@@ -99,8 +99,3 @@ export function printSuiteSummary(
   return allOk;
 }
 
-/** Writes the suite progress indicator unless running in summary-only mode. */
-export function startSuiteProgress(summaryOnly: boolean): void {
-  if (summaryOnly) return;
-  process.stdout.write(paint("⏳ Please wait ... ", ANSI.bold, ANSI.cyan));
-}

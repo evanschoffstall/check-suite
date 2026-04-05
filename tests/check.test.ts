@@ -38,6 +38,11 @@ import {
 } from "../src/regex.ts";
 import { runGitFileScan } from "../src/step/git-file-scan.ts";
 import {
+  renderCheckingFrame,
+  startCheckingIndicator,
+  withCheckingIndicator,
+} from "../src/suite-processing/checking-indicator/index.ts";
+import {
   appendTimedOutDrainMessage,
   appendTimedOutMessage,
   createDelay,
@@ -206,6 +211,63 @@ describe("format helpers", () => {
       infoLines.some((line) => stripAnsi(line).includes("(no output)")),
     ).toBe(true);
     expect(writeLines.some((line) => line === "payload\n")).toBe(true);
+  });
+
+  test("checking indicator renders Checking frames and restores the terminal", async () => {
+    const writes: string[] = [];
+    let taskStarted = false;
+    const output = {
+      isTTY: true,
+      write(chunk: string): boolean {
+        writes.push(chunk);
+        return true;
+      },
+    };
+
+    expect(stripAnsi(renderCheckingFrame(0))).toContain("Checking");
+
+    const resultPromise = withCheckingIndicator(async () => {
+      taskStarted = true;
+      return "done";
+    }, {
+      enabled: true,
+      frameIntervalMs: 1,
+      output,
+    });
+
+    expect(taskStarted).toBe(false);
+
+    const result = await resultPromise;
+
+    expect(result).toBe("done");
+    expect(writes[0]).toBe("\x1b[?25l");
+    expect(writes.some((chunk) => stripAnsi(chunk).includes("Checking"))).toBe(
+      true,
+    );
+    expect(writes.at(-1)).toBe("\r\x1b[2K\x1b[?25h");
+  });
+
+  test("checking indicator start renders a frame immediately", async () => {
+    const writes: string[] = [];
+    const output = {
+      isTTY: true,
+      write(chunk: string): boolean {
+        writes.push(chunk);
+        return true;
+      },
+    };
+
+    const indicator = startCheckingIndicator({
+      enabled: true,
+      frameIntervalMs: 100,
+      output,
+    });
+
+    expect(writes[0]).toBe("\x1b[?25l");
+    expect(stripAnsi(writes[1])).toContain("Checking");
+
+    await indicator.stop();
+    expect(writes.at(-1)).toBe("\r\x1b[2K\x1b[?25h");
   });
 });
 
