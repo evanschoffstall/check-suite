@@ -11,6 +11,7 @@ import {
   ensureReleaseRevisionUnchanged,
   pushMainBranch,
   shouldProceedWithRelease,
+  syncLocalMainWithOrigin,
 } from "./git.ts";
 import { logRelease, ReleaseWorkflowError } from "./runtime.ts";
 import {
@@ -54,6 +55,7 @@ async function main(): Promise<void> {
       command: ["bunx", "semantic-release", "--no-ci"],
       label: "Run semantic-release",
     });
+    await syncLocalMainWithOrigin();
   } finally {
     await releaseLock.release();
   }

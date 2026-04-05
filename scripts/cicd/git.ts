@@ -175,6 +175,47 @@ export async function shouldProceedWithRelease(): Promise<boolean> {
 }
 
 /**
+ * Fast-forward the operator's local main checkout after semantic-release
+ * publishes from the detached worktree so package.json and the release commit
+ * become visible in the original working tree immediately.
+ */
+export async function syncLocalMainWithOrigin(): Promise<void> {
+  await runStepOrExit({
+    command: ["git", "fetch", "origin", MAIN_BRANCH],
+    label: `Fetch origin/${MAIN_BRANCH} after release`,
+  });
+
+  const [headRevision, remoteRevision] = await Promise.all([
+    runCommandForStdout(
+      ["git", "rev-parse", "HEAD"],
+      "Unable to resolve local HEAD after release",
+    ),
+    runCommandForStdout(
+      ["git", "rev-parse", `refs/remotes/origin/${MAIN_BRANCH}`],
+      `Unable to resolve origin/${MAIN_BRANCH} after release`,
+    ),
+  ]);
+
+  if (headRevision === remoteRevision) {
+    logRelease(
+      `Local ${MAIN_BRANCH} already includes the published release revision ${remoteRevision}.`,
+    );
+    return;
+  }
+
+  if (await hasPendingChanges()) {
+    failRelease(
+      `Release was published, but the local ${MAIN_BRANCH} checkout is dirty and could not be fast-forwarded to origin/${MAIN_BRANCH}. Clean the worktree and run git pull --ff-only to pick up the release commit and version bump.`,
+    );
+  }
+
+  await runStepOrExit({
+    command: ["git", "merge", "--ff-only", `refs/remotes/origin/${MAIN_BRANCH}`],
+    label: `Fast-forward local ${MAIN_BRANCH} to origin/${MAIN_BRANCH}`,
+  });
+}
+
+/**
  * Persist lock metadata and return the matching cleanup callback.
  */
 async function buildReleaseLock(
