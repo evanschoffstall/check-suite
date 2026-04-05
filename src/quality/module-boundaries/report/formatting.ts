@@ -7,7 +7,7 @@ const MAX_VIOLATIONS_PER_GROUP = 50;
 
 /**
  * Formats architecture violations into a styled, human-readable report
- * grouped by rule code, matching the lizard violation reporting style.
+ * grouped by rule code, matching the generic complexity report style.
  */
 export function formatArchitectureViolations(
   violations: ArchitectureViolation[],

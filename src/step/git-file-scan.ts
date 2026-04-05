@@ -24,7 +24,7 @@ export interface GitFileScanOptions {
    * Defaults to `fileArgs` when omitted.
    */
   fallbackArgs?: readonly string[];
-  /** Args prepended before each file-path batch, e.g. `["secretlint", "--no-glob"]`. */
+  /** Args prepended before each file-path batch, e.g. `["scanner", "--no-glob"]`. */
   fileArgs: readonly string[];
   /** Maximum combined argument length before splitting into a new batch. Defaults to 100 000. */
   maxArgLength?: number;
@@ -84,8 +84,8 @@ export function runGitFileScan(
  * ```ts
  * runGitFileScan(process.cwd(), {
  *   command: "bunx",
- *   fileArgs: ["secretlint", "--no-glob", "--secretlintignore", ".secretlintignore"],
- *   fallbackArgs: ["secretlint", "**\/*", "--secretlintignore", ".secretlintignore"],
+ *   fileArgs: ["scanner", "--no-glob", "--config", "scanner.config.json"],
+ *   fallbackArgs: ["scanner", "<workspace-glob>", "--config", "scanner.config.json"],
  * });
  * ```
  */
