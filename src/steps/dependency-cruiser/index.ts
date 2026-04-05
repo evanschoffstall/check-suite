@@ -9,11 +9,7 @@ import extractTSConfig from "dependency-cruiser/config-utl/extract-ts-config";
 import { readdirSync } from "node:fs";
 import { extname, join } from "node:path";
 
-import type {
-  Command,
-  InlineTypeScriptContext,
-  StepConfig,
-} from "@/types/index.ts";
+import type { Command, InlineTypeScriptContext } from "@/types/index.ts";
 
 /**
  * Generic dependency-cruiser policy for repository-agnostic dependency checks.
@@ -72,31 +68,32 @@ interface DependencyCruiserTarget {
   path: string;
 }
 
-/** Creates a StepConfig for generic dependency analysis powered by dependency-cruiser. */
-export function createDependencyCruiserStep(): StepConfig {
-  return {
-    config: {
-      source: runDependencyCruiserStep,
-    },
-    enabled: true,
-    failMsg: "dependency-cruiser failed",
-    handler: "inline-ts",
-    key: "dependency-cruiser",
-    label: "dependency-cruiser",
-    passMsg: "",
-    summary: {
-      default: "dependency cruise completed",
-      patterns: [
-        {
-          format: "0 dependency violations · {1} modules · {2} dependencies",
-          regex:
-            "no dependency violations found \\((\\d+) modules, (\\d+) dependencies cruised\\)",
-          type: "match",
-        },
-      ],
-      type: "pattern",
-    },
-  };
+/** Runs dependency-cruiser with dynamically discovered repository targets. */
+export async function runDependencyCruiserStep({
+  cwd,
+  existsSync,
+  fail,
+  ok,
+}: InlineTypeScriptContext): Promise<Command> {
+  const targets = discoverDependencyCruiserTargets(cwd);
+  if (targets.length === 0) {
+    return ok("no dependency-cruiser targets found\n");
+  }
+
+  const targetPaths = targets.map((target) => target.path);
+  const tsConfigFilePath = join(cwd, "tsconfig.json");
+  const options = buildDependencyCruiserOptions(targets);
+  const result = await cruise(
+    targetPaths,
+    options,
+    undefined,
+    existsSync(tsConfigFilePath)
+      ? { tsConfig: extractTSConfig(tsConfigFilePath) }
+      : undefined,
+  );
+  const output = normalizeDependencyCruiserOutput(result);
+
+  return result.exitCode === 0 ? ok(output) : fail(output);
 }
 
 /** Builds the generic dependency-cruiser options for the discovered targets. */
@@ -209,32 +206,4 @@ function normalizeDependencyCruiserOutput({ output }: IReporterOutput): string {
   return normalizedOutput.endsWith("\n")
     ? normalizedOutput
     : `${normalizedOutput}\n`;
-}
-
-/** Runs dependency-cruiser with dynamically discovered repository targets. */
-async function runDependencyCruiserStep({
-  cwd,
-  existsSync,
-  fail,
-  ok,
-}: InlineTypeScriptContext): Promise<Command> {
-  const targets = discoverDependencyCruiserTargets(cwd);
-  if (targets.length === 0) {
-    return ok("no dependency-cruiser targets found\n");
-  }
-
-  const targetPaths = targets.map((target) => target.path);
-  const tsConfigFilePath = join(cwd, "tsconfig.json");
-  const options = buildDependencyCruiserOptions(targets);
-  const result = await cruise(
-    targetPaths,
-    options,
-    undefined,
-    existsSync(tsConfigFilePath)
-      ? { tsConfig: extractTSConfig(tsConfigFilePath) }
-      : undefined,
-  );
-  const output = normalizeDependencyCruiserOutput(result);
-
-  return result.exitCode === 0 ? ok(output) : fail(output);
 }

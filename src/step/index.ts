@@ -6,6 +6,10 @@ import { runHandledStep } from "./handlers.ts";
 import { runCommandStep } from "./run-command.ts";
 import { getStepTimeoutMs } from "./timeouts.ts";
 
+export { defineInlineStep } from "./build.ts";
+export { createGitFileScanStep } from "./git-file-scan.ts";
+export { createTestCoverageStep } from "./test.ts";
+
 export function runStepWithinDeadline(
   step: StepConfig,
   deadlineMs: number,

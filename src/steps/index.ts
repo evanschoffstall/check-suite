@@ -1,7 +1,4 @@
-export { createArchitectureStep } from "@/steps/architecture/index.ts";
-export { createDependencyCruiserStep } from "@/steps/dependency-cruiser/index.ts";
-export { createJunitStep } from "@/steps/junit/index.ts";
+export { architectureStep } from "@/steps/architecture/index.ts";
+export { runDependencyCruiserStep } from "@/steps/dependency-cruiser/index.ts";
 export { createLizardStep } from "@/steps/lizard/index.ts";
-export { createPlaywrightStep } from "@/steps/playwright/index.ts";
-export { createPurgeCssStep } from "@/steps/purgecss/index.ts";
-export { createSecretlintStep } from "@/steps/secretlint/index.ts";
+export { purgeCssStep } from "@/steps/purgecss/index.ts";
