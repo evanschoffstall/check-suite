@@ -1,7 +1,4 @@
-export {
-  buildLizardAnalysisArgs,
-  LIZARD_DEFAULT_THRESHOLDS,
-} from "./constants";
+export { DEFAULT_COMPLEXITY_THRESHOLDS } from "./constants";
 export type {
   ComplexityThresholds,
   ComplexityViolation,

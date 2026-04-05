@@ -1,12 +1,20 @@
 /// <reference types="bun" />
 /// <reference types="node" />
 
-export { parseLizardCsv, parseLizardCsvLine } from "./csv-parser";
-
-export { runLizardAnalysis } from "./lizard-analysis";
-export type { LizardConfig } from "./main";
-export type { LizardCheckResult } from "./main";
-export { runLizardCheck } from "./main";
+export type {
+  ComplexityAnalyzerAdapter,
+  ComplexityCheckOptions,
+} from "./main";
+export type { ComplexityCheckResult } from "./main";
+export { runComplexityCheck } from "./main";
+export {
+  createSpawnComplexityAdapter,
+  parseCsvComplexityRows,
+} from "./spawn-adapter.ts";
+export type {
+  ComplexityColumnMap,
+  SpawnComplexityAdapterOptions,
+} from "./spawn-adapter.ts";
 export {
   collectTopLevelTypeScriptFunctionMetrics,
   resolveTopLevelFunctionMetrics,
@@ -20,14 +28,13 @@ export {
   toTopLevelTypeScriptFunctionMetrics,
 } from "@/quality/complexity/function/index.ts";
 export {
-  buildLizardReportWithFiles,
+  buildComplexityReportWithFiles,
   findFileViolations,
   findFunctionViolations,
   formatViolations,
 } from "@/quality/complexity/report/index.ts";
 export {
-  buildLizardAnalysisArgs,
-  LIZARD_DEFAULT_THRESHOLDS,
+  DEFAULT_COMPLEXITY_THRESHOLDS,
 } from "@/quality/complexity/shared/index.ts";
 export type {
   ComplexityThresholds,

@@ -33,7 +33,7 @@ export function collectTopLevelTypeScriptFunctionMetrics(
 }
 
 // ---------------------------------------------------------------------------
-// Multi-file: resolve lizard function metrics against AST-derived metrics
+// Multi-file: reconcile analyzer metrics against AST-derived metrics
 // ---------------------------------------------------------------------------
 
 export function resolveTopLevelFunctionMetrics(
@@ -79,20 +79,20 @@ function resolvePathEntries(
     .sort((left, right) => left - right);
 
   return astFunctions.map((astFunction) => {
-    const lizardFunction = pathEntries.find(
+    const analyzerFunction = pathEntries.find(
       (entry) => entry.startLine === astFunction.startLine,
     );
-    if (!lizardFunction) return astFunction;
+    if (!analyzerFunction) return astFunction;
 
     const overlaps = astStartLines.filter(
       (startLine) =>
-        startLine >= lizardFunction.startLine &&
-        startLine <= lizardFunction.endLine,
+        startLine >= analyzerFunction.startLine &&
+        startLine <= analyzerFunction.endLine,
     ).length;
     if (overlaps > 1) return astFunction;
 
     return {
-      ...lizardFunction,
+      ...analyzerFunction,
       endLine: astFunction.endLine,
       functionName: astFunction.functionName,
       length: astFunction.length,
@@ -100,7 +100,7 @@ function resolvePathEntries(
       nestingDepth: astFunction.nestingDepth,
       nloc: astFunction.nloc,
       parameterCount: astFunction.parameterCount,
-      tokenCount: Math.max(lizardFunction.tokenCount, astFunction.tokenCount),
+      tokenCount: Math.max(analyzerFunction.tokenCount, astFunction.tokenCount),
     } satisfies TypeScriptFunctionMetrics;
   });
 }

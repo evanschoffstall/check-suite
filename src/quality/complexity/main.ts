@@ -3,26 +3,31 @@ import type {
   FunctionMetrics,
 } from "@/quality/complexity/shared/index.ts";
 
-import { buildLizardReportWithFiles } from "@/quality/complexity/report/index.ts";
-import {
-  buildLizardAnalysisArgs,
-  LIZARD_DEFAULT_THRESHOLDS,
-} from "@/quality/complexity/shared/index.ts";
+import { buildComplexityReportWithFiles } from "@/quality/complexity/report/index.ts";
+import { DEFAULT_COMPLEXITY_THRESHOLDS } from "@/quality/complexity/shared/index.ts";
 import { discoverDefaultCodeRoots } from "@/quality/module-boundaries/discovery/index.ts";
 
-import { parseLizardCsv } from "./csv-parser";
-import { runLizardAnalysis } from "./lizard-analysis";
 import { resolveTopLevelFunctionMetrics } from "./top-level-resolution";
 import { collectWorkspaceFileMetrics } from "./workspace-metrics";
 
-/** Result of a lizard complexity analysis run. */
-export interface LizardCheckResult {
-  exitCode: 0 | 1;
-  output: string;
+/** Config-owned adapter that supplies the external analysis contract. */
+export interface ComplexityAnalyzerAdapter {
+  buildAnalysisArgs(
+    targets: readonly string[],
+    excludedPaths: readonly string[],
+  ): readonly string[];
+  parseAnalysisOutput(output: string): FunctionMetrics[];
+  runAnalysis(input: {
+    analysisArgs: readonly string[];
+    cwd: string;
+    failWithOutput: (output: string, exitCode?: number) => never;
+  }): string;
 }
 
-/** Runtime configuration for the lizard complexity analysis. */
-export interface LizardConfig {
+/** Runtime configuration for the generic complexity analysis. */
+export interface ComplexityCheckOptions {
+  /** External analyzer implementation supplied by config-owned code. */
+  analyzer: ComplexityAnalyzerAdapter;
   /** Glob patterns for paths to exclude from analysis. */
   excludedPaths?: readonly string[];
   /**
@@ -36,24 +41,39 @@ export interface LizardConfig {
   thresholds?: Partial<ComplexityThresholds>;
 }
 
-/** Runs the lizard complexity analysis and returns the normalized result. */
-export function runLizardCheck(
-  config: LizardConfig,
+/** Result of a generic complexity analysis run. */
+export interface ComplexityCheckResult {
+  exitCode: 0 | 1;
+  output: string;
+}
+
+/** Runs the generic complexity analysis and returns the normalized result. */
+export function runComplexityCheck(
+  config: ComplexityCheckOptions,
   cwd: string = process.cwd(),
-): LizardCheckResult {
+): ComplexityCheckResult {
   const thresholds: ComplexityThresholds = {
-    ...LIZARD_DEFAULT_THRESHOLDS,
+    ...DEFAULT_COMPLEXITY_THRESHOLDS,
     ...config.thresholds,
   };
   const excludedPaths = config.excludedPaths ?? [];
   const targets = config.targets ?? discoverDefaultCodeRoots(cwd).directories;
-  const analysisArgs = buildLizardAnalysisArgs(targets, excludedPaths);
+  const analysisArgs = config.analyzer.buildAnalysisArgs(targets, excludedPaths);
 
-  const lizardCsvOutput = runLizardAnalysis(failWithOutput, analysisArgs);
+  const analysisOutput = config.analyzer.runAnalysis({
+    analysisArgs,
+    cwd,
+    failWithOutput,
+  });
   const functions = resolveTopLevelFunctionMetrics(
-    parseLizardCsv(lizardCsvOutput),
+    config.analyzer.parseAnalysisOutput(analysisOutput),
   );
-  const report = buildLizardReport(functions, targets, excludedPaths, thresholds);
+  const report = buildComplexityReport(
+    functions,
+    targets,
+    excludedPaths,
+    thresholds,
+  );
 
   return {
     exitCode: report.exitCode,
@@ -61,13 +81,13 @@ export function runLizardCheck(
   };
 }
 
-function buildLizardReport(
+function buildComplexityReport(
   functions: FunctionMetrics[],
   targets: readonly string[],
   excludedPaths: readonly string[],
   thresholds: ComplexityThresholds,
-): LizardCheckResult {
-  return buildLizardReportWithFiles(
+): ComplexityCheckResult {
+  return buildComplexityReportWithFiles(
     functions,
     collectWorkspaceFileMetrics(functions, targets, excludedPaths),
     thresholds,

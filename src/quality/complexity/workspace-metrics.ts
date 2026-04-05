@@ -14,10 +14,10 @@ import {
 import { getAnalyzedTypeScriptFiles } from "./file-scanning";
 
 // ---------------------------------------------------------------------------
-// Per-file metric aggregation from lizard function rows
+// Per-file metric aggregation from analyzer function rows
 // ---------------------------------------------------------------------------
 
-/** Aggregates per-function lizard metrics into a per-file summary. */
+/** Aggregates per-function analyzer metrics into a per-file summary. */
 export function collectFileMetrics(
   functions: FunctionMetrics[],
 ): FileMetrics[] {
@@ -48,7 +48,7 @@ export function collectFileMetrics(
 // Source-file-level NLOC and token counting (whole-file, not per-function)
 // ---------------------------------------------------------------------------
 
-/** Builds per-file metrics for all analyzed workspace files, merging lizard function-row aggregates with direct source-file scans for NLOC and token counts. */
+/** Builds per-file metrics for all analyzed workspace files, merging analyzer function-row aggregates with direct source-file scans for NLOC and token counts. */
 export function collectWorkspaceFileMetrics(
   functions: FunctionMetrics[],
   targets: readonly string[],

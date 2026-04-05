@@ -1,7 +1,6 @@
 /** Public entrypoint for the repository-agnostic quality analysis surface. */
 export {
-  buildLizardAnalysisArgs,
-  buildLizardReportWithFiles,
+  buildComplexityReportWithFiles,
   collectExcludedRanges,
   collectFileMetrics,
   collectTopLevelFunctionNodes,
@@ -11,50 +10,31 @@ export {
   computeMaxNestingDepth,
   countNonCommentLines,
   countTokens,
+  createSpawnComplexityAdapter,
+  DEFAULT_COMPLEXITY_THRESHOLDS,
   findFileViolations,
   findFunctionViolations,
   formatViolations,
   isPositionInsideRanges,
-  LIZARD_DEFAULT_THRESHOLDS,
-  parseLizardCsv,
-  parseLizardCsvLine,
+  parseCsvComplexityRows,
   resolveTopLevelFunctionMetrics,
-  runLizardAnalysis,
-  runLizardCheck,
+  runComplexityCheck,
   toTopLevelTypeScriptFunctionMetrics,
 } from "@/quality/complexity/index.ts";
 export type {
+  ComplexityAnalyzerAdapter,
+  ComplexityCheckOptions,
+  ComplexityCheckResult,
+  ComplexityColumnMap,
   ComplexityThresholds,
   ComplexityViolation,
   FileMetrics,
   FunctionMetrics,
-  LizardCheckResult,
-  LizardConfig,
+  SpawnComplexityAdapterOptions,
   TopLevelDeclaration,
   TopLevelFunctionNode,
   TypeScriptFunctionMetrics,
 } from "@/quality/complexity/index.ts";
-export { runDependencyCruiserCheck } from "@/quality/dependency-graph/index.ts";
-export type { DependencyCruiserCheckResult } from "@/quality/dependency-graph/index.ts";
-export {
-  appendCoverageCheckResult,
-  appendMissingReportMessage,
-  appendTestResultSections,
-  buildCommonCoverageState,
-  buildConsoleOnlyJunitResults,
-  buildTestSummary,
-  collectLineCoverage,
-  matchesCoveragePath,
-  normalizeCoverageFilePath,
-  parseBunConsoleCoverage,
-  parseJunitResults,
-  shouldIncludeCoverageFile,
-} from "@/quality/line-metrics/index.ts";
-export type {
-  ConsoleCoverageTotals,
-  CoverageState,
-  JunitResults,
-} from "@/quality/line-metrics/index.ts";
 export {
   analyzeArchitecture,
   discoverDefaultCodeRoots,

@@ -11,7 +11,7 @@ import { findFileViolations, findFunctionViolations } from "./violations";
 
 type FunctionMetrics = TypeScriptFunctionMetrics;
 
-export function buildLizardReportWithFiles(
+export function buildComplexityReportWithFiles(
   functions: FunctionMetrics[],
   files: FileMetrics[],
   thresholds: ComplexityThresholds,
@@ -24,7 +24,7 @@ export function buildLizardReportWithFiles(
       exitCode: 1,
       output: [
         "complexity: 0 function violations · 0 file violations",
-        paint("No lizard rows were produced.", ANSI.bold, ANSI.yellow),
+        paint("No analyzer rows were produced.", ANSI.bold, ANSI.yellow),
       ].join("\n"),
     };
   }
