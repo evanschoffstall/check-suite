@@ -1,4 +1,4 @@
-import type { FunctionMetrics } from "./shared/index.ts";
+import type { FunctionMetrics } from "@/steps/lizard/shared/index.ts";
 
 export function parseLizardCsv(csvOutput: string): FunctionMetrics[] {
   return csvOutput
@@ -24,22 +24,28 @@ export function parseLizardCsv(csvOutput: string): FunctionMetrics[] {
         startLine,
         endLine,
       ] = cells;
+      const resolvedFunctionName =
+        functionName.length > 0 ? functionName : "(anonymous)";
+      const resolvedLocation =
+        location.length > 0
+          ? location
+          : path.length > 0
+            ? path
+            : "unknown-location";
+      const resolvedPath = path.length > 0 ? path : "unknown-file";
 
       return {
-        ccn: Number.parseInt(ccn ?? "0", 10),
-        endLine: Number.parseInt(endLine ?? "0", 10),
-        functionName:
-          functionName && functionName.length > 0
-            ? functionName
-            : "(anonymous)",
-        length: Number.parseInt(length ?? "0", 10),
-        location: location ?? path ?? "unknown-location",
+        ccn: Number.parseInt(ccn, 10),
+        endLine: Number.parseInt(endLine, 10),
+        functionName: resolvedFunctionName,
+        length: Number.parseInt(length, 10),
+        location: resolvedLocation,
         nestingDepth: 0,
-        nloc: Number.parseInt(nloc ?? "0", 10),
-        parameterCount: Number.parseInt(parameterCount ?? "0", 10),
-        path: path ?? "unknown-file",
-        startLine: Number.parseInt(startLine ?? "0", 10),
-        tokenCount: Number.parseInt(tokenCount ?? "0", 10),
+        nloc: Number.parseInt(nloc, 10),
+        parameterCount: Number.parseInt(parameterCount, 10),
+        path: resolvedPath,
+        startLine: Number.parseInt(startLine, 10),
+        tokenCount: Number.parseInt(tokenCount, 10),
       } satisfies FunctionMetrics;
     });
 }

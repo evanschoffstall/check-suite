@@ -1,4 +1,4 @@
 export {
   collectTopLevelFunctionNodes,
   toTopLevelTypeScriptFunctionMetrics,
-} from "./node/index.ts";
+} from "@/steps/lizard/function/node/index.ts";

@@ -3,14 +3,14 @@ import ts from "typescript";
 import type {
   TopLevelFunctionNode,
   TypeScriptFunctionMetrics,
-} from "../../shared/index.ts";
+} from "@/steps/lizard/shared/index.ts";
 
 import {
   computeCyclomaticComplexity,
   computeMaxNestingDepth,
   countNonCommentLines,
   countTokens,
-} from "../../shared/index.ts";
+} from "@/steps/lizard/shared/index.ts";
 
 /** Converts collected top-level function nodes into typed metrics objects. */
 export function toTopLevelTypeScriptFunctionMetrics(

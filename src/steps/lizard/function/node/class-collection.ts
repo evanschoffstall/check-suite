@@ -1,8 +1,8 @@
 import ts from "typescript";
 
-import type { TopLevelFunctionNode } from "../../shared/index.ts";
+import type { TopLevelFunctionNode } from "@/steps/lizard/shared/index.ts";
 
-import { getDeclarationName, pushTopLevelFunction } from "./shared.ts";
+import { getDeclarationName, pushTopLevelFunction } from "./shared";
 
 export function collectClassFunctions(
   declaration: ts.ClassDeclaration,

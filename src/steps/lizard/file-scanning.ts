@@ -2,6 +2,8 @@ import { existsSync, statSync } from "node:fs";
 import { relative, resolve } from "node:path";
 import ts from "typescript";
 
+import { escapeRegExpLiteral, testSafeRegExp } from "@/regex.ts";
+
 // ---------------------------------------------------------------------------
 // Path normalization
 // ---------------------------------------------------------------------------
@@ -10,24 +12,25 @@ import ts from "typescript";
 export function createGlobMatcher(pattern: string): (value: string) => boolean {
   const escapedPattern = pattern
     .replaceAll("\\", "\\\\")
-    .replaceAll(".", "\\.")
-    .replaceAll("+", "\\+")
-    .replaceAll("?", "\\?")
-    .replaceAll("^", "\\^")
-    .replaceAll("$", "\\$")
-    .replaceAll("{", "\\{")
-    .replaceAll("}", "\\}")
-    .replaceAll("(", "\\(")
-    .replaceAll(")", "\\)")
-    .replaceAll("|", "\\|")
-    .replaceAll("[", "\\[")
-    .replaceAll("]", "\\]")
+    .replaceAll(".", escapeRegExpLiteral("."))
+    .replaceAll("+", escapeRegExpLiteral("+"))
+    .replaceAll("?", escapeRegExpLiteral("?"))
+    .replaceAll("^", escapeRegExpLiteral("^"))
+    .replaceAll("$", escapeRegExpLiteral("$"))
+    .replaceAll("{", escapeRegExpLiteral("{"))
+    .replaceAll("}", escapeRegExpLiteral("}"))
+    .replaceAll("(", escapeRegExpLiteral("("))
+    .replaceAll(")", escapeRegExpLiteral(")"))
+    .replaceAll("|", escapeRegExpLiteral("|"))
+    .replaceAll("[", escapeRegExpLiteral("["))
+    .replaceAll("]", escapeRegExpLiteral("]"))
     .replaceAll("**", "\\u0000")
     .replaceAll("*", "[^/]*")
     .replaceAll("\\u0000", ".*");
-  const patternRegex = new RegExp(`^${escapedPattern}$`, "u");
+  const safePattern = `^${escapedPattern}$`;
 
-  return (value: string): boolean => patternRegex.test(normalizePath(value));
+  return (value: string): boolean =>
+    testSafeRegExp(normalizePath(value), safePattern, "u");
 }
 
 // ---------------------------------------------------------------------------
