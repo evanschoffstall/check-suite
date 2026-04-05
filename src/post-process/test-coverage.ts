@@ -1,4 +1,4 @@
-import type { ConsoleCoverageTotals } from "@/coverage/index.ts";
+import type { ConsoleCoverageTotals } from "@/quality/line-metrics/index.ts";
 import type {
   InlineTypeScriptPostProcessContext,
   InlineTypeScriptPostProcessor,
@@ -13,7 +13,7 @@ import {
   buildTestSummary,
   collectLineCoverage,
   parseJunitResults,
-} from "@/coverage/index.ts";
+} from "@/quality/line-metrics/index.ts";
 
 /** Options for {@link buildTestCoveragePostProcess}. */
 export interface TestCoveragePostProcessOptions {
