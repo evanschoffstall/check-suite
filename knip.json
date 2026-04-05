@@ -1,8 +1,5 @@
 {
-  "entry": [
-    "check-suite.config.ts",
-    "src/cli/command-line-interface.ts"
-  ],
+  "entry": ["check-suite.config.ts", "src/cli/command-line-interface.ts"],
   "project": [
     "src/**/*.ts",
     "check-suite-config/**/*.ts",
