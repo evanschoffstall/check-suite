@@ -1,8 +1,41 @@
+require.resolve("conventional-changelog-conventionalcommits");
+
+const conventionalCommitSections = Object.freeze([
+  { section: "Features", type: "feat" },
+  { section: "Features", type: "feature" },
+  { section: "Bug Fixes", type: "fix" },
+  { section: "Performance Improvements", type: "perf" },
+  { section: "Reverts", type: "revert" },
+  { hidden: false, section: "Documentation", type: "docs" },
+  { hidden: false, section: "Refactors", type: "refactor" },
+  { hidden: false, section: "Chores", type: "chore" },
+  { hidden: false, section: "Tests", type: "test" },
+  { hidden: false, section: "Continuous Integration", type: "ci" },
+  { hidden: false, section: "Build System", type: "build" },
+  { hidden: true, section: "Styles", type: "style" },
+]);
+
+const conventionalCommitsPresetConfig = {
+  types: conventionalCommitSections,
+};
+
 module.exports = {
   branches: ["main"],
   plugins: [
-    "@semantic-release/commit-analyzer",
-    "@semantic-release/release-notes-generator",
+    [
+      "@semantic-release/commit-analyzer",
+      {
+        preset: "conventionalcommits",
+        presetConfig: conventionalCommitsPresetConfig,
+      },
+    ],
+    [
+      "@semantic-release/release-notes-generator",
+      {
+        preset: "conventionalcommits",
+        presetConfig: conventionalCommitsPresetConfig,
+      },
+    ],
     "@semantic-release/github",
   ],
 };
