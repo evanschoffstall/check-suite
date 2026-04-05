@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { isRecord } from "@/types/index.ts";
+import { isRecord } from "@/foundation/index.ts";
 
 import {
   inlineTypeScriptConfigSchema,

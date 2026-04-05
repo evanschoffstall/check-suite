@@ -4,7 +4,7 @@ import type {
   ProcessedCheck,
 } from "@/types/index.ts";
 
-import { isRecord } from "@/types/index.ts";
+import { isRecord } from "@/foundation/index.ts";
 
 import { normalizeTone } from "./shared.ts";
 

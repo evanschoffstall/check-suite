@@ -1,5 +1,6 @@
 import type { StepPostProcessResult } from "@/types/index.ts";
 
+import { isRecord } from "@/foundation/index.ts";
 import {
   isOptionalStatus,
   isOptionalString,
@@ -8,7 +9,6 @@ import {
   toPostProcessSection,
   toProcessedCheck,
 } from "@/post-process/normalize/result/index.ts";
-import { isRecord } from "@/types/index.ts";
 
 export function toStepPostProcessResult(
   value: unknown,

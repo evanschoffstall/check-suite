@@ -4,7 +4,7 @@ import type {
   StepConfig,
 } from "@/types/index.ts";
 
-import { isRecord } from "@/types/index.ts";
+import { isRecord } from "@/foundation/index.ts";
 
 export function toInlineTypeScriptConfig(
   config: StepConfig["config"] | StepConfig["postProcess"],
