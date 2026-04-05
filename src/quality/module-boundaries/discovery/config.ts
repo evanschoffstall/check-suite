@@ -99,6 +99,22 @@ export function discoverCodeRoots(
   return { directories: directories.sort(), files: files.sort() };
 }
 
+/**
+ * Discovers the top-level source directories for a given working directory
+ * using the platform's conventional exclusion defaults (build artefacts, test
+ * folders, tool caches, package managers, framework output, etc.).
+ *
+ * The returned `directories` list is suitable as a source-scan target for any
+ * platform step that needs to know which directories contain project code,
+ * without requiring the user to hardcode names like `"src"`.
+ */
+export function discoverDefaultCodeRoots(cwd: string): CodeRoots {
+  return discoverCodeRoots(
+    cwd,
+    normalizeArchitectureConfig({ includeRootFiles: false }),
+  );
+}
+
 /** Returns the normalized analyzer config, filling in generic defaults. */
 export function normalizeArchitectureConfig(
   value: unknown,

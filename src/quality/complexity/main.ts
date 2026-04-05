@@ -8,6 +8,7 @@ import {
   buildLizardAnalysisArgs,
   LIZARD_DEFAULT_THRESHOLDS,
 } from "@/quality/complexity/shared/index.ts";
+import { discoverDefaultCodeRoots } from "@/quality/module-boundaries/discovery/index.ts";
 
 import { parseLizardCsv } from "./csv-parser";
 import { runLizardAnalysis } from "./lizard-analysis";
@@ -24,31 +25,35 @@ export interface LizardCheckResult {
 export interface LizardConfig {
   /** Glob patterns for paths to exclude from analysis. */
   excludedPaths?: readonly string[];
-  /** Source directories and files to analyze. */
-  targets: readonly string[];
+  /**
+   * Source directories and files to analyze.
+   *
+   * When omitted, the platform auto-discovers top-level source directories
+   * from the current working directory using conventional exclusion defaults.
+   */
+  targets?: readonly string[];
   /** Complexity thresholds — any unset field falls back to the platform default. */
   thresholds?: Partial<ComplexityThresholds>;
 }
 
 /** Runs the lizard complexity analysis and returns the normalized result. */
-export function runLizardCheck(config: LizardConfig): LizardCheckResult {
+export function runLizardCheck(
+  config: LizardConfig,
+  cwd: string = process.cwd(),
+): LizardCheckResult {
   const thresholds: ComplexityThresholds = {
     ...LIZARD_DEFAULT_THRESHOLDS,
     ...config.thresholds,
   };
   const excludedPaths = config.excludedPaths ?? [];
-  const analysisArgs = buildLizardAnalysisArgs(config.targets, excludedPaths);
+  const targets = config.targets ?? discoverDefaultCodeRoots(cwd).directories;
+  const analysisArgs = buildLizardAnalysisArgs(targets, excludedPaths);
 
   const lizardCsvOutput = runLizardAnalysis(failWithOutput, analysisArgs);
   const functions = resolveTopLevelFunctionMetrics(
     parseLizardCsv(lizardCsvOutput),
   );
-  const report = buildLizardReport(
-    functions,
-    config.targets,
-    excludedPaths,
-    thresholds,
-  );
+  const report = buildLizardReport(functions, targets, excludedPaths, thresholds);
 
   return {
     exitCode: report.exitCode,

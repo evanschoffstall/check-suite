@@ -57,7 +57,13 @@ export type {
 } from "@/quality/line-metrics/index.ts";
 export {
   analyzeArchitecture,
+  discoverDefaultCodeRoots,
   formatArchitectureViolations,
+  inferAllowedRootFileStems,
+  inferCentralSurfacePathPrefixes,
+  inferDependencyPolicies,
+  inferEntrypointNames,
+  inferExplicitPublicSurfacePaths,
 } from "@/quality/module-boundaries/index.ts";
 export type { ArchitectureAnalyzerConfig } from "@/quality/module-boundaries/index.ts";
 export {

@@ -12,7 +12,33 @@ export const DEFAULT_DEPENDENCY_POLICIES: {
   pathPrefixes: string[];
 }[] = [];
 export const DEFAULT_EXPLICIT_PUBLIC_SURFACE_PATHS: string[] = [];
-export const DEFAULT_IGNORED_DIRECTORY_NAMES: string[] = [];
+
+/**
+ * Conventional directory names that the architecture analyzer ignores by
+ * default.  Covers hidden tool caches, common framework output folders, and
+ * the Node.js package directory so that no project has to enumerate them.
+ */
+export const DEFAULT_IGNORED_DIRECTORY_NAMES: string[] = [
+  ".cache",
+  ".git",
+  ".idea",
+  ".next",
+  ".nuxt",
+  ".output",
+  ".pnpm-store",
+  ".svelte-kit",
+  ".turbo",
+  ".vercel",
+  ".vscode",
+  ".yarn",
+  "build",
+  "coverage",
+  "dist",
+  "node_modules",
+  "out",
+  "tmp",
+];
+
 export const DEFAULT_JUNK_DRAWER_DIRECTORY_NAMES: string[] = [];
 export const DEFAULT_JUNK_DRAWER_FILE_STEMS: string[] = [];
 export const DEFAULT_MAX_DIRECTORY_DEPTH = Number.MAX_SAFE_INTEGER;
@@ -28,6 +54,30 @@ export const DEFAULT_REQUIRE_ACYCLIC_DEPENDENCY_POLICIES = false;
 export const DEFAULT_REQUIRE_COMPLETE_DEPENDENCY_POLICY_COVERAGE = false;
 export const DEFAULT_REQUIRE_TYPE_ONLY_IMPORTS_FOR_TYPE_ONLY_POLICIES = false;
 export const DEFAULT_SHARED_HOME_NAMES: string[] = [];
-export const DEFAULT_VENDOR_MANAGED_DIRECTORY_NAMES: string[] = [];
-export const DEFAULT_TEST_DIRECTORY_NAMES: string[] = [];
+
+/**
+ * Test directory names ignored by the architecture analyzer by default.
+ * Projects with custom test directory names must list them explicitly.
+ */
+export const DEFAULT_TEST_DIRECTORY_NAMES: string[] = [
+  "__fixtures__",
+  "__mocks__",
+  "__tests__",
+  "e2e",
+  "fixtures",
+  "mocks",
+  "test",
+  "tests",
+];
+
+/**
+ * Vendor-managed or auto-generated directory names the architecture analyzer
+ * skips by default.  Code in these directories is not owned by the project.
+ */
+export const DEFAULT_VENDOR_MANAGED_DIRECTORY_NAMES: string[] = [
+  "__generated__",
+  "generated",
+  "vendor",
+];
+
 export const TEST_FILE_REGEX = /\.(?:test|spec)\.(?:[cm]?[jt]sx?)$/u;

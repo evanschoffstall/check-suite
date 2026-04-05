@@ -1,2 +1,2 @@
-export { normalizeArchitectureConfig } from "./config";
+export { discoverDefaultCodeRoots, normalizeArchitectureConfig } from "./config";
 export { discoverArchitectureProject } from "./project.ts";
