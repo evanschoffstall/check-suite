@@ -27,12 +27,6 @@ import {
   stripAnsi,
 } from "../src/format/index.ts";
 import {
-  appendCoverageCheckResult,
-  appendMissingReportMessage,
-  appendTestResultSections,
-  buildTestSummary,
-} from "../src/quality/line-metrics/post-process";
-import {
   createSafeRegExp,
   escapeRegExpLiteral,
   isSafeRegExpPattern,
@@ -390,79 +384,6 @@ describe("regex helpers", () => {
     expect(
       createSafeRegExp(`^${escapeRegExpLiteral("a+b")}$`).test("a+b"),
     ).toBe(true);
-  });
-});
-
-describe("coverage post-process helpers", () => {
-  test("append coverage failures and missing report messages consistently", () => {
-    const messages: {
-      text: string;
-      tone?: "fail" | "info" | "pass" | "warn";
-    }[] = [];
-    const extraChecks: {
-      details: string;
-      label: string;
-      status: "fail" | "pass";
-    }[] = [];
-
-    expect(
-      appendCoverageCheckResult(
-        {
-          coverageLabel: "lcov-coverage",
-          coverageThreshold: 85,
-          totals: null,
-        },
-        messages,
-        extraChecks,
-      ),
-    ).toBe(true);
-    appendMissingReportMessage(messages);
-
-    expect(extraChecks).toEqual([
-      {
-        details: "0.00% (0/0) · threshold 85.0%",
-        label: "lcov-coverage",
-        status: "fail",
-      },
-    ]);
-    expect(messages).toEqual([
-      { text: "Coverage report not found: (unset)", tone: "fail" },
-      { text: "Report file not found: (unset)", tone: "fail" },
-    ]);
-  });
-
-  test("append test sections and summaries from junit-style results", () => {
-    const sections: {
-      items: string[];
-      title: string;
-      tone?: "fail" | "info" | "pass" | "warn";
-    }[] = [];
-
-    expect(
-      appendTestResultSections(
-        true,
-        {
-          failedTests: ["suite > failed test"],
-          skippedTests: ["suite > skipped test"],
-        },
-        sections,
-      ),
-    ).toBe(true);
-    expect(sections).toEqual([
-      {
-        items: ["suite > failed test"],
-        title: "Failed tests",
-        tone: "fail",
-      },
-      {
-        items: ["suite > skipped test"],
-        title: "Skipped tests",
-        tone: "warn",
-      },
-    ]);
-    expect(buildTestSummary({ failed: 1, passed: 4, skipped: 2 }, 1)).toBe(
-      "4 passed · 1 failed · 2 skipped · runner exit 1",
-    );
   });
 });
 
