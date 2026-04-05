@@ -1,5 +1,5 @@
 import { getConfiguredStepKeys, parseCliArguments } from "@/cli/args/index.ts";
-import { SUITE_TIMEOUT_MS } from "@/config/index.ts";
+import { SUITE_TIMEOUT_MS } from "@/runtime-config/index.ts";
 import { runStepWithinDeadline } from "@/step/index.ts";
 import { runCheckSuite } from "@/suite-processing/index.ts";
 

@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "type": "module",
   "main": "src/check.ts",
+  "exports": {
+    ".": "./src/check.ts",
+    "./cli": "./src/cli/index.ts"
+  },
   "bin": {
     "check-suite": "bin/check-suite"
   },

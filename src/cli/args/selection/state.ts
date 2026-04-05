@@ -1,6 +1,6 @@
 import type { StepConfig } from "@/types/index.ts";
 
-import { CFG } from "@/config/index.ts";
+import { CFG } from "@/runtime-config/index.ts";
 
 const SUITE_EXCLUSION_PREFIX = "---no=";
 
