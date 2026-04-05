@@ -1,14 +1,14 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import {
-  appendCoverageCheckResult,
-  appendMissingReportMessage,
-  appendTestResultSections,
-  buildTestSummary,
-} from "../src/coverage/post-process.ts";
 import {
   ANSI,
   divider,
@@ -26,10 +26,17 @@ import {
   stripAnsi,
 } from "../src/format/index.ts";
 import {
+  appendCoverageCheckResult,
+  appendMissingReportMessage,
+  appendTestResultSections,
+  buildTestSummary,
+} from "../src/quality/line-metrics/post-process";
+import {
   createSafeRegExp,
   escapeRegExpLiteral,
   isSafeRegExpPattern,
 } from "../src/regex.ts";
+import { runGitFileScan } from "../src/step/git-file-scan.ts";
 import {
   appendTimedOutDrainMessage,
   appendTimedOutMessage,
@@ -41,6 +48,28 @@ import {
   resolveTimeoutMs,
   withStepTimeout,
 } from "../src/timeout/index.ts";
+
+function initializeGitRepo(repoDir: string): void {
+  const result = Bun.spawnSync(["git", "init"], {
+    cwd: repoDir,
+    stderr: "pipe",
+    stdout: "pipe",
+  });
+
+  if (result.exitCode !== 0) {
+    throw new Error(result.stderr.toString("utf8") || "git init failed");
+  }
+}
+
+function writeExecutableScript(
+  binDir: string,
+  name: string,
+  source: string,
+): void {
+  const filePath = join(binDir, name);
+  writeFileSync(filePath, source);
+  chmodSync(filePath, 0o755);
+}
 
 describe("check CLI", () => {
   test("runs via the sole declared binary entrypoint", async () => {
@@ -345,5 +374,149 @@ describe("timeout helpers", () => {
       output: "demo exceeded the 1ms timeout\n",
       timedOut: true,
     });
+  });
+});
+
+describe("git file scan runtime", () => {
+  test("falls back to the non-git command invocation outside git repositories", () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "check-suite-file-scan-"));
+
+    try {
+      const result = runGitFileScan(tempDir, {
+        command: "node",
+        fallbackArgs: ["-e", "process.stdout.write('fallback-ok\\n')"],
+        fileArgs: ["-e", "process.stdout.write('should-not-run\\n')"],
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.output).toBe("fallback-ok\n");
+      expect(result.timedOut).toBe(false);
+      expect(result.durationMs).toBeGreaterThanOrEqual(0);
+    } finally {
+      rmSync(tempDir, { force: true, recursive: true });
+    }
+  });
+
+  test("returns the default empty-file message when git resolves no visible files", () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "check-suite-file-scan-"));
+
+    try {
+      initializeGitRepo(tempDir);
+
+      const result = runGitFileScan(tempDir, {
+        command: "node",
+        fileArgs: ["-e", "process.stdout.write('unused\\n')"],
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.output).toBe("No tracked or non-ignored files matched\n");
+    } finally {
+      rmSync(tempDir, { force: true, recursive: true });
+    }
+  });
+
+  test("batches resolved git-visible files and joins batch output", () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "check-suite-file-scan-"));
+    const binDir = join(tempDir, "bin");
+    mkdirSync(binDir);
+    writeExecutableScript(
+      binDir,
+      "scanner",
+      [
+        "#!/usr/bin/env node",
+        "process.stdout.write(process.argv.slice(2).join(',') + '\\n');",
+        "",
+      ].join("\n"),
+    );
+
+    try {
+      initializeGitRepo(tempDir);
+      writeFileSync(join(tempDir, "alpha.ts"), "export const alpha = 1;\n");
+      writeFileSync(join(tempDir, "beta.ts"), "export const beta = 2;\n");
+      writeFileSync(join(tempDir, "gamma.ts"), "export const gamma = 3;\n");
+
+      const result = runGitFileScan(tempDir, {
+        command: join(binDir, "scanner"),
+        fileArgs: ["--scan"],
+        maxArgLength: 16,
+      });
+
+      expect(result.exitCode).toBe(0);
+      expect(result.output).toContain("--scan,alpha.ts");
+      expect(result.output).toContain("--scan,beta.ts");
+      expect(result.output).toContain("--scan,gamma.ts");
+    } finally {
+      rmSync(tempDir, { force: true, recursive: true });
+    }
+  });
+
+  test("returns exit code 1 when any batch reports a soft failure", () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "check-suite-file-scan-"));
+    const binDir = join(tempDir, "bin");
+    mkdirSync(binDir);
+    writeExecutableScript(
+      binDir,
+      "scanner",
+      [
+        "#!/usr/bin/env node",
+        "const args = process.argv.slice(2);",
+        "process.stdout.write(args.join(',') + '\\n');",
+        "process.exit(args.includes('beta.ts') ? 1 : 0);",
+        "",
+      ].join("\n"),
+    );
+
+    try {
+      initializeGitRepo(tempDir);
+      writeFileSync(join(tempDir, "alpha.ts"), "export const alpha = 1;\n");
+      writeFileSync(join(tempDir, "beta.ts"), "export const beta = 2;\n");
+
+      const result = runGitFileScan(tempDir, {
+        command: join(binDir, "scanner"),
+        fileArgs: ["--scan"],
+        maxArgLength: 16,
+      });
+
+      expect(result.exitCode).toBe(1);
+      expect(result.output).toContain("--scan,alpha.ts");
+      expect(result.output).toContain("--scan,beta.ts");
+    } finally {
+      rmSync(tempDir, { force: true, recursive: true });
+    }
+  });
+
+  test("stops immediately on non-soft batch failures", () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "check-suite-file-scan-"));
+    const binDir = join(tempDir, "bin");
+    mkdirSync(binDir);
+    writeExecutableScript(
+      binDir,
+      "scanner",
+      [
+        "#!/usr/bin/env node",
+        "const args = process.argv.slice(2);",
+        "process.stdout.write(args.join(',') + '\\n');",
+        "process.exit(args.includes('beta.ts') ? 2 : 0);",
+        "",
+      ].join("\n"),
+    );
+
+    try {
+      initializeGitRepo(tempDir);
+      writeFileSync(join(tempDir, "alpha.ts"), "export const alpha = 1;\n");
+      writeFileSync(join(tempDir, "beta.ts"), "export const beta = 2;\n");
+
+      const result = runGitFileScan(tempDir, {
+        command: join(binDir, "scanner"),
+        fileArgs: ["--scan"],
+        maxArgLength: 16,
+      });
+
+      expect(result.exitCode).toBe(2);
+      expect(result.output).toContain("--scan,alpha.ts");
+      expect(result.output).toContain("--scan,beta.ts");
+    } finally {
+      rmSync(tempDir, { force: true, recursive: true });
+    }
   });
 });

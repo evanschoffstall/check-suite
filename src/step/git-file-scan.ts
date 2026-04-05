@@ -1,10 +1,4 @@
-import type {
-  Command,
-  InlineTypeScriptContext,
-  StepConfig,
-} from "@/types/index.ts";
-
-import { defineInlineStep } from "./build.ts";
+import type { Command } from "@/types/index.ts";
 
 const MAX_DEFAULT_ARG_LENGTH = 100_000;
 
@@ -18,11 +12,13 @@ const GIT_LS_FILES_ARGS = [
   ".",
 ] as const;
 
-/** Options for a step that runs a command against every git-visible file in the workspace. */
+/**
+ * Runtime options for executing a command against every git-visible file in a
+ * workspace without carrying any step-definition concerns.
+ */
 export interface GitFileScanOptions {
   /** Command to run, e.g. `"bunx"`. */
   command: string;
-  failMsg?: string;
   /**
    * Args used when the working directory is not inside a git repository.
    * Defaults to `fileArgs` when omitted.
@@ -30,12 +26,10 @@ export interface GitFileScanOptions {
   fallbackArgs?: readonly string[];
   /** Args prepended before each file-path batch, e.g. `["secretlint", "--no-glob"]`. */
   fileArgs: readonly string[];
-  key: string;
-  label: string;
   /** Maximum combined argument length before splitting into a new batch. Defaults to 100 000. */
   maxArgLength?: number;
-  passMsg?: string;
-  summary?: StepConfig["summary"];
+  /** Message written when the git-visible file set is empty. */
+  noFilesMessage?: string;
 }
 
 type ResolvedGitFiles =
@@ -44,7 +38,41 @@ type ResolvedGitFiles =
   | { kind: "resolved"; paths: string[] };
 
 /**
- * Creates a {@link StepConfig} that discovers every git-tracked and untracked
+ * Runs a command against the git-visible files in the target workspace and
+ * falls back to a single non-git invocation when the workspace is not a git
+ * repository.
+ */
+export function runGitFileScan(
+  cwd: string,
+  options: GitFileScanOptions,
+): Command {
+  const startedAt = Date.now();
+  const gitFiles = resolveGitVisibleFiles(cwd);
+
+  if (gitFiles.kind === "failure") {
+    return buildTimedCommand(gitFiles.exitCode, gitFiles.output, startedAt);
+  }
+
+  if (gitFiles.kind === "fallback") {
+    const result = spawnBuffered(cwd, options.command, [
+      ...(options.fallbackArgs ?? options.fileArgs),
+    ]);
+    return buildTimedCommand(result.exitCode, result.output, startedAt);
+  }
+
+  if (gitFiles.paths.length === 0) {
+    return buildTimedCommand(
+      0,
+      options.noFilesMessage ?? "No tracked or non-ignored files matched\n",
+      startedAt,
+    );
+  }
+
+  return runFileBatches(cwd, options, gitFiles.paths, startedAt);
+}
+
+/**
+ * Discovers every git-tracked and untracked
  * non-ignored file in the workspace and runs
  * `command [fileArgs...] [batch...]` in chunks that stay within the OS argument
  * length limit.
@@ -54,26 +82,13 @@ type ResolvedGitFiles =
  *
  * @example
  * ```ts
- * createGitFileScanStep({
- *   key: "secretlint",
- *   label: "secretlint",
+ * runGitFileScan(process.cwd(), {
  *   command: "bunx",
  *   fileArgs: ["secretlint", "--no-glob", "--secretlintignore", ".secretlintignore"],
  *   fallbackArgs: ["secretlint", "**\/*", "--secretlintignore", ".secretlintignore"],
  * });
  * ```
  */
-export function createGitFileScanStep(options: GitFileScanOptions): StepConfig {
-  return defineInlineStep({
-    failMsg: options.failMsg,
-    key: options.key,
-    label: options.label,
-    passMsg: options.passMsg,
-    source: ({ cwd }: InlineTypeScriptContext) => runGitFileScan(cwd, options),
-    summary: options.summary,
-  });
-}
-
 function buildTimedCommand(
   exitCode: number,
   output: string,
@@ -174,32 +189,6 @@ function runFileBatches(
   }
 
   return buildTimedCommand(finalExitCode, joinOutputs(outputParts), startedAt);
-}
-
-function runGitFileScan(cwd: string, options: GitFileScanOptions): Command {
-  const startedAt = Date.now();
-  const gitFiles = resolveGitVisibleFiles(cwd);
-
-  if (gitFiles.kind === "failure") {
-    return buildTimedCommand(gitFiles.exitCode, gitFiles.output, startedAt);
-  }
-
-  if (gitFiles.kind === "fallback") {
-    const result = spawnBuffered(cwd, options.command, [
-      ...(options.fallbackArgs ?? options.fileArgs),
-    ]);
-    return buildTimedCommand(result.exitCode, result.output, startedAt);
-  }
-
-  if (gitFiles.paths.length === 0) {
-    return buildTimedCommand(
-      0,
-      `No tracked or non-ignored files matched for ${options.label}\n`,
-      startedAt,
-    );
-  }
-
-  return runFileBatches(cwd, options, gitFiles.paths, startedAt);
 }
 
 function spawnBuffered(
