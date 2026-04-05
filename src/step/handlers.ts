@@ -1,8 +1,9 @@
 import type { Command, StepConfig } from "@/types/index.ts";
 
 import { runInlineTypeScriptStep } from "@/inline-ts/index.ts";
-import { runLint } from "@/lint.ts";
 import { withStepTimeout } from "@/timeout/index.ts";
+
+import { runLint } from "./lint.ts";
 
 type StepRunner = (
   step: StepConfig,
