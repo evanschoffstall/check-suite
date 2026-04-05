@@ -28,9 +28,8 @@ import {
   parseCsvComplexityRows,
   runComplexityCheck,
 } from "check-suite/quality";
+import { createSafeRegExp, isSafeRegExpPattern } from "check-suite/regex";
 import { defineCommandStep, defineInlineStep, defineLintStep, runGitFileScan } from "check-suite/step";
-
-import { createSafeRegExp, isSafeRegExpPattern } from "./src/regex.ts";
 
 type PatternSummary = Extract<Summary, { type: "pattern" }>;
 
