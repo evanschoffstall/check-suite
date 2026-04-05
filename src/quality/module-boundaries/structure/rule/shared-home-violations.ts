@@ -7,14 +7,13 @@ import { normalizeParentPath } from "./helpers";
 
 /** Flags repositories that split one shared-home concept across local and central homes. */
 export function buildMixedTypesViolations(
+  sharedHomeNames: string[],
   parentPath: string,
   siblingDirectories: Set<string>,
   files: string[],
   imports: ArchitectureProject["imports"],
 ): ArchitectureViolation[] {
-  const knownSharedHomeNames = ["types", "contracts", "utils"];
-
-  return knownSharedHomeNames.flatMap((sharedHomeName) => {
+  return sharedHomeNames.flatMap((sharedHomeName) => {
     if (!siblingDirectories.has(sharedHomeName)) return [];
 
     const localSharedOwners = collectExternallyConsumedSharedOwners(
