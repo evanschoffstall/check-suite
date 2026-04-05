@@ -1,3 +1,8 @@
+export {
+  buildConsoleOnlyJunitResults,
+  parseBunConsoleCoverage,
+} from "./console-results";
+export type { ConsoleCoverageTotals } from "./console-results";
 export { parseJunitResults } from "./junit-results";
 export { collectLineCoverage } from "./lcov";
 export {
@@ -12,4 +17,5 @@ export {
   normalizeCoverageFilePath,
   shouldIncludeCoverageFile,
 } from "./state";
+export type { CoverageState } from "./state";
 export type { JunitResults } from "./types";

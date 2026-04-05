@@ -84,3 +84,6 @@ function makePostProcessFailure(
     summary: `${label} post-process ${message}`,
   };
 }
+
+export { buildTestCoveragePostProcess } from "./test-coverage.ts";
+export type { TestCoveragePostProcessOptions } from "./test-coverage.ts";
