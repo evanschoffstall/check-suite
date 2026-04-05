@@ -6,18 +6,37 @@ import type {
 } from "@/quality/module-boundaries/foundation/index.ts";
 
 import {
+  isRecord,
+  normalizeBooleanConfig,
+  normalizeDependencyPolicies,
+  normalizeIntegerConfig,
+  normalizeLayerGroups,
+  normalizeStringListConfig,
+} from "@/quality/module-boundaries/discovery/normalization.ts";
+import {
+  DEFAULT_ALLOW_PUBLIC_SURFACE_RE_EXPORT_CHAINS,
+  DEFAULT_ALLOWED_IMPURE_PUBLIC_SURFACE_PATHS,
+  DEFAULT_ALLOWED_ROOT_FILE_STEMS,
+  DEFAULT_CENTRAL_SURFACE_PATH_PREFIXES,
   DEFAULT_ENTRYPOINT_NAMES,
+  DEFAULT_EXPLICIT_PUBLIC_SURFACE_PATHS,
   DEFAULT_IGNORED_DIRECTORY_NAMES,
   DEFAULT_JUNK_DRAWER_DIRECTORY_NAMES,
   DEFAULT_JUNK_DRAWER_FILE_STEMS,
-  DEFAULT_LAYER_GROUPS,
+  DEFAULT_MAX_CENTRAL_SURFACE_EXPORTS,
+  DEFAULT_MAX_DIRECTORY_DEPTH,
   DEFAULT_MAX_ENTRYPOINT_RE_EXPORTS,
   DEFAULT_MAX_INTERNAL_IMPORTS,
+  DEFAULT_MAX_POLICY_FAN_OUT,
   DEFAULT_MAX_SIBLING_IMPORTS,
+  DEFAULT_MAX_WILDCARD_EXPORTS_PER_PUBLIC_SURFACE,
   DEFAULT_MIN_REPEATED_DEEP_IMPORTS,
+  DEFAULT_REQUIRE_ACYCLIC_DEPENDENCY_POLICIES,
+  DEFAULT_REQUIRE_COMPLETE_DEPENDENCY_POLICY_COVERAGE,
+  DEFAULT_REQUIRE_TYPE_ONLY_IMPORTS_FOR_TYPE_ONLY_POLICIES,
   DEFAULT_SHARED_HOME_NAMES,
+  DEFAULT_TEST_DIRECTORY_NAMES,
   DEFAULT_VENDOR_MANAGED_DIRECTORY_NAMES,
-  TEST_DIRECTORY_NAMES,
 } from "@/quality/module-boundaries/foundation/index.ts";
 import {
   directoryContainsCode,
@@ -43,13 +62,15 @@ export function collectRootEntry(
 
     if (
       isIgnoredDirectory(entry.name, config) ||
-      TEST_DIRECTORY_NAMES.has(entry.name)
+      config.testDirectoryNames.includes(entry.name)
     ) {
       return;
     }
+
     if (directoryContainsCode(join(cwd, entry.name), config)) {
       roots.directories.push(entry.name);
     }
+
     return;
   }
 
@@ -92,25 +113,50 @@ export function normalizeArchitectureConfig(
   };
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
 function normalizeDirectoryNameConfig(
   record: Record<string, unknown>,
 ): Pick<
   Required<ArchitectureAnalyzerConfig>,
+  | "allowedImpurePublicSurfacePaths"
+  | "allowedRootFileStems"
+  | "allowPublicSurfaceReExportChains"
+  | "centralSurfacePathPrefixes"
+  | "dependencyPolicies"
   | "entrypointNames"
+  | "explicitPublicSurfacePaths"
+  | "ignoredDirectoryNames"
+  | "junkDrawerDirectoryNames"
+  | "junkDrawerFileStems"
+  | "requireAcyclicDependencyPolicies"
+  | "requireCompleteDependencyPolicyCoverage"
+  | "requireTypeOnlyImportsForTypeOnlyPolicies"
+  | "sharedHomeNames"
+  | "testDirectoryNames"
+  | "vendorManagedDirectoryNames"
+> {
+  return {
+    ...normalizePublicSurfaceConfig(record),
+    ...normalizeDirectoryNamingConfig(record),
+    ...normalizePolicyConfig(record),
+  };
+}
+
+function normalizeDirectoryNamingConfig(
+  record: Record<string, unknown>,
+): Pick<
+  Required<ArchitectureAnalyzerConfig>,
+  | "allowedRootFileStems"
   | "ignoredDirectoryNames"
   | "junkDrawerDirectoryNames"
   | "junkDrawerFileStems"
   | "sharedHomeNames"
+  | "testDirectoryNames"
   | "vendorManagedDirectoryNames"
 > {
   return {
-    entrypointNames: normalizeStringListConfig(
-      record.entrypointNames,
-      DEFAULT_ENTRYPOINT_NAMES,
+    allowedRootFileStems: normalizeStringListConfig(
+      record.allowedRootFileStems,
+      DEFAULT_ALLOWED_ROOT_FILE_STEMS,
     ),
     ignoredDirectoryNames: normalizeStringListConfig(
       record.ignoredDirectoryNames,
@@ -128,6 +174,10 @@ function normalizeDirectoryNameConfig(
       record.sharedHomeNames,
       DEFAULT_SHARED_HOME_NAMES,
     ),
+    testDirectoryNames: normalizeStringListConfig(
+      record.testDirectoryNames,
+      DEFAULT_TEST_DIRECTORY_NAMES,
+    ),
     vendorManagedDirectoryNames: normalizeStringListConfig(
       record.vendorManagedDirectoryNames,
       DEFAULT_VENDOR_MANAGED_DIRECTORY_NAMES,
@@ -135,29 +185,72 @@ function normalizeDirectoryNameConfig(
   };
 }
 
-function normalizeIntegerConfig(
-  value: unknown,
-  minimum: number,
-  fallback: number,
-): number {
-  return toIntegerAtLeast(value, minimum) ?? fallback;
+function normalizePolicyConfig(
+  record: Record<string, unknown>,
+): Pick<
+  Required<ArchitectureAnalyzerConfig>,
+  | "dependencyPolicies"
+  | "entrypointNames"
+  | "requireAcyclicDependencyPolicies"
+  | "requireCompleteDependencyPolicyCoverage"
+  | "requireTypeOnlyImportsForTypeOnlyPolicies"
+> {
+  return {
+    dependencyPolicies: normalizeDependencyPolicies(record.dependencyPolicies),
+    entrypointNames: normalizeStringListConfig(
+      record.entrypointNames,
+      DEFAULT_ENTRYPOINT_NAMES,
+    ),
+    requireAcyclicDependencyPolicies: normalizeBooleanConfig(
+      record.requireAcyclicDependencyPolicies,
+      DEFAULT_REQUIRE_ACYCLIC_DEPENDENCY_POLICIES,
+    ),
+    requireCompleteDependencyPolicyCoverage: normalizeBooleanConfig(
+      record.requireCompleteDependencyPolicyCoverage,
+      DEFAULT_REQUIRE_COMPLETE_DEPENDENCY_POLICY_COVERAGE,
+    ),
+    requireTypeOnlyImportsForTypeOnlyPolicies: normalizeBooleanConfig(
+      record.requireTypeOnlyImportsForTypeOnlyPolicies,
+      DEFAULT_REQUIRE_TYPE_ONLY_IMPORTS_FOR_TYPE_ONLY_POLICIES,
+    ),
+  };
 }
 
-function normalizeLayerGroups(
-  value: unknown,
-): Required<ArchitectureAnalyzerConfig>["layerGroups"] {
-  return (
-    toLayerPatternGroups(value) ??
-    DEFAULT_LAYER_GROUPS.map((group) => ({
-      name: group.name,
-      patterns: [...group.patterns],
-    }))
-  );
+function normalizePublicSurfaceConfig(
+  record: Record<string, unknown>,
+): Pick<
+  Required<ArchitectureAnalyzerConfig>,
+  | "allowedImpurePublicSurfacePaths"
+  | "allowPublicSurfaceReExportChains"
+  | "centralSurfacePathPrefixes"
+  | "explicitPublicSurfacePaths"
+> {
+  return {
+    allowedImpurePublicSurfacePaths: normalizeStringListConfig(
+      record.allowedImpurePublicSurfacePaths,
+      DEFAULT_ALLOWED_IMPURE_PUBLIC_SURFACE_PATHS,
+    ),
+    allowPublicSurfaceReExportChains: normalizeBooleanConfig(
+      record.allowPublicSurfaceReExportChains,
+      DEFAULT_ALLOW_PUBLIC_SURFACE_RE_EXPORT_CHAINS,
+    ),
+    centralSurfacePathPrefixes: normalizeStringListConfig(
+      record.centralSurfacePathPrefixes,
+      DEFAULT_CENTRAL_SURFACE_PATH_PREFIXES,
+    ),
+    explicitPublicSurfacePaths: normalizeStringListConfig(
+      record.explicitPublicSurfacePaths,
+      DEFAULT_EXPLICIT_PUBLIC_SURFACE_PATHS,
+    ),
+  };
 }
 
 function normalizeRootScopeConfig(
   record: Record<string, unknown>,
-): Pick<Required<ArchitectureAnalyzerConfig>, "includeRootFiles" | "rootDirectories"> {
+): Pick<
+  Required<ArchitectureAnalyzerConfig>,
+  "includeRootFiles" | "rootDirectories"
+> {
   return {
     includeRootFiles:
       typeof record.includeRootFiles === "boolean"
@@ -167,23 +260,30 @@ function normalizeRootScopeConfig(
   };
 }
 
-function normalizeStringListConfig(
-  value: unknown,
-  fallback: readonly string[],
-): string[] {
-  return toStringList(value) ?? [...fallback];
-}
-
 function normalizeThresholdConfig(
   record: Record<string, unknown>,
 ): Pick<
   Required<ArchitectureAnalyzerConfig>,
+  | "maxCentralSurfaceExports"
+  | "maxDirectoryDepth"
   | "maxEntrypointReExports"
   | "maxInternalImportsPerFile"
+  | "maxPolicyFanOut"
   | "maxSiblingImports"
+  | "maxWildcardExportsPerPublicSurface"
   | "minRepeatedDeepImports"
 > {
   return {
+    maxCentralSurfaceExports: normalizeIntegerConfig(
+      record.maxCentralSurfaceExports,
+      1,
+      DEFAULT_MAX_CENTRAL_SURFACE_EXPORTS,
+    ),
+    maxDirectoryDepth: normalizeIntegerConfig(
+      record.maxDirectoryDepth,
+      1,
+      DEFAULT_MAX_DIRECTORY_DEPTH,
+    ),
     maxEntrypointReExports: normalizeIntegerConfig(
       record.maxEntrypointReExports,
       1,
@@ -194,10 +294,20 @@ function normalizeThresholdConfig(
       1,
       DEFAULT_MAX_INTERNAL_IMPORTS,
     ),
+    maxPolicyFanOut: normalizeIntegerConfig(
+      record.maxPolicyFanOut,
+      1,
+      DEFAULT_MAX_POLICY_FAN_OUT,
+    ),
     maxSiblingImports: normalizeIntegerConfig(
       record.maxSiblingImports,
       1,
       DEFAULT_MAX_SIBLING_IMPORTS,
+    ),
+    maxWildcardExportsPerPublicSurface: normalizeIntegerConfig(
+      record.maxWildcardExportsPerPublicSurface,
+      0,
+      DEFAULT_MAX_WILDCARD_EXPORTS_PER_PUBLIC_SURFACE,
     ),
     minRepeatedDeepImports: normalizeIntegerConfig(
       record.minRepeatedDeepImports,
@@ -205,51 +315,4 @@ function normalizeThresholdConfig(
       DEFAULT_MIN_REPEATED_DEEP_IMPORTS,
     ),
   };
-}
-
-function toIntegerAtLeast(value: unknown, minimum: number): null | number {
-  return typeof value === "number" &&
-    Number.isInteger(value) &&
-    value >= minimum
-    ? value
-    : null;
-}
-
-function toLayerPatternGroups(
-  value: unknown,
-): null | { name: string; patterns: string[] }[] {
-  if (!Array.isArray(value)) {
-    return null;
-  }
-
-  const groups = value
-    .map((entry) => {
-      if (!isRecord(entry)) {
-        return null;
-      }
-
-      const name = entry.name;
-      const patterns = toStringList(entry.patterns);
-
-      return typeof name === "string" && name.length > 0 && patterns !== null
-        ? { name, patterns }
-        : null;
-    })
-    .filter(
-      (
-        entry,
-      ): entry is {
-        name: string;
-        patterns: string[];
-      } => entry !== null,
-    );
-
-  return groups.length === value.length ? groups : null;
-}
-
-function toStringList(value: unknown): null | string[] {
-  return Array.isArray(value) &&
-    value.every((entry) => typeof entry === "string")
-    ? value
-    : null;
 }

@@ -6,20 +6,49 @@ export interface AliasMapping {
 
 /** Configurable thresholds and discovery knobs for the architecture analyzer. */
 export interface ArchitectureAnalyzerConfig {
+  allowedImpurePublicSurfacePaths?: string[];
+  allowedRootFileStems?: string[];
+  allowPublicSurfaceReExportChains?: boolean;
+  centralSurfacePathPrefixes?: string[];
+  dependencyPolicies?: ArchitectureDependencyPolicy[];
   entrypointNames?: string[];
+  explicitPublicSurfacePaths?: string[];
   ignoredDirectoryNames?: string[];
   includeRootFiles?: boolean;
   junkDrawerDirectoryNames?: string[];
   junkDrawerFileStems?: string[];
   layerGroups?: ArchitectureLayerGroup[];
+  maxCentralSurfaceExports?: number;
+  maxDirectoryDepth?: number;
   maxEntrypointReExports?: number;
   maxInternalImportsPerFile?: number;
+  maxPolicyFanOut?: number;
   maxSiblingImports?: number;
+  maxWildcardExportsPerPublicSurface?: number;
   minRepeatedDeepImports?: number;
+  requireAcyclicDependencyPolicies?: boolean;
+  requireCompleteDependencyPolicyCoverage?: boolean;
+  requireTypeOnlyImportsForTypeOnlyPolicies?: boolean;
   rootDirectories?: string[];
   sharedHomeNames?: string[];
+  testDirectoryNames?: string[];
   vendorManagedDirectoryNames?: string[];
 }
+
+/** A repository-specific dependency policy for an owned architectural surface. */
+export interface ArchitectureDependencyPolicy {
+  allowedDependents?: string[];
+  allowedRuntimeImporters?: string[];
+  isTypeOnly?: boolean;
+  mayDependOn: string[];
+  name: string;
+  pathPrefixes: string[];
+  role?: ArchitectureDependencyPolicyRole;
+  surfaceTier?: ArchitectureSurfaceTier;
+}
+
+/** Generic owner role used for architectural budget rules. */
+export type ArchitectureDependencyPolicyRole = "orchestration" | "standard";
 
 /** A normalized layer family used for generic dependency-direction checks. */
 export interface ArchitectureLayerGroup {
@@ -39,6 +68,12 @@ export interface ArchitectureProject {
   imports: ImportRecord[];
   sourceFacts: SourceFileFacts[];
 }
+
+/** Stability tier for exported architectural surfaces. */
+export type ArchitectureSurfaceTier =
+  | "internal-public"
+  | "private-runtime"
+  | "public";
 
 /** A concrete architecture violation emitted by the analyzer. */
 export interface ArchitectureViolation {
@@ -68,6 +103,9 @@ export interface DirectoryFacts {
 
 /** Resolved import metadata for a single source file import edge. */
 export interface ImportRecord {
+  isReExport: boolean;
+  isSideEffectOnly: boolean;
+  isTypeOnly: boolean;
   resolvedPath: null | string;
   sourcePath: string;
   specifier: string;
@@ -76,9 +114,21 @@ export interface ImportRecord {
 /** AST-derived source facts used by entrypoint and cohesion rules. */
 export interface SourceFileFacts {
   directoryPath: string;
+  exportedSymbolCount: number;
   exportModuleSpecifiers: string[];
   isEntrypoint: boolean;
   path: string;
+  reExports: SourceFileReExport[];
+  runtimeOperationCount: number;
   stem: string;
   topLevelDeclarationCount: number;
+  topLevelExecutableStatementCount: number;
+  wildcardExportCount: number;
+}
+
+/** Re-export metadata collected from a source file's export declarations. */
+export interface SourceFileReExport {
+  isWildcard: boolean;
+  resolvedPath: null | string;
+  specifier: string;
 }
