@@ -58,6 +58,8 @@ export type InlineTypeScriptSource<TContext, TResult> =
 
 export interface LintConfig {
   args: string[];
+  concurrencyArgs?: string[];
+  concurrencyEnvVar?: string;
   globExtensions: string[];
   maxFiles: number;
   skipDirs: string[];
