@@ -1,6 +1,9 @@
 import type { ArchitectureProject } from "@/quality/module-boundaries/foundation/index.ts";
 
-import { getCodeStem } from "@/quality/module-boundaries/foundation/index.ts";
+import {
+  getCodeStem,
+  isArchitectureEntrypoint,
+} from "@/quality/module-boundaries/foundation/index.ts";
 
 import { isSameDirectory } from "./paths";
 
@@ -44,7 +47,8 @@ export function collectSiblingImports(
     if (
       !entry.resolvedPath ||
       !isSameDirectory(entry.sourcePath, entry.resolvedPath) ||
-      project.config.entrypointNames.includes(
+      isArchitectureEntrypoint(
+        project.config,
         getCodeStem(entry.sourcePath.split("/").pop() ?? entry.sourcePath),
       )
     ) {

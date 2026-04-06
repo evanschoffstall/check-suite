@@ -14,6 +14,7 @@ import {
   buildFlattenedFeatureViolations,
   buildJunkDrawerViolations,
   buildMixedTypesViolations,
+  buildMultipleEntrypointViolations,
   buildPeerBoundaryConsistencyViolations,
   buildPolicyFanOutViolations,
   buildPublicSurfacePurityViolations,
@@ -54,16 +55,7 @@ export function analyzeStructureRules(
 function buildBoundaryViolations(
   project: ArchitectureProject,
 ): ArchitectureViolation[] {
-  return project.boundaries.flatMap((boundary) =>
-    boundary.entrypointPaths.length > 1
-      ? [
-          {
-            code: "multiple-entrypoints",
-            message: `${boundary.path} exposes multiple public entrypoints (${boundary.entrypointPaths.join(", ")}); keep one intentional surface per boundary`,
-          },
-        ]
-      : [],
-  );
+  return buildMultipleEntrypointViolations(project);
 }
 
 function buildCoreStructureViolations(

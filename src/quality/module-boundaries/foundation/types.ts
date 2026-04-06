@@ -12,6 +12,7 @@ export interface ArchitectureAnalyzerConfig {
   centralSurfacePathPrefixes?: string[];
   dependencyPolicies?: ArchitectureDependencyPolicy[];
   entrypointNames?: string[];
+  entrypointRules?: ArchitectureEntrypointRule[];
   explicitPublicSurfacePaths?: string[];
   ignoredDirectoryNames?: string[];
   includeRootFiles?: boolean;
@@ -49,6 +50,13 @@ export interface ArchitectureDependencyPolicy {
 
 /** Generic owner role used for architectural budget rules. */
 export type ArchitectureDependencyPolicyRole = "orchestration" | "standard";
+
+/** Generic semantics for one configured architectural entrypoint stem. */
+export interface ArchitectureEntrypointRule {
+  allowSiblingEntrypoints?: boolean;
+  allowTopLevelStatements?: boolean;
+  name: string;
+}
 
 /** A normalized layer family used for generic dependency-direction checks. */
 export interface ArchitectureLayerGroup {

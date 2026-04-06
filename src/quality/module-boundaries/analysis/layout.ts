@@ -9,6 +9,7 @@ import type {
 
 import {
   getCodeStem,
+  isArchitectureEntrypoint,
   normalizePath,
 } from "@/quality/module-boundaries/foundation/index.ts";
 import {
@@ -66,7 +67,8 @@ export function collectDirectoryFacts(
           )
           .sort((left, right) => left.localeCompare(right));
         const entrypointPaths = codeFilePaths.filter((filePath) =>
-          config.entrypointNames.includes(
+          isArchitectureEntrypoint(
+            config,
             getCodeStem(filePath.split("/").pop() ?? filePath),
           ),
         );
@@ -120,9 +122,7 @@ export function discoverBoundaryDirectories(
           (entry) => entry.isFile() && isIncludedCodeFile(entry.name),
         );
         const entrypointPaths = codeFiles
-          .filter((entry) =>
-            config.entrypointNames.includes(getCodeStem(entry.name)),
-          )
+          .filter((entry) => isArchitectureEntrypoint(config, getCodeStem(entry.name)))
           .map((entry) =>
             normalizePath(`${relativeDirectoryPath}/${entry.name}`),
           );
@@ -137,7 +137,7 @@ export function discoverBoundaryDirectories(
             ),
         );
         const hasLocalImplementation = codeFiles.some(
-          (entry) => !config.entrypointNames.includes(getCodeStem(entry.name)),
+          (entry) => !isArchitectureEntrypoint(config, getCodeStem(entry.name)),
         );
 
         if (

@@ -1,6 +1,7 @@
 export {
   buildBroadBarrelViolations,
   buildDirectoryFactViolations,
+  buildMultipleEntrypointViolations,
   buildPeerBoundaryConsistencyViolations,
 } from "./boundary-violations";
 export {

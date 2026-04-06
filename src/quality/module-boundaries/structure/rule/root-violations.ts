@@ -7,6 +7,7 @@ import type {
 import {
   getCodeStem,
   getLastPathSegment,
+  isArchitectureEntrypoint,
 } from "@/quality/module-boundaries/foundation/index.ts";
 
 import { isCodeRootDirectory, isDirectChildOfCodeRoot } from "./helpers";
@@ -42,7 +43,7 @@ export function buildRootFileOwnershipViolations(
 
     const stem = getCodeStem(getLastPathSegment(filePath));
     if (
-      project.config.entrypointNames.includes(stem) ||
+      isArchitectureEntrypoint(project.config, stem) ||
       project.config.allowedRootFileStems.includes(stem)
     ) {
       return [];

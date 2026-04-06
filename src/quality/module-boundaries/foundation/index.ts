@@ -33,6 +33,7 @@ export type {
   ArchitectureAnalyzerConfig,
   ArchitectureDependencyPolicy,
   ArchitectureDependencyPolicyRole,
+  ArchitectureEntrypointRule,
   ArchitectureLayerGroup,
   ArchitectureProject,
   ArchitectureSurfaceTier,
@@ -45,8 +46,12 @@ export type {
   SourceFileReExport,
 } from "./types";
 export {
+  entrypointAllowsSiblingEntrypoints,
+  entrypointAllowsTopLevelStatements,
+  getArchitectureEntrypointRule,
   getCodeStem,
   getLastPathSegment,
+  isArchitectureEntrypoint,
   normalizePath,
   trimLeadingDotSlash,
 } from "./utils";

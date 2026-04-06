@@ -5,6 +5,7 @@ import type {
   SourceFileFacts,
 } from "@/quality/module-boundaries/foundation/index.ts";
 
+import { entrypointAllowsTopLevelStatements } from "@/quality/module-boundaries/foundation/index.ts";
 import { inferDependencyPolicy } from "@/quality/module-boundaries/import/rule/index.ts";
 
 /** Flags public surfaces that contain implementation rather than a pure export surface. */
@@ -13,7 +14,8 @@ export function buildPublicSurfacePurityViolations(
 ): ArchitectureViolation[] {
   return getTargetFacts(project).flatMap((sourceFact) =>
     sourceFact.topLevelExecutableStatementCount > 0 &&
-    !project.config.allowedImpurePublicSurfacePaths.includes(sourceFact.path)
+    !project.config.allowedImpurePublicSurfacePaths.includes(sourceFact.path) &&
+    !entrypointAllowsTopLevelStatements(project.config, sourceFact.stem)
       ? [
           {
             code: "public-surface-purity",

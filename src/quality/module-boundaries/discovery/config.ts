@@ -2,6 +2,7 @@ import { join } from "node:path";
 
 import type {
   ArchitectureAnalyzerConfig,
+  ArchitectureEntrypointRule,
   CodeRoots,
 } from "@/quality/module-boundaries/foundation/index.ts";
 
@@ -139,6 +140,7 @@ function normalizeDirectoryNameConfig(
   | "centralSurfacePathPrefixes"
   | "dependencyPolicies"
   | "entrypointNames"
+  | "entrypointRules"
   | "explicitPublicSurfacePaths"
   | "ignoredDirectoryNames"
   | "junkDrawerDirectoryNames"
@@ -201,22 +203,78 @@ function normalizeDirectoryNamingConfig(
   };
 }
 
+function normalizeEntrypointRules(
+  record: Record<string, unknown>,
+): ArchitectureEntrypointRule[] {
+  const defaultRules = normalizeStringListConfig(
+    record.entrypointNames,
+    DEFAULT_ENTRYPOINT_NAMES,
+  ).map((name) => ({
+    allowSiblingEntrypoints: false,
+    allowTopLevelStatements: false,
+    name,
+  }));
+  const rulesByName = new Map(
+    defaultRules.map((entrypointRule) => [entrypointRule.name, entrypointRule]),
+  );
+
+  if (!Array.isArray(record.entrypointRules)) {
+    return [...rulesByName.values()].sort((left, right) =>
+      left.name.localeCompare(right.name),
+    );
+  }
+
+  for (const candidate of record.entrypointRules) {
+    if (!isRecord(candidate)) {
+      continue;
+    }
+
+    const rawName = candidate.name;
+    if (typeof rawName !== "string") {
+      continue;
+    }
+
+    const name = rawName.trim();
+    if (name.length === 0) {
+      continue;
+    }
+
+    const previousRule = rulesByName.get(name);
+    rulesByName.set(name, {
+      allowSiblingEntrypoints:
+        typeof candidate.allowSiblingEntrypoints === "boolean"
+          ? candidate.allowSiblingEntrypoints
+          : previousRule?.allowSiblingEntrypoints ?? false,
+      allowTopLevelStatements:
+        typeof candidate.allowTopLevelStatements === "boolean"
+          ? candidate.allowTopLevelStatements
+          : previousRule?.allowTopLevelStatements ?? false,
+      name,
+    });
+  }
+
+  return [...rulesByName.values()].sort((left, right) =>
+    left.name.localeCompare(right.name),
+  );
+}
+
 function normalizePolicyConfig(
   record: Record<string, unknown>,
 ): Pick<
   Required<ArchitectureAnalyzerConfig>,
   | "dependencyPolicies"
   | "entrypointNames"
+  | "entrypointRules"
   | "requireAcyclicDependencyPolicies"
   | "requireCompleteDependencyPolicyCoverage"
   | "requireTypeOnlyImportsForTypeOnlyPolicies"
 > {
+  const entrypointRules = normalizeEntrypointRules(record);
+
   return {
     dependencyPolicies: normalizeDependencyPolicies(record.dependencyPolicies),
-    entrypointNames: normalizeStringListConfig(
-      record.entrypointNames,
-      DEFAULT_ENTRYPOINT_NAMES,
-    ),
+    entrypointNames: entrypointRules.map((entrypointRule) => entrypointRule.name),
+    entrypointRules,
     requireAcyclicDependencyPolicies: normalizeBooleanConfig(
       record.requireAcyclicDependencyPolicies,
       DEFAULT_REQUIRE_ACYCLIC_DEPENDENCY_POLICIES,

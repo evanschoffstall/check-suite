@@ -4,7 +4,11 @@ import type {
   DirectoryFacts,
 } from "@/quality/module-boundaries/foundation/index.ts";
 
-import { getLastPathSegment } from "@/quality/module-boundaries/foundation/index.ts";
+import {
+  entrypointAllowsSiblingEntrypoints,
+  getCodeStem,
+  getLastPathSegment,
+} from "@/quality/module-boundaries/foundation/index.ts";
 
 import {
   isCodeRootDirectory,
@@ -72,6 +76,36 @@ export function buildDirectoryFactViolations(
   }
 
   return violations;
+}
+
+/** Flags boundaries whose entrypoints exceed the configured coexistence rules. */
+export function buildMultipleEntrypointViolations(
+  project: ArchitectureProject,
+): ArchitectureViolation[] {
+  return project.boundaries.flatMap((boundary) => {
+    if (boundary.entrypointPaths.length <= 1) {
+      return [];
+    }
+
+    const entrypointStems = boundary.entrypointPaths.map((entrypointPath) =>
+      getCodeStem(getLastPathSegment(entrypointPath)),
+    );
+    const uniqueEntrypointCount = new Set(entrypointStems).size;
+    const allAllowSiblings = entrypointStems.every((stem) =>
+      entrypointAllowsSiblingEntrypoints(project.config, stem),
+    );
+
+    if (uniqueEntrypointCount === boundary.entrypointPaths.length && allAllowSiblings) {
+      return [];
+    }
+
+    return [
+      {
+        code: "multiple-entrypoints",
+        message: `${boundary.path} exposes multiple public entrypoints (${boundary.entrypointPaths.join(", ")}); keep one intentional surface per boundary`,
+      },
+    ];
+  });
 }
 
 /** Requires peer feature folders to follow a consistent public-surface pattern. */

@@ -9,7 +9,10 @@ import type {
   SourceFileReExport,
 } from "@/quality/module-boundaries/foundation/index.ts";
 
-import { getCodeStem } from "@/quality/module-boundaries/foundation/index.ts";
+import {
+  getCodeStem,
+  isArchitectureEntrypoint,
+} from "@/quality/module-boundaries/foundation/index.ts";
 
 import { resolveModulePath } from "./module-resolution";
 import { countTopLevelRuntimeOperations } from "./runtime-analysis";
@@ -57,7 +60,7 @@ function analyzeSourceFile(
     directoryPath: dirname(filePath).replace(/^\.$/u, ""),
     exportedSymbolCount: countExportedSymbols(sourceFile),
     exportModuleSpecifiers: collectExportModuleSpecifiers(sourceFile),
-    isEntrypoint: config.entrypointNames.includes(getCodeStem(fileName)),
+    isEntrypoint: isArchitectureEntrypoint(config, getCodeStem(fileName)),
     path: filePath,
     reExports,
     runtimeOperationCount: countTopLevelRuntimeOperations(sourceFile),

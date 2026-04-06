@@ -138,6 +138,75 @@ describe("architecture analyzer", () => {
     ).toBe(true);
   });
 
+  test("accepts implementation entrypoints that explicitly allow sibling surfaces", () => {
+    const repoDir = createTempRepo({
+      "src/app/api/feeds/route.ts":
+        "export async function GET() { return Response.json({ ok: true }); }\n",
+      "src/app/dashboard/page.tsx":
+        "export default function DashboardPage() { return <main>dashboard</main>; }\n",
+      "src/app/global-error.tsx":
+        "export default function GlobalError() { return <main>error</main>; }\n",
+      "src/app/layout.tsx":
+        "export default function Layout({ children }: { children: React.ReactNode }) { return children; }\n",
+      "src/app/not-found.tsx":
+        "export default function NotFound() { return <main>missing</main>; }\n",
+      "src/app/page.tsx":
+        "export default function Page() { return <main>home</main>; }\n",
+    });
+
+    const violations = analyzeArchitecture(repoDir, {
+      dependencyPolicies: [],
+      entrypointNames: [
+        "global-error",
+        "layout",
+        "not-found",
+        "page",
+        "route",
+      ],
+      entrypointRules: [
+        {
+          allowSiblingEntrypoints: true,
+          allowTopLevelStatements: true,
+          name: "global-error",
+        },
+        {
+          allowSiblingEntrypoints: true,
+          allowTopLevelStatements: true,
+          name: "layout",
+        },
+        {
+          allowSiblingEntrypoints: true,
+          allowTopLevelStatements: true,
+          name: "not-found",
+        },
+        {
+          allowSiblingEntrypoints: true,
+          allowTopLevelStatements: true,
+          name: "page",
+        },
+        {
+          allowSiblingEntrypoints: true,
+          allowTopLevelStatements: true,
+          name: "route",
+        },
+      ],
+      includeRootFiles: false,
+      requireAcyclicDependencyPolicies: false,
+      requireCompleteDependencyPolicyCoverage: false,
+      rootDirectories: ["src"],
+    });
+
+    expect(
+      violations.some((violation) =>
+        [
+          "missing-public-entrypoint",
+          "multiple-entrypoints",
+          "public-surface-purity",
+        ].includes(violation.code),
+      ),
+    ).toBe(false);
+  });
+
   test("flags public-surface re-export chains across top-level owners", () => {
     const repoDir = createTempRepo({
       "src/check.ts": 'export { runCli } from "./cli/index.ts";\n',
