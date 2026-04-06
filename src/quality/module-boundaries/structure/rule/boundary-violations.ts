@@ -46,7 +46,7 @@ export function buildDirectoryFactViolations(
     directoryFact.childDirectoryPaths.length > 0;
   const shouldRequireEntrypoint =
     implementationFiles.length > 1 ||
-    directoryFact.childDirectoryPaths.length > 0;
+    (implementationFiles.length > 0 && directoryFact.childDirectoryPaths.length > 0);
   const violations: ArchitectureViolation[] = [];
 
   if (
