@@ -207,6 +207,45 @@ describe("architecture analyzer", () => {
     ).toBe(false);
   });
 
+  test("ignores namespace-only peers when checking boundary consistency", () => {
+    const repoDir = createTempRepo({
+      "src/app/api/account/route.ts": "export async function GET() { return Response.json({ ok: true }); }\n",
+      "src/app/api/auth/login/route.ts": "export async function POST() { return Response.json({ ok: true }); }\n",
+      "src/app/components/Card.tsx": "export function Card() { return null; }\n",
+      "src/app/components/index.ts": 'export { Card } from "./Card.tsx";\n',
+      "src/app/dashboard/page.tsx": "export default function DashboardPage() { return null; }\n",
+      "src/app/layout.tsx": "export default function Layout({ children }: { children: React.ReactNode }) { return children; }\n",
+      "src/app/page.tsx": "export default function Page() { return null; }\n",
+    });
+
+    const entrypointRules = [
+      "index",
+      "layout",
+      "page",
+      "route",
+    ].map((name) => ({
+      allowSiblingEntrypoints: name !== "index",
+      allowTopLevelStatements: name !== "index",
+      name,
+    }));
+
+    const violations = analyzeArchitecture(repoDir, {
+      dependencyPolicies: [],
+      entrypointNames: entrypointRules.map((entrypointRule) => entrypointRule.name),
+      entrypointRules,
+      includeRootFiles: false,
+      requireAcyclicDependencyPolicies: false,
+      requireCompleteDependencyPolicyCoverage: false,
+      rootDirectories: ["src"],
+    });
+
+    expect(
+      violations.some(
+        (violation) => violation.code === "peer-boundary-inconsistency",
+      ),
+    ).toBe(false);
+  });
+
   test("flags public-surface re-export chains across top-level owners", () => {
     const repoDir = createTempRepo({
       "src/check.ts": 'export { runCli } from "./cli/index.ts";\n',

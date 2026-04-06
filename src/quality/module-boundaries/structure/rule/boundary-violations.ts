@@ -122,13 +122,7 @@ export function buildPeerBoundaryConsistencyViolations(
         ) ?? directoryFactsByPath.get(directoryName),
     )
     .filter((fact): fact is DirectoryFacts => fact !== undefined)
-    .filter(
-      (fact) =>
-        fact.childDirectoryPaths.length > 0 ||
-        fact.codeFilePaths.filter(
-          (filePath) => !fact.entrypointPaths.includes(filePath),
-        ).length > 1,
-    );
+    .filter((fact) => isComparablePeerBoundary(fact));
 
   if (peerFacts.length < 2) {
     return [];
@@ -149,6 +143,26 @@ export function buildPeerBoundaryConsistencyViolations(
         },
       ]
     : [];
+}
+
+/** Namespace-only parents should not force sibling boundaries onto one pattern. */
+function isComparablePeerBoundary(directoryFact: DirectoryFacts): boolean {
+  const localImplementationFileCount = directoryFact.codeFilePaths.filter(
+    (filePath) => !directoryFact.entrypointPaths.includes(filePath),
+  ).length;
+
+  if (
+    directoryFact.entrypointPaths.length === 0 &&
+    localImplementationFileCount === 0
+  ) {
+    return false;
+  }
+
+  return (
+    directoryFact.childDirectoryPaths.length > 0 ||
+    localImplementationFileCount > 1 ||
+    directoryFact.entrypointPaths.length > 0
+  );
 }
 
 function isMissingPublicEntrypoint(
