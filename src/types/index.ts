@@ -13,6 +13,9 @@ export interface CheckConfig {
   };
 }
 
+/** A single entry in the flat {@link defineCheckSuiteConfig} array. */
+export type CheckConfigEntry = PathsConfigEntry | StepConfig | SuiteConfigEntry;
+
 export interface CheckRow {
   details: string;
   durationMs?: number;
@@ -51,6 +54,11 @@ export interface PackageManifest {
   scripts?: Record<string, string>;
 }
 
+/** A path-token map entry in the flat {@link defineCheckSuiteConfig} array. */
+export interface PathsConfigEntry {
+  paths: Record<string, string>;
+}
+
 export interface ProcessedResultEntry {
   displayOutput: string;
   postProcess: null | StepPostProcessResult;
@@ -66,6 +74,11 @@ export interface RunOptions {
 export interface StreamCollector {
   done: Promise<void>;
   getOutput: () => string;
+}
+
+/** A suite-level configuration entry in the flat {@link defineCheckSuiteConfig} array. */
+export interface SuiteConfigEntry {
+  suite: NonNullable<CheckConfig["suite"]>;
 }
 
 export interface SuiteExecutionState {

@@ -7,3 +7,5 @@ export { runGitFileScan } from "./git-file-scan.ts";
 export type { GitFileScanOptions } from "./git-file-scan.ts";
 export { defineLintStep, STANDARD_LINT_SKIP_DIRS } from "./lint.ts";
 export type { LintStepOptions } from "./lint.ts";
+export { defineStep } from "./unified.ts";
+export type { CommandStepInput, InlineStepInput, LintStepInput } from "./unified.ts";

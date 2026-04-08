@@ -1,15 +1,25 @@
 import { ZodError } from "zod";
 
-import type { CheckConfig } from "@/types/index.ts";
+import type { CheckConfig, CheckConfigEntry, StepConfig } from "@/types/index.ts";
 
 import { isRecord } from "@/foundation/index.ts";
 
 import { checkConfigSchema } from "./schemas.ts";
 
-export function defineCheckSuiteConfig<TConfig extends CheckConfig>(
-  config: TConfig,
-): TConfig {
-  return parseCheckConfig(config) as TConfig;
+export function defineCheckSuiteConfig(entries: CheckConfigEntry[]): CheckConfig {
+  const steps: StepConfig[] = [];
+  let paths: Record<string, string> = {};
+  let suite: CheckConfig["suite"];
+  for (const entry of entries) {
+    if ("key" in entry) {
+      steps.push(entry);
+    } else if ("paths" in entry) {
+      paths = entry.paths;
+    } else {
+      suite = entry.suite;
+    }
+  }
+  return parseCheckConfig({ paths, steps, suite });
 }
 
 export function parseCheckConfig(config: unknown): CheckConfig {
