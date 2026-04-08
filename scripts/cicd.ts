@@ -125,8 +125,8 @@ async function commitPendingChangesIfRequested(): Promise<void> {
   if (!(await hasPendingChanges())) return;
   if (!(await hasStagedChanges())) failRelease("Dirty worktree detected with no staged release candidate. Stage the exact release changes first so staged-only validation does not diverge from the eventual commit.");
   logRelease("Pending changes detected.");
-  if (!(await askYesNo("Run gitaicmt --no-token-check -y before continuing? (y/n) "))) failRelease("CI/CD flow cancelled because the worktree is not clean.");
-  await runStepOrExit({ command: ["gitaicmt", "--no-token-check", "-y"], label: "Create commit with gitaicmt" });
+  if (!(await askYesNo("Run gitaicmt? (y/n) "))) failRelease("CI/CD flow cancelled because the worktree is not clean.");
+  await runStepOrExit({ command: ["gitaicmt"], label: "Create commit with gitaicmt" });
 }
 
 async function ensureHeadMatchesOriginMain(fetchLabel = `Fetch origin/${MAIN_BRANCH}`): Promise<string> {
@@ -138,11 +138,25 @@ async function ensureHeadMatchesOriginMain(fetchLabel = `Fetch origin/${MAIN_BRA
   return state.headRevision;
 }
 
-/** Guard main-branch release execution and keep origin/main synchronized with HEAD. */
-async function ensureOnMainBranch(): Promise<void> {
+/**
+ * Fast-forward merge sourceBranch into main so that the branch tip becomes
+ * the new main HEAD. Fails if origin/main has diverged from the branch.
+ */
+async function fastForwardBranchIntoMain(sourceBranch: string): Promise<void> {
+  logRelease(`Source branch '${sourceBranch}' is not '${MAIN_BRANCH}'. Preparing to fast-forward merge into ${MAIN_BRANCH}.`);
+  await fetchOriginMain();
+  const mergeBaseResult = await runCommand(git("merge-base", "--is-ancestor", `refs/remotes/origin/${MAIN_BRANCH}`, "HEAD"), "capture");
+  if (mergeBaseResult.exitCode !== 0) failRelease(`Cannot fast-forward '${sourceBranch}' into '${MAIN_BRANCH}': origin/${MAIN_BRANCH} is not an ancestor of '${sourceBranch}'. Rebase '${sourceBranch}' onto origin/${MAIN_BRANCH} before releasing.`);
+  if (!(await askYesNo(`Fast-forward merge '${sourceBranch}' into '${MAIN_BRANCH}' and release? (y/n) `))) failRelease("CI/CD flow cancelled by user.");
+  await runStepOrExit({ command: git("checkout", MAIN_BRANCH), label: `Check out ${MAIN_BRANCH}` });
+  await runStepOrExit({ command: git("merge", "--ff-only", sourceBranch), label: `Fast-forward merge '${sourceBranch}' into ${MAIN_BRANCH}` });
+}
+
+/** Resolve the current branch name and fail if in detached HEAD state. */
+async function resolveSourceBranch(): Promise<string> {
   const branchName = await runCommandForStdout(git("rev-parse", "--abbrev-ref", "HEAD"), "Unable to determine the current branch");
   if (branchName === "HEAD") failRelease("CI/CD flow must run from a named branch, not detached HEAD.");
-  if (branchName !== MAIN_BRANCH) failRelease(`CI/CD flow must start on ${MAIN_BRANCH}. Current branch is ${branchName}.`);
+  return branchName;
 }
 
 const ensureNoStagedChangesRemain = async (): Promise<void> => {
@@ -163,10 +177,11 @@ const runStepAgainstHeadWorktree = async (step: ReleaseStep): Promise<void> => a
 async function main(): Promise<void> {
   const releaseLock = await acquireReleaseLock();
   try {
-    await ensureOnMainBranch();
+    const sourceBranch = await resolveSourceBranch();
     await runBunCheckAgainstIndexSnapshot();
     await commitPendingChangesIfRequested();
     await ensureNoStagedChangesRemain();
+    if (sourceBranch !== MAIN_BRANCH) await fastForwardBranchIntoMain(sourceBranch);
     await runStepOrExit({ command: git("push", "origin", MAIN_BRANCH), label: `Push ${MAIN_BRANCH} to origin` });
     const releaseRevision = await ensureHeadMatchesOriginMain();
     await runStepAgainstHeadWorktree({ command: ["bunx", "semantic-release", "--no-ci", "--dry-run"], label: "Run semantic-release dry-run" });
