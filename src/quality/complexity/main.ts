@@ -17,11 +17,16 @@ export interface ComplexityAnalyzerAdapter {
     excludedPaths: readonly string[],
   ): readonly string[];
   parseAnalysisOutput(output: string): FunctionMetrics[];
+  /**
+   * Runs the external analysis process asynchronously. Must not block the
+   * event loop — use async process spawning (e.g. {@link Bun.spawn}) rather
+   * than any synchronous spawn variant to prevent freezing the host process.
+   */
   runAnalysis(input: {
     analysisArgs: readonly string[];
     cwd: string;
     failWithOutput: (output: string, exitCode?: number) => never;
-  }): string;
+  }): Promise<string>;
 }
 
 /** Runtime configuration for the generic complexity analysis. */
@@ -48,10 +53,10 @@ export interface ComplexityCheckResult {
 }
 
 /** Runs the generic complexity analysis and returns the normalized result. */
-export function runComplexityCheck(
+export async function runComplexityCheck(
   config: ComplexityCheckOptions,
   cwd: string = process.cwd(),
-): ComplexityCheckResult {
+): Promise<ComplexityCheckResult> {
   const thresholds: ComplexityThresholds = {
     ...DEFAULT_COMPLEXITY_THRESHOLDS,
     ...config.thresholds,
@@ -60,7 +65,7 @@ export function runComplexityCheck(
   const targets = config.targets ?? discoverDefaultCodeRoots(cwd).directories;
   const analysisArgs = config.analyzer.buildAnalysisArgs(targets, excludedPaths);
 
-  const analysisOutput = config.analyzer.runAnalysis({
+  const analysisOutput = await config.analyzer.runAnalysis({
     analysisArgs,
     cwd,
     failWithOutput,

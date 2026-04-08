@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process";
+
 
 import type {
   ComplexityAnalyzerAdapter,
@@ -69,20 +69,26 @@ export function createSpawnComplexityAdapter(
   return {
     buildAnalysisArgs: opts.buildArgs,
     parseAnalysisOutput: opts.parseOutput,
-    runAnalysis({ analysisArgs, cwd, failWithOutput }) {
-      const result = spawnSync(opts.command, [...analysisArgs], {
+    async runAnalysis({ analysisArgs, cwd, failWithOutput }) {
+      // Use async Bun.spawn instead of spawnSync so the event loop remains
+      // unblocked during the (potentially slow) external analysis run.
+      const child = Bun.spawn([opts.command, ...analysisArgs], {
         cwd,
-        encoding: "utf8",
+        stderr: "pipe",
+        stdin: "ignore",
+        stdout: "pipe",
       });
 
-      if (result.error) {
-        throw result.error;
-      }
+      const [rawStdout, rawStderr, exitCode] = await Promise.all([
+        new Response(child.stdout).text(),
+        new Response(child.stderr).text(),
+        child.exited,
+      ]);
 
-      const stderr = result.stderr.trim();
-      const stdout = result.stdout.trim();
+      const stderr = rawStderr.trim();
+      const stdout = rawStdout.trim();
 
-      if (result.status !== 0) {
+      if (exitCode !== 0) {
         const details =
           stderr || stdout || "analyzer exited with a non-zero status";
         failWithOutput(
@@ -92,7 +98,7 @@ export function createSpawnComplexityAdapter(
             details,
             `install with: ${opts.installHint}`,
           ].join("\n"),
-          result.status ?? 1,
+          exitCode,
         );
       }
 
@@ -106,7 +112,7 @@ export function createSpawnComplexityAdapter(
         );
       }
 
-      return result.stdout;
+      return rawStdout;
     },
   };
 }
