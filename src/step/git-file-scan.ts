@@ -40,21 +40,21 @@ type ResolvedGitFiles =
 /**
  * Runs a command against the git-visible files in the target workspace and
  * falls back to a single non-git invocation when the workspace is not a git
- * repository.
+ * repository. Async to avoid blocking the event loop during subprocess execution.
  */
-export function runGitFileScan(
+export async function runGitFileScan(
   cwd: string,
   options: GitFileScanOptions,
-): Command {
+): Promise<Command> {
   const startedAt = Date.now();
-  const gitFiles = resolveGitVisibleFiles(cwd);
+  const gitFiles = await resolveGitVisibleFiles(cwd);
 
   if (gitFiles.kind === "failure") {
     return buildTimedCommand(gitFiles.exitCode, gitFiles.output, startedAt);
   }
 
   if (gitFiles.kind === "fallback") {
-    const result = spawnBuffered(cwd, options.command, [
+    const result = await spawnBuffered(cwd, options.command, [
       ...(options.fallbackArgs ?? options.fileArgs),
     ]);
     return buildTimedCommand(result.exitCode, result.output, startedAt);
@@ -134,8 +134,8 @@ function joinOutputs(parts: string[]): string {
   return parts.length === 0 ? "" : `${parts.join("\n\n")}\n`;
 }
 
-function resolveGitVisibleFiles(cwd: string): ResolvedGitFiles {
-  const result = spawnBuffered(cwd, "git", [...GIT_LS_FILES_ARGS]);
+async function resolveGitVisibleFiles(cwd: string): Promise<ResolvedGitFiles> {
+  const result = await spawnBuffered(cwd, "git", [...GIT_LS_FILES_ARGS]);
 
   if (result.exitCode === 0) {
     const paths = result.output
@@ -152,18 +152,21 @@ function resolveGitVisibleFiles(cwd: string): ResolvedGitFiles {
   return { exitCode: result.exitCode, kind: "failure", output: result.output };
 }
 
-function runFileBatches(
+async function runFileBatches(
   cwd: string,
   options: GitFileScanOptions,
   paths: string[],
   startedAt: number,
-): Command {
+): Promise<Command> {
   const maxLen = options.maxArgLength ?? MAX_DEFAULT_ARG_LENGTH;
   const outputParts: string[] = [];
   let finalExitCode = 0;
 
+  // Batches are intentionally sequential: a non-soft failure stops further
+  // processing, and exit-code ordering is deterministic.
   for (const batch of chunkPaths(paths, options.fileArgs, maxLen)) {
-    const result = spawnBuffered(cwd, options.command, [
+     
+    const result = await spawnBuffered(cwd, options.command, [
       ...options.fileArgs,
       ...batch,
     ]);
@@ -191,20 +194,30 @@ function runFileBatches(
   return buildTimedCommand(finalExitCode, joinOutputs(outputParts), startedAt);
 }
 
-function spawnBuffered(
+/**
+ * Spawns a subprocess and buffers its combined stdout+stderr output.
+ * Async to keep the event loop unblocked during subprocess execution.
+ */
+async function spawnBuffered(
   cwd: string,
   command: string,
   args: string[],
-): { exitCode: number; output: string } {
-  const result = Bun.spawnSync([command, ...args], {
+): Promise<{ exitCode: number; output: string }> {
+  const child = Bun.spawn([command, ...args], {
     cwd,
     stderr: "pipe",
     stdin: "ignore",
     stdout: "pipe",
   });
 
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+    child.exited,
+  ]);
+
   return {
-    exitCode: result.exitCode,
-    output: `${result.stdout.toString("utf8")}${result.stderr.toString("utf8")}`,
+    exitCode,
+    output: `${stdout}${stderr}`,
   };
 }

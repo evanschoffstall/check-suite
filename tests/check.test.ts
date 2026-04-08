@@ -472,11 +472,11 @@ describe("timeout helpers", () => {
 });
 
 describe("git file scan runtime", () => {
-  test("falls back to the non-git command invocation outside git repositories", () => {
+  test("falls back to the non-git command invocation outside git repositories", async () => {
     const tempDir = mkdtempSync(join(tmpdir(), "check-suite-file-scan-"));
 
     try {
-      const result = runGitFileScan(tempDir, {
+      const result = await runGitFileScan(tempDir, {
         command: "node",
         fallbackArgs: ["-e", "process.stdout.write('fallback-ok\\n')"],
         fileArgs: ["-e", "process.stdout.write('should-not-run\\n')"],
@@ -491,13 +491,13 @@ describe("git file scan runtime", () => {
     }
   });
 
-  test("returns the default empty-file message when git resolves no visible files", () => {
+  test("returns the default empty-file message when git resolves no visible files", async () => {
     const tempDir = mkdtempSync(join(tmpdir(), "check-suite-file-scan-"));
 
     try {
       initializeGitRepo(tempDir);
 
-      const result = runGitFileScan(tempDir, {
+      const result = await runGitFileScan(tempDir, {
         command: "node",
         fileArgs: ["-e", "process.stdout.write('unused\\n')"],
       });
@@ -509,7 +509,7 @@ describe("git file scan runtime", () => {
     }
   });
 
-  test("batches resolved git-visible files and joins batch output", () => {
+  test("batches resolved git-visible files and joins batch output", async () => {
     const tempDir = mkdtempSync(join(tmpdir(), "check-suite-file-scan-"));
     const binDir = join(tempDir, "bin");
     mkdirSync(binDir);
@@ -529,7 +529,7 @@ describe("git file scan runtime", () => {
       writeFileSync(join(tempDir, "beta.ts"), "export const beta = 2;\n");
       writeFileSync(join(tempDir, "gamma.ts"), "export const gamma = 3;\n");
 
-      const result = runGitFileScan(tempDir, {
+      const result = await runGitFileScan(tempDir, {
         command: join(binDir, "scanner"),
         fileArgs: ["--scan"],
         maxArgLength: 16,
@@ -544,7 +544,7 @@ describe("git file scan runtime", () => {
     }
   });
 
-  test("returns exit code 1 when any batch reports a soft failure", () => {
+  test("returns exit code 1 when any batch reports a soft failure", async () => {
     const tempDir = mkdtempSync(join(tmpdir(), "check-suite-file-scan-"));
     const binDir = join(tempDir, "bin");
     mkdirSync(binDir);
@@ -565,7 +565,7 @@ describe("git file scan runtime", () => {
       writeFileSync(join(tempDir, "alpha.ts"), "export const alpha = 1;\n");
       writeFileSync(join(tempDir, "beta.ts"), "export const beta = 2;\n");
 
-      const result = runGitFileScan(tempDir, {
+      const result = await runGitFileScan(tempDir, {
         command: join(binDir, "scanner"),
         fileArgs: ["--scan"],
         maxArgLength: 16,
@@ -579,7 +579,7 @@ describe("git file scan runtime", () => {
     }
   });
 
-  test("stops immediately on non-soft batch failures", () => {
+  test("stops immediately on non-soft batch failures", async () => {
     const tempDir = mkdtempSync(join(tmpdir(), "check-suite-file-scan-"));
     const binDir = join(tempDir, "bin");
     mkdirSync(binDir);
@@ -600,7 +600,7 @@ describe("git file scan runtime", () => {
       writeFileSync(join(tempDir, "alpha.ts"), "export const alpha = 1;\n");
       writeFileSync(join(tempDir, "beta.ts"), "export const beta = 2;\n");
 
-      const result = runGitFileScan(tempDir, {
+      const result = await runGitFileScan(tempDir, {
         command: join(binDir, "scanner"),
         fileArgs: ["--scan"],
         maxArgLength: 16,
