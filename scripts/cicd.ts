@@ -28,6 +28,12 @@ const git = (...arguments_: [string, ...string[]]): Command => ["git", ...argume
 const logRelease = (message: string): void => console.info(`[cicd] ${message}`);
 const failRelease = (message: string): never => { logRelease(message); throw new ReleaseWorkflowError(message); };
 
+/** Resolve whether a command is available on the current PATH before prompting to use it. */
+const hasCommandAvailable = async (commandName: string): Promise<boolean> => {
+  const result = await runCommand(["bash", "-lc", `command -v -- ${JSON.stringify(commandName)}`], "capture");
+  return result.exitCode === 0;
+};
+
 /** Keep pre-release validation strict while allowing the published release commit to advance origin/main. */
 export function determineMainBranchSyncAction(phase: MainBranchSyncPhase, state: MainBranchRevisionState): MainBranchSyncAction {
   if (state.headRevision === state.remoteRevision) return "continue";
@@ -91,6 +97,20 @@ const getHeadRevision = async (label: string): Promise<string> => await runComma
 const getOriginMainRevision = async (label: string): Promise<string> => await runCommandForStdout(git("rev-parse", `refs/remotes/origin/${MAIN_BRANCH}`), label);
 const hasPendingChanges = async (): Promise<boolean> => (await runCommandForStdout(git("status", "--porcelain"), "Unable to inspect the git worktree")).length > 0;
 const hasStagedChanges = async (): Promise<boolean> => (await runCommandForStdout(git("diff", "--cached", "--name-only"), "Unable to inspect staged release changes")).length > 0;
+
+/** Auto-stage the current release candidate when the workflow starts from a dirty but unstaged worktree. */
+const stageAllPendingChanges = async (): Promise<void> => await runStepOrExit({ command: git("add", "--all"), label: "Stage the release candidate" });
+
+const ensureStagedReleaseCandidate = async (): Promise<void> => {
+  if (await hasStagedChanges()) return;
+  if (!(await hasPendingChanges())) {
+    failRelease("No staged release candidate found and the worktree is clean. Make the release changes before running CI/CD.");
+  }
+  logRelease("No staged release candidate found at startup. Auto-staging all pending changes.");
+  await stageAllPendingChanges();
+  if (await hasStagedChanges()) return;
+  failRelease("Auto-staging completed, but no staged release candidate was produced. Inspect ignored files and release inputs before running CI/CD.");
+};
 const fetchOriginMain = async (label = `Fetch origin/${MAIN_BRANCH}`): Promise<void> => await runStepOrExit({ command: git("fetch", "origin", MAIN_BRANCH), label });
 const readMainBranchRevisionState = async (): Promise<MainBranchRevisionState> => {
   const [headRevision, remoteRevision] = await Promise.all([
@@ -125,8 +145,17 @@ async function commitPendingChangesIfRequested(): Promise<void> {
   if (!(await hasPendingChanges())) return;
   if (!(await hasStagedChanges())) failRelease("Dirty worktree detected with no staged release candidate. Stage the exact release changes first so staged-only validation does not diverge from the eventual commit.");
   logRelease("Pending changes detected.");
-  if (!(await askYesNo("Run gitaicmt? (y/n) "))) failRelease("CI/CD flow cancelled because the worktree is not clean.");
-  await runStepOrExit({ command: ["gitaicmt"], label: "Create commit with gitaicmt" });
+  if (await hasCommandAvailable("gitaicmt")) {
+    if (!(await askYesNo("Run gitaicmt? (y/n) "))) failRelease("CI/CD flow cancelled because the worktree is not clean.");
+    await runStepOrExit({ command: ["gitaicmt"], label: "Create commit with gitaicmt" });
+    return;
+  }
+  if (!(await askYesNo("Commit now as needed. Ready to proceed? (y/n) "))) {
+    failRelease("CI/CD flow cancelled because the worktree is not clean.");
+  }
+  if (await hasPendingChanges()) {
+    failRelease("CI/CD flow still has pending changes. Commit or clean the release candidate before continuing.");
+  }
 }
 
 async function ensureHeadMatchesOriginMain(fetchLabel = `Fetch origin/${MAIN_BRANCH}`): Promise<string> {
@@ -138,18 +167,30 @@ async function ensureHeadMatchesOriginMain(fetchLabel = `Fetch origin/${MAIN_BRA
   return state.headRevision;
 }
 
-/**
- * Fast-forward merge sourceBranch into main so that the branch tip becomes
- * the new main HEAD. Fails if origin/main has diverged from the branch.
- */
+/** Fast-forward main to the source branch tip so semantic-release's commit is the sole release marker. */
 async function fastForwardBranchIntoMain(sourceBranch: string): Promise<void> {
-  logRelease(`Source branch '${sourceBranch}' is not '${MAIN_BRANCH}'. Preparing to fast-forward merge into ${MAIN_BRANCH}.`);
-  await fetchOriginMain();
-  const mergeBaseResult = await runCommand(git("merge-base", "--is-ancestor", `refs/remotes/origin/${MAIN_BRANCH}`, "HEAD"), "capture");
-  if (mergeBaseResult.exitCode !== 0) failRelease(`Cannot fast-forward '${sourceBranch}' into '${MAIN_BRANCH}': origin/${MAIN_BRANCH} is not an ancestor of '${sourceBranch}'. Rebase '${sourceBranch}' onto origin/${MAIN_BRANCH} before releasing.`);
-  if (!(await askYesNo(`Fast-forward merge '${sourceBranch}' into '${MAIN_BRANCH}' and release? (y/n) `))) failRelease("CI/CD flow cancelled by user.");
+  if (sourceBranch === MAIN_BRANCH) return;
   await runStepOrExit({ command: git("checkout", MAIN_BRANCH), label: `Check out ${MAIN_BRANCH}` });
-  await runStepOrExit({ command: git("merge", "--ff-only", sourceBranch), label: `Fast-forward merge '${sourceBranch}' into ${MAIN_BRANCH}` });
+  await runStepOrExit({ command: git("merge", "--ff-only", sourceBranch), label: `Fast-forward ${MAIN_BRANCH} to '${sourceBranch}'` });
+}
+
+/** Preserve the source branch commits remotely before the release merge lands on main. */
+async function pushSourceBranchIfNeeded(sourceBranch: string): Promise<void> {
+  if (sourceBranch === MAIN_BRANCH) return;
+  await runStepOrExit({ command: git("push", "--force-with-lease", "origin", sourceBranch), label: `Push ${sourceBranch} to origin` });
+}
+
+/**
+ * Rebase source branch onto origin/main when main has advanced since the
+ * last sync, so the subsequent fast-forward into main succeeds cleanly.
+ */
+async function reconcileSourceBranchWithMain(sourceBranch: string): Promise<void> {
+  if (sourceBranch === MAIN_BRANCH) return;
+  await fetchOriginMain();
+  const ancestorCheck = await runCommand(git("merge-base", "--is-ancestor", `refs/remotes/origin/${MAIN_BRANCH}`, "HEAD"), "capture");
+  if (ancestorCheck.exitCode === 0) return;
+  logRelease(`Rebasing '${sourceBranch}' onto origin/${MAIN_BRANCH} so fast-forward into ${MAIN_BRANCH} succeeds.`);
+  await runStepOrExit({ command: git("rebase", `refs/remotes/origin/${MAIN_BRANCH}`), label: `Rebase '${sourceBranch}' onto origin/${MAIN_BRANCH}` });
 }
 
 /** Resolve the current branch name and fail if in detached HEAD state. */
@@ -157,6 +198,13 @@ async function resolveSourceBranch(): Promise<string> {
   const branchName = await runCommandForStdout(git("rev-parse", "--abbrev-ref", "HEAD"), "Unable to determine the current branch");
   if (branchName === "HEAD") failRelease("CI/CD flow must run from a named branch, not detached HEAD.");
   return branchName;
+}
+
+/** Restore the operator's starting branch after temporarily checking out main during release automation. */
+async function restoreSourceBranch(sourceBranch: string): Promise<void> {
+  const currentBranch = await runCommandForStdout(git("rev-parse", "--abbrev-ref", "HEAD"), "Unable to determine the current branch for cleanup");
+  if (currentBranch === sourceBranch) return;
+  await runStepOrExit({ command: git("checkout", sourceBranch), label: `Restore ${sourceBranch}` });
 }
 
 const ensureNoStagedChangesRemain = async (): Promise<void> => {
@@ -168,48 +216,42 @@ const runBunCheckAgainstIndexSnapshot = async (): Promise<void> => await withSna
   await runStepOrExit({ command: ["bun", "check"], label: "Run bun check for the staged snapshot" }, path);
 });
 
-const runStepAgainstHeadWorktree = async (step: ReleaseStep): Promise<void> => await withSnapshot("check-suite-cicd-head-", async (path) => await runStepOrExit({ command: git("worktree", "add", "--detach", path, "HEAD"), label: "Materialize the committed HEAD worktree" }), async (path) => await runStepOrExit({ command: git("worktree", "remove", "--force", path), label: "Remove the detached HEAD worktree" }), async (path) => {
-  logRelease(`Running ${step.label} in detached HEAD worktree ${path}`);
-  await runStepOrExit(step, path);
-});
-
-/** Validate the staged candidate, publish from detached HEAD, then fast-forward local main. */
+/** Validate the staged candidate, run semantic-release on main, then sync branches. */
 async function main(): Promise<void> {
   const releaseLock = await acquireReleaseLock();
+  let sourceBranch: string | undefined;
   try {
-    const sourceBranch = await resolveSourceBranch();
+    sourceBranch = await resolveSourceBranch();
+    await ensureStagedReleaseCandidate();
     await runBunCheckAgainstIndexSnapshot();
     await commitPendingChangesIfRequested();
     await ensureNoStagedChangesRemain();
-    if (sourceBranch !== MAIN_BRANCH) await fastForwardBranchIntoMain(sourceBranch);
+    await reconcileSourceBranchWithMain(sourceBranch);
+    await pushSourceBranchIfNeeded(sourceBranch);
+    await fastForwardBranchIntoMain(sourceBranch);
     await runStepOrExit({ command: git("push", "origin", MAIN_BRANCH), label: `Push ${MAIN_BRANCH} to origin` });
     const releaseRevision = await ensureHeadMatchesOriginMain();
-    await runStepAgainstHeadWorktree({ command: ["bunx", "semantic-release", "--no-ci", "--dry-run"], label: "Run semantic-release dry-run" });
-    logRelease("Dry-run checks completed.");
     if (!(await askYesNo("Publish the release now? (y/n) "))) return void logRelease("Publish step skipped by user.");
     if ((await getHeadRevision("Unable to resolve the current revision")) !== releaseRevision) failRelease(`HEAD changed during the CI/CD workflow (${releaseRevision} -> ${await getHeadRevision("Unable to resolve the current revision")}). Restart from a stable state.`);
     await ensureHeadMatchesOriginMain();
-    await runStepAgainstHeadWorktree({ command: ["bunx", "semantic-release", "--no-ci"], label: "Run semantic-release" });
-    await syncLocalMainWithOrigin();
+    await runStepOrExit({ command: ["bunx", "semantic-release", "--no-ci"], label: "Run semantic-release" });
+    await runStepOrExit({ command: git("fetch", "origin", MAIN_BRANCH), label: `Fetch origin/${MAIN_BRANCH} after release` });
+    await runStepOrExit({ command: git("reset", "--hard", `refs/remotes/origin/${MAIN_BRANCH}`), label: `Reset local ${MAIN_BRANCH} to origin/${MAIN_BRANCH}` });
+    await syncSourceBranchWithMain(sourceBranch);
   } finally {
+    if (typeof sourceBranch === "string") {
+      await restoreSourceBranch(sourceBranch);
+    }
     await releaseLock();
   }
 }
 
-async function syncLocalMainWithOrigin(): Promise<void> {
-  await fetchOriginMain(`Fetch origin/${MAIN_BRANCH} after release`);
-  const releaseState = await readMainBranchRevisionState();
-  if (determineMainBranchSyncAction("post-release", releaseState) === "continue") {
-    logRelease(`Local ${MAIN_BRANCH} already includes the published release revision ${releaseState.remoteRevision}.`);
-    return;
-  }
-  if (await hasPendingChanges()) failRelease(`Release was published, but the local ${MAIN_BRANCH} checkout is dirty and could not be fast-forwarded to origin/${MAIN_BRANCH}. Clean the worktree and run git pull --ff-only to pick up the release commit and version bump.`);
-  await runStepOrExit({ command: git("merge", "--ff-only", `refs/remotes/origin/${MAIN_BRANCH}`), label: `Fast-forward local ${MAIN_BRANCH} to origin/${MAIN_BRANCH}` });
-  const syncedState = await readMainBranchRevisionState();
-  if (determineMainBranchSyncAction("post-release", syncedState) !== "continue") {
-    failRelease(`Local ${MAIN_BRANCH} still does not match origin/${MAIN_BRANCH} after the fast-forward attempt.`);
-  }
-  logRelease(`Fast-forwarded local ${MAIN_BRANCH} to published release revision ${syncedState.remoteRevision}.`);
+/** Fast-forward source branch to include the release merge and version bump so it stays in sync with main. */
+async function syncSourceBranchWithMain(sourceBranch: string): Promise<void> {
+  if (sourceBranch === MAIN_BRANCH) return;
+  await runStepOrExit({ command: git("checkout", sourceBranch), label: `Check out ${sourceBranch}` });
+  await runStepOrExit({ command: git("merge", "--ff-only", MAIN_BRANCH), label: `Fast-forward '${sourceBranch}' to ${MAIN_BRANCH}` });
+  await runStepOrExit({ command: git("push", "origin", sourceBranch), label: `Push ${sourceBranch} to origin` });
 }
 
 if (import.meta.main) {
