@@ -14,6 +14,7 @@ interface MainBranchRevisionState { headRevision: string; remoteRevision: string
 type MainBranchSyncAction = "continue" | "fail" | "fast-forward";
 type MainBranchSyncPhase = "post-release" | "pre-release";
 type OutputMode = "capture" | "inherit";
+type ReleaseCandidatePreparationAction = "auto-stage" | "continue" | "use-clean-head";
 interface ReleaseStep { command: Command; label: string; }
 
 /** Keep CI/CD deterministic while still prompting for explicit operator consent. */
@@ -38,6 +39,16 @@ const hasCommandAvailable = async (commandName: string): Promise<boolean> => {
 export function determineMainBranchSyncAction(phase: MainBranchSyncPhase, state: MainBranchRevisionState): MainBranchSyncAction {
   if (state.headRevision === state.remoteRevision) return "continue";
   return phase === "post-release" ? "fast-forward" : "fail";
+}
+
+/**
+ * Decide whether release validation should use the staged index, auto-stage the
+ * current worktree, or accept the already-committed clean HEAD as the release
+ * candidate.
+ */
+export function determineReleaseCandidatePreparationAction(hasStagedReleaseCandidate: boolean, hasPendingWorktreeChanges: boolean): ReleaseCandidatePreparationAction {
+  if (hasStagedReleaseCandidate) return "continue";
+  return hasPendingWorktreeChanges ? "auto-stage" : "use-clean-head";
 }
 
 /** Run subprocesses in either streaming or captured mode without losing timing data. */
@@ -101,10 +112,17 @@ const hasStagedChanges = async (): Promise<boolean> => (await runCommandForStdou
 /** Auto-stage the current release candidate when the workflow starts from a dirty but unstaged worktree. */
 const stageAllPendingChanges = async (): Promise<void> => await runStepOrExit({ command: git("add", "--all"), label: "Stage the release candidate" });
 
+/**
+ * Ensure the release flow has a deterministic snapshot to validate. A clean
+ * worktree means HEAD and the index already represent the same committed
+ * candidate, so no additional staging is required.
+ */
 const ensureStagedReleaseCandidate = async (): Promise<void> => {
-  if (await hasStagedChanges()) return;
-  if (!(await hasPendingChanges())) {
-    failRelease("No staged release candidate found and the worktree is clean. Make the release changes before running CI/CD.");
+  const preparationAction = determineReleaseCandidatePreparationAction(await hasStagedChanges(), await hasPendingChanges());
+  if (preparationAction === "continue") return;
+  if (preparationAction === "use-clean-head") {
+    logRelease("No staged release candidate found at startup, but the worktree is clean. Continuing with the committed HEAD snapshot.");
+    return;
   }
   logRelease("No staged release candidate found at startup. Auto-staging all pending changes.");
   await stageAllPendingChanges();
@@ -216,7 +234,7 @@ const runBunCheckAgainstIndexSnapshot = async (): Promise<void> => await withSna
   await runStepOrExit({ command: ["bun", "check"], label: "Run bun check for the staged snapshot" }, path);
 });
 
-/** Validate the staged candidate, run semantic-release on main, then sync branches. */
+/** Validate the staged or committed candidate, run semantic-release on main, then sync branches. */
 async function main(): Promise<void> {
   const releaseLock = await acquireReleaseLock();
   let sourceBranch: string | undefined;
