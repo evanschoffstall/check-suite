@@ -15,16 +15,15 @@ import type {
 import { hasPackageScript } from "check-suite/config";
 import { defineCheckSuiteConfig } from "check-suite/config-schema";
 import {
-  analyzeArchitecture,
   createSpawnComplexityAdapter,
   discoverDefaultCodeRoots,
-  formatArchitectureViolations,
   inferAllowedRootFileStems,
   inferCentralSurfacePathPrefixes,
   inferDependencyPolicies,
   inferEntrypointNames,
   inferExplicitPublicSurfacePaths,
   parseCsvComplexityRows,
+  runArchitectureCheck,
   runComplexityCheck,
 } from "check-suite/quality";
 import { createSafeRegExp, isSafeRegExpPattern } from "check-suite/regex";
@@ -140,10 +139,9 @@ const architecture = defineStep({
   })() as Record<string, unknown>,
   failMsg: "architecture violations found",
   label: "architecture",
-  source: ({ cwd, data, fail, ok }: InlineTypeScriptContext): Command => {
-    const violations = analyzeArchitecture(cwd, data);
-    const output = formatArchitectureViolations(violations);
-    return violations.length === 0 ? ok(output) : fail(output);
+  source: async ({ cwd, data, fail, ok }: InlineTypeScriptContext): Promise<Command> => {
+    const result = await runArchitectureCheck(cwd, data);
+    return result.exitCode === 0 ? ok(result.output) : fail(result.output);
   },
 });
 const purgeCss = defineStep({

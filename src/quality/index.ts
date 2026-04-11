@@ -44,5 +44,9 @@ export {
   inferDependencyPolicies,
   inferEntrypointNames,
   inferExplicitPublicSurfacePaths,
+  runArchitectureCheck,
 } from "@/quality/module-boundaries/index.ts";
-export type { ArchitectureAnalyzerConfig } from "@/quality/module-boundaries/index.ts";
+export type {
+  ArchitectureAnalyzerConfig,
+  ArchitectureCheckResult,
+} from "@/quality/module-boundaries/index.ts";
