@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import {
   determineMainBranchSyncAction,
   determineReleaseCandidatePreparationAction,
+  formatExistingLocalTagFailure,
 } from "../scripts/cicd.ts";
 
 describe("cicd release candidate preparation", () => {
@@ -42,5 +43,19 @@ describe("cicd main branch sync action", () => {
         remoteRevision: "def456",
       }),
     ).toBe("fast-forward");
+  });
+});
+
+describe("semantic-release local tag collisions", () => {
+  test("explains that an existing local tag blocks semantic-release", () => {
+    expect(
+      formatExistingLocalTagFailure("fatal: tag 'v1.6.0' already exists"),
+    ).toContain("git tag -d v1.6.0");
+  });
+
+  test("ignores unrelated semantic-release failures", () => {
+    expect(
+      formatExistingLocalTagFailure("fatal: unable to access remote origin"),
+    ).toBeUndefined();
   });
 });

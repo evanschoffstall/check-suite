@@ -16,6 +16,7 @@ type MainBranchSyncPhase = "post-release" | "pre-release";
 type OutputMode = "capture" | "inherit";
 type ReleaseCandidatePreparationAction = "auto-stage" | "continue" | "use-clean-head";
 interface ReleaseStep { command: Command; label: string; }
+const existingLocalTagPattern = /fatal: tag '([^']+)' already exists/iu;
 
 /** Keep CI/CD deterministic while still prompting for explicit operator consent. */
 class ReleaseWorkflowError extends Error {
@@ -51,6 +52,17 @@ export function determineReleaseCandidatePreparationAction(hasStagedReleaseCandi
   return hasPendingWorktreeChanges ? "auto-stage" : "use-clean-head";
 }
 
+/**
+ * Convert semantic-release's raw git-tag collision into an actionable operator
+ * message so local tag state is fixed before the workflow retries.
+ */
+export function formatExistingLocalTagFailure(stderr: string): string | undefined {
+  const tagMatch = existingLocalTagPattern.exec(stderr);
+  if (!tagMatch) return undefined;
+  const [, tagName] = tagMatch;
+  return `semantic-release could not create ${tagName} because that tag already exists in the local git repository. GitHub releases and visible remote tags can already be gone while the local tag still remains. Delete the local tag with 'git tag -d ${tagName}' and remove any matching remote tag ref before retrying.`;
+}
+
 /** Run subprocesses in either streaming or captured mode without losing timing data. */
 async function runCommand(command: Command, outputMode: OutputMode = "inherit", cwd = process.cwd()): Promise<CommandResult> {
   const [executable, ...arguments_] = command;
@@ -78,6 +90,13 @@ const runCommandForStdout = async (command: Command, failureLabel: string): Prom
   if (result.exitCode === 0) return result.stdout.trim();
   const stderr = result.stderr.trim();
   return failRelease(stderr.length > 0 ? `${failureLabel}: ${stderr}` : `${failureLabel}: command exited with ${result.exitCode}.`);
+};
+
+/** Preserve captured subprocess output while still allowing custom failure handling. */
+const writeCapturedOutput = (stream: "stderr" | "stdout", text: string): void => {
+  if (text.length === 0) return;
+  const target = stream === "stdout" ? process.stdout : process.stderr;
+  target.write(text.endsWith("\n") ? text : `${text}\n`);
 };
 
 /** Isolate staged and committed snapshots while reusing the main dependency tree. */
@@ -252,7 +271,7 @@ async function main(): Promise<void> {
     if (!(await askYesNo("Publish the release now? (y/n) "))) return void logRelease("Publish step skipped by user.");
     if ((await getHeadRevision("Unable to resolve the current revision")) !== releaseRevision) failRelease(`HEAD changed during the CI/CD workflow (${releaseRevision} -> ${await getHeadRevision("Unable to resolve the current revision")}). Restart from a stable state.`);
     await ensureHeadMatchesOriginMain();
-    await runStepOrExit({ command: ["bunx", "semantic-release", "--no-ci"], label: "Run semantic-release" });
+    await runSemanticReleaseOrExit();
     await runStepOrExit({ command: git("fetch", "origin", MAIN_BRANCH), label: `Fetch origin/${MAIN_BRANCH} after release` });
     await runStepOrExit({ command: git("reset", "--hard", `refs/remotes/origin/${MAIN_BRANCH}`), label: `Reset local ${MAIN_BRANCH} to origin/${MAIN_BRANCH}` });
     await syncSourceBranchWithMain(sourceBranch);
@@ -262,6 +281,29 @@ async function main(): Promise<void> {
     }
     await releaseLock();
   }
+}
+
+/** Run semantic-release with captured output so known git tag collisions can be surfaced clearly. */
+async function runSemanticReleaseOrExit(): Promise<void> {
+  const step: ReleaseStep = {
+    command: ["bunx", "semantic-release", "--no-ci"],
+    label: "Run semantic-release",
+  };
+  logRelease(`Starting: ${step.label}`);
+  const result = await runCommand(step.command, "capture");
+  writeCapturedOutput("stdout", result.stdout);
+  writeCapturedOutput("stderr", result.stderr);
+  if (result.exitCode === 0) {
+    logRelease(`Completed: ${step.label} (${result.durationInMilliseconds}ms)`);
+    return;
+  }
+  const existingLocalTagFailure = formatExistingLocalTagFailure(result.stderr);
+  if (existingLocalTagFailure) {
+    logRelease(existingLocalTagFailure);
+    throw new ReleaseWorkflowError(existingLocalTagFailure, result.exitCode);
+  }
+  logRelease(`Failed: ${step.label} (exit code ${result.exitCode} after ${result.durationInMilliseconds}ms)`);
+  throw new ReleaseWorkflowError(step.label, result.exitCode);
 }
 
 /** Fast-forward source branch to include the release merge and version bump so it stays in sync with main. */
