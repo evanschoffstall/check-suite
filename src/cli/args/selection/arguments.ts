@@ -73,6 +73,7 @@ export function parseSuiteSelectionArguments(
     directStep: undefined,
     directStepArgs: [],
     excludedKeys: new Set<string>(selectionState.exclusions),
+    failureOutputLineLimit: cliOptions.failureOutputLineLimit,
     invalidOptions: cliOptions.invalidOptions,
     invalidSuiteExclusions: selectionState.invalidSuiteExclusions,
     invalidSuiteFlags: selectionState.invalidSuiteFlags,

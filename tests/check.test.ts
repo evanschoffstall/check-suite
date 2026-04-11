@@ -106,6 +106,7 @@ describe("check CLI", () => {
     expect(stdout).toContain("Usage: check-suite [command] [options]");
     expect(stdout).toContain("--output=all");
     expect(stdout).toContain("--output=failures");
+    expect(stdout).toContain("--fail-lines=<n>");
   });
 
   test("prints help for summary --help", async () => {
@@ -121,16 +122,24 @@ describe("check CLI", () => {
     expect(stdout).toContain("Suite Options:");
   });
 
-  test("defaults suite output mode to failures-only and accepts --output=all", () => {
+  test("parses suite output options and failing output line limits", () => {
     expect(parseCliOptions([]).outputMode).toBe("failures-only");
+    expect(parseCliOptions([]).failureOutputLineLimit).toBeNull();
     expect(parseCliOptions(["--output=all", "--lint"]).outputMode).toBe(
       "all",
     );
     expect(parseCliOptions(["--output=failures"]).outputMode).toBe(
       "failures-only",
     );
+    expect(parseCliOptions(["--fail-lines=3"]).failureOutputLineLimit).toBe(3);
     expect(parseCliOptions(["--output=nope"]).invalidOptions).toEqual([
       "--output=nope",
+    ]);
+    expect(parseCliOptions(["--fail-lines=0"]).invalidOptions).toEqual([
+      "--fail-lines=0",
+    ]);
+    expect(parseCliOptions(["--fail-lines=nope"]).invalidOptions).toEqual([
+      "--fail-lines=nope",
     ]);
   });
 
@@ -286,9 +295,8 @@ describe("format helpers", () => {
 
       printSuiteOutputs(
         allExecutedSteps,
-        runs,
+        { failureOutputLineLimit: null, outputMode: "failures-only", runs },
         processedResults,
-        "failures-only",
         false,
         false,
       );
@@ -302,14 +310,67 @@ describe("format helpers", () => {
 
       printSuiteOutputs(
         allExecutedSteps,
-        runs,
+        { failureOutputLineLimit: null, outputMode: "all", runs },
         processedResults,
-        "all",
         false,
         false,
       );
       expect(writeLines).toEqual(["pass output\n", "fail output\n"]);
       expect(infoLines.some((line) => stripAnsi(line).includes("pass step"))).toBe(
+        true,
+      );
+    } finally {
+      console.info = originalConsoleInfo;
+      process.stdout.write = originalStdoutWrite;
+    }
+  });
+
+  test("suite output line limit truncates failing output only", () => {
+    const infoLines: string[] = [];
+    const writeLines: string[] = [];
+    const originalConsoleInfo = console.info;
+    const originalStdoutWrite = process.stdout.write;
+
+    console.info = ((...args: unknown[]) => {
+      infoLines.push(args.join(" "));
+    }) as typeof console.info;
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      writeLines.push(
+        typeof chunk === "string" ? chunk : Buffer.from(chunk).toString("utf8"),
+      );
+      return true;
+    }) as typeof process.stdout.write;
+
+    try {
+      const allExecutedSteps = [
+        { key: "pass-step", label: "pass step" },
+        { key: "fail-step", label: "fail step" },
+      ];
+      const runs = {
+        "fail-step": { exitCode: 1, output: "fail raw", timedOut: false },
+        "pass-step": { exitCode: 0, output: "pass raw", timedOut: false },
+      };
+      const processedResults = {
+        "fail-step": { displayOutput: "line 1\nline 2\nline 3\n", postProcess: null },
+        "pass-step": { displayOutput: "pass line 1\npass line 2\npass line 3\n", postProcess: null },
+      };
+
+      printSuiteOutputs(
+        allExecutedSteps,
+        { failureOutputLineLimit: 2, outputMode: "all", runs },
+        processedResults,
+        false,
+        false,
+      );
+
+      expect(writeLines).toEqual([
+        "pass line 1\npass line 2\npass line 3\n",
+        "line 1\nline 2\n... truncated to first 2 lines of failing output (--fail-lines=2)\n",
+      ]);
+      expect(infoLines.some((line) => stripAnsi(line).includes("pass step"))).toBe(
+        true,
+      );
+      expect(infoLines.some((line) => stripAnsi(line).includes("fail step"))).toBe(
         true,
       );
     } finally {

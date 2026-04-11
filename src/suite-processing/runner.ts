@@ -21,6 +21,7 @@ export async function runCheckSuite(
   keyFilter?: null | Set<string>,
   options: {
     excludedKeys?: ReadonlySet<string>;
+    failureOutputLineLimit?: null | number;
     indicator?: CheckingIndicatorController;
     outputMode?: SuiteOutputMode;
     summaryOnly?: boolean;
@@ -54,6 +55,7 @@ export async function runCheckSuite(
 
   printSuiteReport(
     executionState,
+    options.failureOutputLineLimit ?? null,
     report.processedResults,
     outputMode,
     summaryOnly,
@@ -78,6 +80,7 @@ function completeSuiteRun(allOk: boolean, timedOut: boolean): void {
 
 function printSuiteReport(
   executionState: Awaited<ReturnType<typeof executeSuiteSteps>>,
+  failureOutputLineLimit: null | number,
   processedResults: Awaited<
     ReturnType<typeof prepareSuiteReport>
   >["processedResults"],
@@ -87,9 +90,12 @@ function printSuiteReport(
 ): void {
   printSuiteOutputs(
     executionState.allExecutedSteps,
-    executionState.runs,
+    {
+      failureOutputLineLimit,
+      outputMode,
+      runs: executionState.runs,
+    },
     processedResults,
-    outputMode,
     executionState.suiteExpiredBeforeOutput,
     summaryOnly,
   );
@@ -97,6 +103,7 @@ function printSuiteReport(
     executionState.executedMainSteps,
     processedResults,
     {
+      failureOutputLineLimit,
       outputMode,
       runs: executionState.runs,
     },

@@ -17,6 +17,7 @@ import {
 } from "@/format/index.ts";
 
 interface SuiteDetailDisplayOptions {
+  failureOutputLineLimit: null | number;
   outputMode: SuiteOutputMode;
   runs: Record<string, Command>;
 }
@@ -24,23 +25,27 @@ interface SuiteDetailDisplayOptions {
 /** Prints each executed step's display output to stdout. */
 export function printSuiteOutputs(
   allExecutedSteps: StepConfig[],
-  runs: Record<string, Command>,
+  detailOptions: SuiteDetailDisplayOptions,
   processedResults: Record<string, ProcessedResultEntry>,
-  outputMode: SuiteOutputMode,
   suiteExpiredBeforeOutput: boolean,
   summaryOnly: boolean,
 ): void {
   if (summaryOnly || suiteExpiredBeforeOutput) return;
 
   for (const step of allExecutedSteps) {
-    if (runs[step.key].notFound) continue;
-    if (!shouldPrintStepDetails(step.key, runs, processedResults, outputMode)) {
+    if (detailOptions.runs[step.key].notFound) continue;
+    const status = getStepStatus(step.key, detailOptions.runs, processedResults);
+    if (!shouldPrintStepDetails(status, detailOptions.outputMode)) {
       continue;
     }
     const postProcessedOutput = processedResults[step.key].postProcess?.output;
     printStepOutput(
       step.label,
-      postProcessedOutput ?? processedResults[step.key].displayOutput,
+      limitFailingOutputLines(
+        postProcessedOutput ?? processedResults[step.key].displayOutput,
+        detailOptions.failureOutputLineLimit,
+        status,
+      ),
     );
   }
 }
@@ -65,9 +70,7 @@ export function printSuitePostProcessFeedback(
     if (suiteExpiredBeforeOutput) break;
     if (
       !shouldPrintStepDetails(
-        step.key,
-        detailOptions.runs,
-        processedResults,
+        getStepStatus(step.key, detailOptions.runs, processedResults),
         detailOptions.outputMode,
       )
     ) {
@@ -131,16 +134,37 @@ function getStepStatus(
   );
 }
 
+/** Truncates detailed failing output to the configured line budget, when set. */
+function limitFailingOutputLines(
+  output: string,
+  failureOutputLineLimit: null | number,
+  status: "fail" | "pass",
+): string {
+  if (status === "pass" || failureOutputLineLimit === null) {
+    return output;
+  }
+
+  const normalizedOutput = output.replace(/\r\n/gu, "\n");
+  const visibleLines = normalizedOutput.endsWith("\n")
+    ? normalizedOutput.slice(0, -1).split("\n")
+    : normalizedOutput.split("\n");
+  if (visibleLines.length <= failureOutputLineLimit) {
+    return output;
+  }
+
+  const truncatedLabel =
+    failureOutputLineLimit === 1 ? "line" : "lines";
+  return `${visibleLines.slice(0, failureOutputLineLimit).join("\n")}\n... truncated to first ${failureOutputLineLimit} ${truncatedLabel} of failing output (--fail-lines=${failureOutputLineLimit})`;
+}
+
 function shouldPrintStepDetails(
-  stepKey: string,
-  runs: Record<string, Command>,
-  processedResults: Record<string, ProcessedResultEntry>,
+  status: "fail" | "pass",
   outputMode: SuiteOutputMode,
 ): boolean {
   if (outputMode === "all") {
     return true;
   }
 
-  return getStepStatus(stepKey, runs, processedResults) === "fail";
+  return status === "fail";
 }
 

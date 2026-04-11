@@ -13,6 +13,7 @@ const HELP_TEXT = [
   "Suite Options:",
   "  --output=failures    Show detailed output only for failing steps (default)",
   "  --output=all         Show detailed output for all steps",
+  "  --fail-lines=<n>     Show only the first <n> lines of each failing step output",
   "  ---no=<step-key>     Exclude a suite step",
   "  --<step-key>         Run only the named suite step(s)",
   "  --help, -h           Show this help text",
@@ -20,6 +21,7 @@ const HELP_TEXT = [
   "Examples:",
   "  check-suite",
   "  check-suite --output=all",
+  "  check-suite --fail-lines=25",
   "  check-suite summary --<step-key>",
   "  check-suite <step-key> -- --watch",
 ].join("\n");
@@ -144,6 +146,7 @@ async function runSuiteCommand(
   const { runCheckSuite } = await import("@/suite-processing/index.ts");
   await runCheckSuite(cliArguments.keyFilter, {
     excludedKeys: cliArguments.excludedKeys,
+    failureOutputLineLimit: cliArguments.failureOutputLineLimit,
     indicator: indicator ?? undefined,
     outputMode: cliArguments.outputMode,
     summaryOnly: cliArguments.command === "summary",

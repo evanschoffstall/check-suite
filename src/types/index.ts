@@ -29,6 +29,7 @@ export interface CliArguments {
   directStep?: StepConfig;
   directStepArgs: string[];
   excludedKeys: Set<string>;
+  failureOutputLineLimit: null | number;
   invalidOptions: string[];
   invalidSuiteExclusions: string[];
   invalidSuiteFlags: string[];
