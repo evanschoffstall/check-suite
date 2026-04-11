@@ -11,8 +11,8 @@ import type {
 import { isRecord } from "@/foundation/index.ts";
 import { withMissingDetection } from "@/process/index.ts";
 
+import { resolveInlineTypeScriptRunner } from "./compiler";
 import { toInlineTypeScriptConfig } from "./config.ts";
-import { resolveInlineTypeScriptRunner } from "./runtime.ts";
 
 export async function runInlineTypeScriptStep(
   step: StepConfig,

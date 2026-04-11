@@ -3,12 +3,12 @@ import type {
   ArchitectureViolation,
 } from "@/quality/module-boundaries/foundation/index.ts";
 
+import { buildPolicyImportViolations } from "./policy-import-violations";
 import {
   getContainingBoundary,
   shouldFlagDeepRelativeImport,
   shouldPreferAliasImport,
-} from "./helpers";
-import { buildPolicyImportViolations } from "./policy-import-violations";
+} from "./shared";
 import { addRepeatedImport, buildLayerViolation } from "./violations";
 
 /** Builds all import-edge violations for a single resolved import record. */

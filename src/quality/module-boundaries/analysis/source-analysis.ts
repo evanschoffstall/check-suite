@@ -15,7 +15,7 @@ import {
 } from "@/quality/module-boundaries/foundation/index.ts";
 
 import { resolveModulePath } from "./module-resolution";
-import { countTopLevelRuntimeOperations } from "./runtime-analysis";
+import { countTopLevelRuntimeOperations } from "./top-level-operations";
 
 /** Collects AST-derived facts for each scanned source file. */
 export function collectSourceFacts(

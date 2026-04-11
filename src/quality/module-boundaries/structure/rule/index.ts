@@ -10,18 +10,18 @@ export {
   buildPublicSurfaceTierViolations,
 } from "./dependency-graph-violations";
 export {
-  getTopLevelOwner,
-  isDirectChildOfCodeRoot,
-  matchesResponsibilityName,
-  normalizeParentPath,
-} from "./helpers";
-export {
   buildFlattenedFeatureViolations,
   buildJunkDrawerViolations,
   buildSameNameFileDirectoryViolations,
   buildScatteredFeatureHomeViolations,
   buildSplitHomeViolations,
 } from "./layout-violations";
+export {
+  getTopLevelOwner,
+  isDirectChildOfCodeRoot,
+  matchesResponsibilityName,
+  normalizeParentPath,
+} from "./ownership";
 export { buildDependencyPolicyCoverageViolations } from "./policy-violations";
 export {
   buildCentralSurfaceBudgetViolations,

@@ -2,7 +2,7 @@ import type {
   Command,
   StepConfig,
   StepPostProcessResult,
-} from "./step-runtime-types.ts";
+} from "./step-types";
 
 export interface CheckConfig {
   paths: Record<string, string>;
@@ -109,4 +109,4 @@ export type {
   StepPostProcessResult,
   Summary,
   SummaryPattern,
-} from "./step-runtime-types.ts";
+} from "./step-types";

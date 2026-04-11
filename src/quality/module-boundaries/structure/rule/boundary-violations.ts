@@ -14,7 +14,7 @@ import {
   isCodeRootDirectory,
   isPureBarrelEntrypoint,
   normalizeParentPath,
-} from "./helpers";
+} from "./ownership";
 
 /** Flags entrypoints that re-export too many modules. */
 export function buildBroadBarrelViolations(

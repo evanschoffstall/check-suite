@@ -254,7 +254,7 @@ function startInProcessIndicatorRenderer(
 function startSubprocessIndicatorRenderer(
   frameIntervalMs: number,
 ): ActiveIndicatorRenderer {
-  const runtimePath = new URL("./runtime.ts", import.meta.url).pathname;
+  const runtimePath = new URL("./frame-loop.ts", import.meta.url).pathname;
   const child = Bun.spawn(
     [process.execPath, runtimePath, String(frameIntervalMs), "1"],
     {
