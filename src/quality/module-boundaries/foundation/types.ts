@@ -17,6 +17,8 @@ export interface ArchitectureAnalyzerConfig {
   ignoredDirectoryNames?: string[];
   includeRootFiles?: boolean;
   junkDrawerDirectoryNames?: string[];
+  /** Glob patterns matched against file basenames and stems, e.g. `*helper*`. */
+  junkDrawerFileNamePatterns?: string[];
   junkDrawerFileStems?: string[];
   layerGroups?: ArchitectureLayerGroup[];
   maxCentralSurfaceExports?: number;

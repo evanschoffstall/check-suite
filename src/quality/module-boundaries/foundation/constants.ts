@@ -40,6 +40,7 @@ export const DEFAULT_IGNORED_DIRECTORY_NAMES: string[] = [
 ];
 
 export const DEFAULT_JUNK_DRAWER_DIRECTORY_NAMES: string[] = [];
+export const DEFAULT_JUNK_DRAWER_FILE_NAME_PATTERNS: string[] = [];
 export const DEFAULT_JUNK_DRAWER_FILE_STEMS: string[] = [];
 export const DEFAULT_MAX_DIRECTORY_DEPTH = Number.MAX_SAFE_INTEGER;
 export const DEFAULT_MAX_CENTRAL_SURFACE_EXPORTS = Number.MAX_SAFE_INTEGER;

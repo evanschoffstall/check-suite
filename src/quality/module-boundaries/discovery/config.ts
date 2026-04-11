@@ -14,31 +14,7 @@ import {
   normalizeLayerGroups,
   normalizeStringListConfig,
 } from "@/quality/module-boundaries/discovery/normalization.ts";
-import {
-  DEFAULT_ALLOW_PUBLIC_SURFACE_RE_EXPORT_CHAINS,
-  DEFAULT_ALLOWED_IMPURE_PUBLIC_SURFACE_PATHS,
-  DEFAULT_ALLOWED_ROOT_FILE_STEMS,
-  DEFAULT_CENTRAL_SURFACE_PATH_PREFIXES,
-  DEFAULT_ENTRYPOINT_NAMES,
-  DEFAULT_EXPLICIT_PUBLIC_SURFACE_PATHS,
-  DEFAULT_IGNORED_DIRECTORY_NAMES,
-  DEFAULT_JUNK_DRAWER_DIRECTORY_NAMES,
-  DEFAULT_JUNK_DRAWER_FILE_STEMS,
-  DEFAULT_MAX_CENTRAL_SURFACE_EXPORTS,
-  DEFAULT_MAX_DIRECTORY_DEPTH,
-  DEFAULT_MAX_ENTRYPOINT_RE_EXPORTS,
-  DEFAULT_MAX_INTERNAL_IMPORTS,
-  DEFAULT_MAX_POLICY_FAN_OUT,
-  DEFAULT_MAX_SIBLING_IMPORTS,
-  DEFAULT_MAX_WILDCARD_EXPORTS_PER_PUBLIC_SURFACE,
-  DEFAULT_MIN_REPEATED_DEEP_IMPORTS,
-  DEFAULT_REQUIRE_ACYCLIC_DEPENDENCY_POLICIES,
-  DEFAULT_REQUIRE_COMPLETE_DEPENDENCY_POLICY_COVERAGE,
-  DEFAULT_REQUIRE_TYPE_ONLY_IMPORTS_FOR_TYPE_ONLY_POLICIES,
-  DEFAULT_SHARED_HOME_NAMES,
-  DEFAULT_TEST_DIRECTORY_NAMES,
-  DEFAULT_VENDOR_MANAGED_DIRECTORY_NAMES,
-} from "@/quality/module-boundaries/foundation/index.ts";
+import * as architectureDefaults from "@/quality/module-boundaries/foundation/index.ts";
 import {
   directoryContainsCode,
   isIgnoredDirectory,
@@ -144,6 +120,7 @@ function normalizeDirectoryNameConfig(
   | "explicitPublicSurfacePaths"
   | "ignoredDirectoryNames"
   | "junkDrawerDirectoryNames"
+  | "junkDrawerFileNamePatterns"
   | "junkDrawerFileStems"
   | "requireAcyclicDependencyPolicies"
   | "requireCompleteDependencyPolicyCoverage"
@@ -166,6 +143,7 @@ function normalizeDirectoryNamingConfig(
   | "allowedRootFileStems"
   | "ignoredDirectoryNames"
   | "junkDrawerDirectoryNames"
+  | "junkDrawerFileNamePatterns"
   | "junkDrawerFileStems"
   | "sharedHomeNames"
   | "testDirectoryNames"
@@ -174,31 +152,35 @@ function normalizeDirectoryNamingConfig(
   return {
     allowedRootFileStems: normalizeStringListConfig(
       record.allowedRootFileStems,
-      DEFAULT_ALLOWED_ROOT_FILE_STEMS,
+      architectureDefaults.DEFAULT_ALLOWED_ROOT_FILE_STEMS,
     ),
     ignoredDirectoryNames: normalizeStringListConfig(
       record.ignoredDirectoryNames,
-      DEFAULT_IGNORED_DIRECTORY_NAMES,
+      architectureDefaults.DEFAULT_IGNORED_DIRECTORY_NAMES,
     ),
     junkDrawerDirectoryNames: normalizeStringListConfig(
       record.junkDrawerDirectoryNames,
-      DEFAULT_JUNK_DRAWER_DIRECTORY_NAMES,
+      architectureDefaults.DEFAULT_JUNK_DRAWER_DIRECTORY_NAMES,
+    ),
+    junkDrawerFileNamePatterns: normalizeStringListConfig(
+      record.junkDrawerFileNamePatterns,
+      architectureDefaults.DEFAULT_JUNK_DRAWER_FILE_NAME_PATTERNS,
     ),
     junkDrawerFileStems: normalizeStringListConfig(
       record.junkDrawerFileStems,
-      DEFAULT_JUNK_DRAWER_FILE_STEMS,
+      architectureDefaults.DEFAULT_JUNK_DRAWER_FILE_STEMS,
     ),
     sharedHomeNames: normalizeStringListConfig(
       record.sharedHomeNames,
-      DEFAULT_SHARED_HOME_NAMES,
+      architectureDefaults.DEFAULT_SHARED_HOME_NAMES,
     ),
     testDirectoryNames: normalizeStringListConfig(
       record.testDirectoryNames,
-      DEFAULT_TEST_DIRECTORY_NAMES,
+      architectureDefaults.DEFAULT_TEST_DIRECTORY_NAMES,
     ),
     vendorManagedDirectoryNames: normalizeStringListConfig(
       record.vendorManagedDirectoryNames,
-      DEFAULT_VENDOR_MANAGED_DIRECTORY_NAMES,
+      architectureDefaults.DEFAULT_VENDOR_MANAGED_DIRECTORY_NAMES,
     ),
   };
 }
@@ -208,7 +190,7 @@ function normalizeEntrypointRules(
 ): ArchitectureEntrypointRule[] {
   const defaultRules = normalizeStringListConfig(
     record.entrypointNames,
-    DEFAULT_ENTRYPOINT_NAMES,
+    architectureDefaults.DEFAULT_ENTRYPOINT_NAMES,
   ).map((name) => ({
     allowSiblingEntrypoints: false,
     allowTopLevelStatements: false,
@@ -277,15 +259,15 @@ function normalizePolicyConfig(
     entrypointRules,
     requireAcyclicDependencyPolicies: normalizeBooleanConfig(
       record.requireAcyclicDependencyPolicies,
-      DEFAULT_REQUIRE_ACYCLIC_DEPENDENCY_POLICIES,
+      architectureDefaults.DEFAULT_REQUIRE_ACYCLIC_DEPENDENCY_POLICIES,
     ),
     requireCompleteDependencyPolicyCoverage: normalizeBooleanConfig(
       record.requireCompleteDependencyPolicyCoverage,
-      DEFAULT_REQUIRE_COMPLETE_DEPENDENCY_POLICY_COVERAGE,
+      architectureDefaults.DEFAULT_REQUIRE_COMPLETE_DEPENDENCY_POLICY_COVERAGE,
     ),
     requireTypeOnlyImportsForTypeOnlyPolicies: normalizeBooleanConfig(
       record.requireTypeOnlyImportsForTypeOnlyPolicies,
-      DEFAULT_REQUIRE_TYPE_ONLY_IMPORTS_FOR_TYPE_ONLY_POLICIES,
+      architectureDefaults.DEFAULT_REQUIRE_TYPE_ONLY_IMPORTS_FOR_TYPE_ONLY_POLICIES,
     ),
   };
 }
@@ -302,19 +284,19 @@ function normalizePublicSurfaceConfig(
   return {
     allowedImpurePublicSurfacePaths: normalizeStringListConfig(
       record.allowedImpurePublicSurfacePaths,
-      DEFAULT_ALLOWED_IMPURE_PUBLIC_SURFACE_PATHS,
+      architectureDefaults.DEFAULT_ALLOWED_IMPURE_PUBLIC_SURFACE_PATHS,
     ),
     allowPublicSurfaceReExportChains: normalizeBooleanConfig(
       record.allowPublicSurfaceReExportChains,
-      DEFAULT_ALLOW_PUBLIC_SURFACE_RE_EXPORT_CHAINS,
+      architectureDefaults.DEFAULT_ALLOW_PUBLIC_SURFACE_RE_EXPORT_CHAINS,
     ),
     centralSurfacePathPrefixes: normalizeStringListConfig(
       record.centralSurfacePathPrefixes,
-      DEFAULT_CENTRAL_SURFACE_PATH_PREFIXES,
+      architectureDefaults.DEFAULT_CENTRAL_SURFACE_PATH_PREFIXES,
     ),
     explicitPublicSurfacePaths: normalizeStringListConfig(
       record.explicitPublicSurfacePaths,
-      DEFAULT_EXPLICIT_PUBLIC_SURFACE_PATHS,
+      architectureDefaults.DEFAULT_EXPLICIT_PUBLIC_SURFACE_PATHS,
     ),
   };
 }
@@ -351,42 +333,42 @@ function normalizeThresholdConfig(
     maxCentralSurfaceExports: normalizeIntegerConfig(
       record.maxCentralSurfaceExports,
       1,
-      DEFAULT_MAX_CENTRAL_SURFACE_EXPORTS,
+      architectureDefaults.DEFAULT_MAX_CENTRAL_SURFACE_EXPORTS,
     ),
     maxDirectoryDepth: normalizeIntegerConfig(
       record.maxDirectoryDepth,
       1,
-      DEFAULT_MAX_DIRECTORY_DEPTH,
+      architectureDefaults.DEFAULT_MAX_DIRECTORY_DEPTH,
     ),
     maxEntrypointReExports: normalizeIntegerConfig(
       record.maxEntrypointReExports,
       1,
-      DEFAULT_MAX_ENTRYPOINT_RE_EXPORTS,
+      architectureDefaults.DEFAULT_MAX_ENTRYPOINT_RE_EXPORTS,
     ),
     maxInternalImportsPerFile: normalizeIntegerConfig(
       record.maxInternalImportsPerFile,
       1,
-      DEFAULT_MAX_INTERNAL_IMPORTS,
+      architectureDefaults.DEFAULT_MAX_INTERNAL_IMPORTS,
     ),
     maxPolicyFanOut: normalizeIntegerConfig(
       record.maxPolicyFanOut,
       1,
-      DEFAULT_MAX_POLICY_FAN_OUT,
+      architectureDefaults.DEFAULT_MAX_POLICY_FAN_OUT,
     ),
     maxSiblingImports: normalizeIntegerConfig(
       record.maxSiblingImports,
       1,
-      DEFAULT_MAX_SIBLING_IMPORTS,
+      architectureDefaults.DEFAULT_MAX_SIBLING_IMPORTS,
     ),
     maxWildcardExportsPerPublicSurface: normalizeIntegerConfig(
       record.maxWildcardExportsPerPublicSurface,
       0,
-      DEFAULT_MAX_WILDCARD_EXPORTS_PER_PUBLIC_SURFACE,
+      architectureDefaults.DEFAULT_MAX_WILDCARD_EXPORTS_PER_PUBLIC_SURFACE,
     ),
     minRepeatedDeepImports: normalizeIntegerConfig(
       record.minRepeatedDeepImports,
       2,
-      DEFAULT_MIN_REPEATED_DEEP_IMPORTS,
+      architectureDefaults.DEFAULT_MIN_REPEATED_DEEP_IMPORTS,
     ),
   };
 }

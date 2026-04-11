@@ -124,6 +124,7 @@ const architecture = defineStep({
       centralSurfacePathPrefixes: inferCentralSurfacePathPrefixes(process.cwd(), boundaryDiscovery),
       dependencyPolicies: inferDependencyPolicies(process.cwd(), boundaryDiscovery),
       includeRootFiles: false,
+      junkDrawerFileNamePatterns: ["*helper*", "*runtime*", "*util*", "*support*"],
       maxCentralSurfaceExports: 66,
       maxDirectoryDepth: 3,
       maxEntrypointReExports: 12,
