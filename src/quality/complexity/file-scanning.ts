@@ -2,39 +2,10 @@ import { existsSync, statSync } from "node:fs";
 import { relative, resolve } from "node:path";
 import ts from "typescript";
 
-import { escapeRegExpLiteral, testSafeRegExp } from "@/regex.ts";
+import { createGlobMatcher } from "@/foundation/index.ts";
 
 // ---------------------------------------------------------------------------
 // Path normalization
-// ---------------------------------------------------------------------------
-
-/** Returns a matcher function for a glob pattern (supports * and **). */
-export function createGlobMatcher(pattern: string): (value: string) => boolean {
-  const escapedPattern = pattern
-    .replaceAll("\\", "\\\\")
-    .replaceAll(".", escapeRegExpLiteral("."))
-    .replaceAll("+", escapeRegExpLiteral("+"))
-    .replaceAll("?", escapeRegExpLiteral("?"))
-    .replaceAll("^", escapeRegExpLiteral("^"))
-    .replaceAll("$", escapeRegExpLiteral("$"))
-    .replaceAll("{", escapeRegExpLiteral("{"))
-    .replaceAll("}", escapeRegExpLiteral("}"))
-    .replaceAll("(", escapeRegExpLiteral("("))
-    .replaceAll(")", escapeRegExpLiteral(")"))
-    .replaceAll("|", escapeRegExpLiteral("|"))
-    .replaceAll("[", escapeRegExpLiteral("["))
-    .replaceAll("]", escapeRegExpLiteral("]"))
-    .replaceAll("**", "\\u0000")
-    .replaceAll("*", "[^/]*")
-    .replaceAll("\\u0000", ".*");
-  const safePattern = `^${escapedPattern}$`;
-
-  return (value: string): boolean =>
-    testSafeRegExp(normalizePath(value), safePattern, "u");
-}
-
-// ---------------------------------------------------------------------------
-// Glob matching
 // ---------------------------------------------------------------------------
 
 /** Returns all TypeScript/TSX files under the given targets, excluding paths that match any exclusion pattern. */
