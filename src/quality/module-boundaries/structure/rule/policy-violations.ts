@@ -9,7 +9,7 @@ import {
 } from "@/quality/module-boundaries/foundation/index.ts";
 import { inferDependencyPolicy } from "@/quality/module-boundaries/import/rule/index.ts";
 
-import { isDirectChildOfCodeRoot } from "./helpers";
+import { isDirectChildOfCodeRoot } from "./ownership";
 
 /** Flags uncovered or overlapping dependency-policy ownership at the code-root level. */
 export function buildDependencyPolicyCoverageViolations(

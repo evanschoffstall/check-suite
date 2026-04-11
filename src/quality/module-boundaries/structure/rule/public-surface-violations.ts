@@ -6,7 +6,7 @@ import type {
 
 import { getContainingBoundary } from "@/quality/module-boundaries/import/rule/index.ts";
 
-import { getTopLevelOwner } from "./helpers";
+import { getTopLevelOwner } from "./ownership";
 
 /** Flags public surfaces that expose too many exported symbols for a central shared surface. */
 export function buildCentralSurfaceBudgetViolations(

@@ -10,7 +10,7 @@ import {
   isArchitectureEntrypoint,
 } from "@/quality/module-boundaries/foundation/index.ts";
 
-import { isCodeRootDirectory, isDirectChildOfCodeRoot } from "./helpers";
+import { isCodeRootDirectory, isDirectChildOfCodeRoot } from "./ownership";
 
 /** Flags directories that exceed the configured depth budget beneath a code root. */
 export function buildDirectoryDepthViolations(

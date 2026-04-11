@@ -27,6 +27,28 @@ describe("architecture analyzer", () => {
     ).toBe(true);
   });
 
+  test("flags nested files whose names match configured junk-drawer glob patterns", () => {
+    const repoDir = createTempRepo({
+      "src/process/index.ts": 'export { runtimeCoordinator } from "./runtime-coordinator.ts";\n',
+      "src/process/runtime-coordinator.ts":
+        "export const runtimeCoordinator = true;\n",
+    });
+
+    const violations = analyzeArchitecture(repoDir, {
+      includeRootFiles: false,
+      junkDrawerFileNamePatterns: ["*runtime*"],
+      rootDirectories: ["src"],
+    });
+
+    expect(
+      violations.some(
+        (violation) =>
+          violation.code === "junk-drawer-file" &&
+          violation.message.includes("src/process/runtime-coordinator.ts"),
+      ),
+    ).toBe(true);
+  });
+
   test("flags imports that violate explicit dependency policies", () => {
     const repoDir = createTempRepo({
       "src/process/index.ts": 'export { run } from "./runner.ts";\n',

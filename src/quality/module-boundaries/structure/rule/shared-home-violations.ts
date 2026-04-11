@@ -3,7 +3,7 @@ import type {
   ArchitectureViolation,
 } from "@/quality/module-boundaries/foundation/index.ts";
 
-import { normalizeParentPath } from "./helpers";
+import { normalizeParentPath } from "./ownership";
 
 /** Flags repositories that split one shared-home concept across local and central homes. */
 export function buildMixedTypesViolations(

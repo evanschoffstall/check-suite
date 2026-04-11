@@ -3,13 +3,14 @@ import type {
   ArchitectureViolation,
 } from "@/quality/module-boundaries/foundation/index.ts";
 
+import { createGlobMatcher } from "@/foundation/index.ts";
 import { getCodeStem, getLastPathSegment } from "@/quality/module-boundaries/foundation/index.ts";
 
 import {
   isDirectChildOfCodeRoot,
   matchesResponsibilityName,
   normalizeParentPath,
-} from "./helpers";
+} from "./ownership";
 
 /** Detects flattened file groups that should live under a feature directory. */
 export function buildFlattenedFeatureViolations(
@@ -35,6 +36,9 @@ export function buildJunkDrawerViolations(
   project: ArchitectureProject,
 ): ArchitectureViolation[] {
   const violations: ArchitectureViolation[] = [];
+  const junkDrawerFileNameMatchers = project.config.junkDrawerFileNamePatterns.map(
+    (pattern) => createGlobMatcher(pattern),
+  );
 
   for (const directoryFact of project.directoryFacts) {
     const directoryName = getLastPathSegment(directoryFact.path);
@@ -51,12 +55,16 @@ export function buildJunkDrawerViolations(
   }
 
   for (const filePath of project.files) {
-    const stem = getCodeStem(filePath.split("/").pop() ?? filePath);
-
-    if (
+    const fileName = filePath.split("/").pop() ?? filePath;
+    const stem = getCodeStem(fileName);
+    const matchesConfiguredPattern = junkDrawerFileNameMatchers.some(
+      (matchesPattern) => matchesPattern(fileName) || matchesPattern(stem),
+    );
+    const matchesConfiguredStem =
       isDirectChildOfCodeRoot(project, filePath) &&
-      project.config.junkDrawerFileStems.includes(stem)
-    ) {
+      project.config.junkDrawerFileStems.includes(stem);
+
+    if (matchesConfiguredStem || matchesConfiguredPattern) {
       violations.push({
         code: "junk-drawer-file",
         message: `${filePath} uses a broad catch-all filename; rename it to the responsibility it actually owns or move the code to the correct owner`,

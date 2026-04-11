@@ -30,6 +30,7 @@ function createArchitectureProject(
     ignoredDirectoryNames: [],
     includeRootFiles: false,
     junkDrawerDirectoryNames: [],
+    junkDrawerFileNamePatterns: [],
     junkDrawerFileStems: [],
     layerGroups: [],
     maxCentralSurfaceExports: 0,
