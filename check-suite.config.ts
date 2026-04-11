@@ -17,11 +17,6 @@ import { defineCheckSuiteConfig } from "check-suite/config-schema";
 import {
   createSpawnComplexityAdapter,
   discoverDefaultCodeRoots,
-  inferAllowedRootFileStems,
-  inferCentralSurfacePathPrefixes,
-  inferDependencyPolicies,
-  inferEntrypointNames,
-  inferExplicitPublicSurfacePaths,
   parseCsvComplexityRows,
   runArchitectureCheck,
   runComplexityCheck,
@@ -99,44 +94,28 @@ const madge = defineStep({
   summary: madgeSummary,
 });
 const architecture = defineStep({
-  data: (() => {
-    const discoveryBase = {
-      ignoredDirectoryNames: [".cache", ".git", ".idea", ".next", ".turbo", ".vscode", "build", "coverage", "dist", "node_modules", "out", "scripts", "tmp"],
-      maxPolicyFanOut: 5,
-      rootDirectories: srcDirs,
-      testDirectoryNames: ["__fixtures__", "__mocks__", "__tests__", "fixtures", "mocks", "test", "tests"],
-      vendorManagedDirectoryNames: ["__generated__", "generated", "vendor", "ui"],
-    };
-    const entrypointNames = inferEntrypointNames(process.cwd(), discoveryBase);
-    const allowedRootFileStems = inferAllowedRootFileStems(process.cwd(), { ...discoveryBase, entrypointNames });
-    const explicitPublicSurfacePaths = inferExplicitPublicSurfacePaths(process.cwd(), { ...discoveryBase, allowedRootFileStems, entrypointNames });
-    const boundaryDiscovery = {
-      ...discoveryBase,
-      allowedRootFileStems,
-      entrypointNames,
-      explicitPublicSurfacePaths,
-    };
-
-    return {
-      ...boundaryDiscovery,
-      allowPublicSurfaceReExportChains: false,
-      centralSurfacePathPrefixes: inferCentralSurfacePathPrefixes(process.cwd(), boundaryDiscovery),
-      dependencyPolicies: inferDependencyPolicies(process.cwd(), boundaryDiscovery),
-      includeRootFiles: false,
-      junkDrawerFileNamePatterns: ["*helper*", "*runtime*", "*util*", "*support*"],
-      maxCentralSurfaceExports: 66,
-      maxDirectoryDepth: 3,
-      maxEntrypointReExports: 12,
-      maxInternalImportsPerFile: 12,
-      maxSiblingImports: 7,
-      maxWildcardExportsPerPublicSurface: 0,
-      minRepeatedDeepImports: 3,
-      requireAcyclicDependencyPolicies: true,
-      requireCompleteDependencyPolicyCoverage: true,
-      requireTypeOnlyImportsForTypeOnlyPolicies: true,
-      sharedHomeNames: ["types", "contracts", "utils"],
-    };
-  })() as Record<string, unknown>,
+  data: {
+    allowPublicSurfaceReExportChains: false,
+    ignoredDirectoryNames: [".cache", ".git", ".idea", ".next", ".turbo", ".vscode", "build", "coverage", "dist", "node_modules", "out", "scripts", "tmp"],
+    includeRootFiles: false,
+    inferPolicies: true,
+    junkDrawerFileNamePatterns: ["*helper*", "*runtime*", "*util*", "*support*"],
+    maxCentralSurfaceExports: 66,
+    maxDirectoryDepth: 3,
+    maxEntrypointReExports: 12,
+    maxInternalImportsPerFile: 12,
+    maxPolicyFanOut: 5,
+    maxSiblingImports: 7,
+    maxWildcardExportsPerPublicSurface: 0,
+    minRepeatedDeepImports: 3,
+    requireAcyclicDependencyPolicies: true,
+    requireCompleteDependencyPolicyCoverage: true,
+    requireTypeOnlyImportsForTypeOnlyPolicies: true,
+    rootDirectories: srcDirs,
+    sharedHomeNames: ["types", "contracts", "utils"],
+    testDirectoryNames: ["__fixtures__", "__mocks__", "__tests__", "fixtures", "mocks", "test", "tests"],
+    vendorManagedDirectoryNames: ["__generated__", "generated", "vendor", "ui"],
+  },
   failMsg: "architecture violations found",
   label: "architecture",
   source: async ({ cwd, data, fail, ok }: InlineTypeScriptContext): Promise<Command> => {
