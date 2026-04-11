@@ -1,6 +1,7 @@
 import type { CliArguments } from "@/types/index.ts";
 
 import {
+  createBaseCliArguments,
   createDirectStepArguments,
   createKeysArguments,
   parseSuiteSelectionArguments,
@@ -39,15 +40,10 @@ export function parseCliArguments(argv: string[]): CliArguments {
 
 function createHelpArguments(): CliArguments {
   return {
+    ...createBaseCliArguments(),
     command: "help",
     directStep: undefined,
     directStepArgs: [],
-    excludedKeys: new Set<string>(),
-    invalidOptions: [],
-    invalidSuiteExclusions: [],
-    invalidSuiteFlags: [],
-    keyFilter: null,
-    outputMode: "all",
   };
 }
 

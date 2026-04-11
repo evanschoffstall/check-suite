@@ -6,16 +6,13 @@ import { parseCliOptions } from "./options";
 import { splitSuiteArguments } from "./split.ts";
 import { collectSelectionState, resolveSuiteFlagDirectStep } from "./state.ts";
 
-export function createDirectStepArguments(
-  command: CliArguments["command"],
-  directStep: StepConfig,
-  directStepArgs: string[],
-): CliArguments {
+export function createBaseCliArguments(): Omit<
+  CliArguments,
+  "command" | "directStep" | "directStepArgs"
+> {
   return {
-    command,
-    directStep,
-    directStepArgs,
     excludedKeys: new Set<string>(),
+    failureOutputLineLimit: null,
     invalidOptions: [],
     invalidSuiteExclusions: [],
     invalidSuiteFlags: [],
@@ -24,17 +21,25 @@ export function createDirectStepArguments(
   };
 }
 
+export function createDirectStepArguments(
+  command: CliArguments["command"],
+  directStep: StepConfig,
+  directStepArgs: string[],
+): CliArguments {
+  return {
+    ...createBaseCliArguments(),
+    command,
+    directStep,
+    directStepArgs,
+  };
+}
+
 export function createKeysArguments(): CliArguments {
   return {
+    ...createBaseCliArguments(),
     command: "keys",
     directStep: undefined,
     directStepArgs: [],
-    excludedKeys: new Set<string>(),
-    invalidOptions: [],
-    invalidSuiteExclusions: [],
-    invalidSuiteFlags: [],
-    keyFilter: null,
-    outputMode: "all",
   };
 }
 
