@@ -23,7 +23,13 @@ export async function run(
   options: RunOptions = {},
 ): Promise<Command> {
   const startMs = Date.now();
-  const { extraEnv, label = cmd, timeoutDrainMs, timeoutMs } = options;
+  const {
+    extraEnv,
+    label = cmd,
+    onOutput,
+    timeoutDrainMs,
+    timeoutMs,
+  } = options;
   const preflightFailure = getPreflightFailure(
     cmd,
     args,
@@ -38,7 +44,7 @@ export async function run(
     stdin: "ignore",
     stdout: "pipe",
   });
-  const collectors = createProcessCollectors(child);
+  const collectors = createProcessCollectors(child, { onOutput });
   const outcome = await waitForProcessOutcome(child, timeoutMs);
 
   const result =

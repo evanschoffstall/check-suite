@@ -10,23 +10,25 @@ export function runStepWithinDeadline(
   step: StepConfig,
   deadlineMs: number,
   extraArgs: string[] = [],
+  onOutput?: (output: string) => void,
 ): Promise<Command> {
   const timeoutMs = getStepTimeoutMs(step, deadlineMs);
   if (timeoutMs <= 0) {
     return Promise.resolve(makeTimedOutCommand(step.label, 0));
   }
 
-  return runStep(step, timeoutMs, extraArgs);
+  return runStep(step, timeoutMs, extraArgs, onOutput);
 }
 
 function runStep(
   step: StepConfig,
   timeoutMs?: number,
   extraArgs: string[] = [],
+  onOutput?: (output: string) => void,
 ): Promise<Command> {
   if (step.handler) {
-    return runHandledStep(step, timeoutMs, extraArgs);
+    return runHandledStep(step, timeoutMs, extraArgs, onOutput);
   }
 
-  return runCommandStep(step, timeoutMs, extraArgs);
+  return runCommandStep(step, timeoutMs, extraArgs, onOutput);
 }

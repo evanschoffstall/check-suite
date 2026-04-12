@@ -10,10 +10,12 @@ export interface ProcessCollectors {
 export function createProcessCollectors(child: {
   stderr: null | ReadableStream<Uint8Array> | undefined;
   stdout: null | ReadableStream<Uint8Array> | undefined;
-}): ProcessCollectors {
+}, options: {
+  onOutput?: (output: string) => void;
+} = {}): ProcessCollectors {
   return {
-    stderrCollector: createStreamCollector(child.stderr),
-    stdoutCollector: createStreamCollector(child.stdout),
+    stderrCollector: createStreamCollector(child.stderr, options.onOutput),
+    stdoutCollector: createStreamCollector(child.stdout, options.onOutput),
   };
 }
 
@@ -36,6 +38,7 @@ export async function flushCollectors(
 
 function createStreamCollector(
   stream: null | ReadableStream<Uint8Array> | undefined,
+  onOutput?: (output: string) => void,
 ): StreamCollector {
   let output = "";
 
@@ -55,11 +58,13 @@ function createStreamCollector(
         const { done: streamDone, value } = await reader.read();
         if (streamDone) break;
         output += decoder.decode(value, { stream: true });
+        onOutput?.(output);
       }
     } catch {
       // Ignore collector errors so timeouts can still return partial output.
     } finally {
       output += decoder.decode();
+      onOutput?.(output);
       reader.releaseLock();
     }
   })();

@@ -40,20 +40,23 @@ export async function runInlineTypeScriptStep(
     const result = await runner(
       buildInlineTypeScriptContext(step, inlineConfig.data ?? {}, overrides),
     );
-    return (
+    const command =
       toCommand(result, durationMs) ??
       makeInlineResult(
         1,
         `${step.label} returned an invalid inline TypeScript result\n`,
         durationMs,
-      )
-    );
+      );
+    overrides.onOutput?.(command.output);
+    return command;
   } catch (error) {
-    return makeInlineResult(
+    const command = makeInlineResult(
       1,
       `${step.label} failed: ${error instanceof Error ? error.message : String(error)}\n`,
       Date.now() - startMs,
     );
+    overrides.onOutput?.(command.output);
+    return command;
   }
 }
 

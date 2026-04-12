@@ -29,6 +29,7 @@ export interface InlineTypeScriptContext {
 
 export interface InlineTypeScriptOverrides {
   importModule?: (specifier: string) => Promise<unknown>;
+  onOutput?: (output: string) => void;
 }
 
 export interface InlineTypeScriptPostProcessContext {

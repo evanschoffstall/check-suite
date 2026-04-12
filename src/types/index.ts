@@ -69,6 +69,7 @@ export interface ProcessedResultEntry {
 export interface RunOptions {
   extraEnv?: Record<string, string>;
   label?: string;
+  onOutput?: (output: string) => void;
   timeoutDrainMs?: number;
   timeoutMs?: number;
 }

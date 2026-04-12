@@ -9,12 +9,17 @@ type StepRunner = (
   step: StepConfig,
   timeoutMs?: number,
   extraArgs?: string[],
+  onOutput?: (output: string) => void,
 ) => Promise<Command>;
 
 export const HANDLERS: Partial<Record<string, StepRunner>> = {
-  "inline-ts": (step, timeoutMs) =>
-    withStepTimeout(step.label, runInlineTypeScriptStep(step), timeoutMs),
-  lint: (step, timeoutMs, extraArgs = []) =>
+  "inline-ts": (step, timeoutMs, _extraArgs, onOutput) =>
+    withStepTimeout(
+      step.label,
+      runInlineTypeScriptStep(step, { onOutput }),
+      timeoutMs,
+    ),
+  lint: (step, timeoutMs, extraArgs = [], onOutput) =>
     runLint(
       step,
       step.config as NonNullable<StepConfig["config"]> & {
@@ -25,6 +30,7 @@ export const HANDLERS: Partial<Record<string, StepRunner>> = {
       },
       extraArgs,
       timeoutMs,
+      onOutput,
     ),
 };
 
@@ -32,10 +38,11 @@ export function runHandledStep(
   step: StepConfig,
   timeoutMs?: number,
   extraArgs: string[] = [],
+  onOutput?: (output: string) => void,
 ): Promise<Command> {
   const handler = HANDLERS[step.handler ?? ""];
   return handler
-    ? handler(step, timeoutMs, extraArgs)
+    ? handler(step, timeoutMs, extraArgs, onOutput)
     : Promise.resolve({
         exitCode: 1,
         output: `unknown handler: ${step.handler ?? ""}`,

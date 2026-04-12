@@ -10,6 +10,7 @@ export function runCommandStep(
   step: StepConfig,
   timeoutMs?: number,
   extraArgs: string[] = [],
+  onOutput?: (output: string) => void,
 ): Promise<Command> {
   if (!step.cmd) {
     return Promise.resolve({
@@ -26,6 +27,7 @@ export function runCommandStep(
     [...resolveArgs(step.args ?? [], tokens), ...extraArgs],
     {
       label: step.label,
+      onOutput,
       timeoutDrainMs: resolveStepTimeoutDrainMsValue(step) ?? undefined,
       timeoutMs,
     },

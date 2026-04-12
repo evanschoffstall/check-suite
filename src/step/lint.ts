@@ -109,10 +109,12 @@ export async function runLint(
   cfg: LintConfig,
   extraArgs: string[],
   timeoutMs?: number,
+  onOutput?: (output: string) => void,
 ): Promise<Command> {
   const concurrencyArgs = await buildConcurrencyArgs(cfg);
   return run("bunx", [...cfg.args, ...concurrencyArgs, ...extraArgs], {
     label: step.label,
+    onOutput,
     timeoutMs,
   });
 }
