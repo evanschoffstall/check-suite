@@ -45,6 +45,7 @@ function createActiveStepProgressTracker(
   updateStepOutput: (step: StepConfig, output: string) => void;
 } {
   const activeSteps = new Map<string, string>();
+  let lastVisibleStatus: ActiveSuiteStepStatus | null = null;
   let lastEmittedSignature = "";
 
   const emitActiveStep = (): void => {
@@ -56,6 +57,7 @@ function createActiveStepProgressTracker(
       }));
 
     if (activeStatuses.length === 0) {
+      lastVisibleStatus = null;
       if (lastEmittedSignature === "__empty__") {
         return;
       }
@@ -64,8 +66,16 @@ function createActiveStepProgressTracker(
       return;
     }
 
-    const status =
-      activeStatuses.find((step) => step.output.length > 0) ?? activeStatuses[0];
+    const firstVisibleStatus = activeStatuses.find((step) => step.output.length > 0);
+    if (firstVisibleStatus) {
+      lastVisibleStatus = firstVisibleStatus;
+    }
+
+    const status = firstVisibleStatus ?? lastVisibleStatus;
+    if (!status) {
+      return;
+    }
+
     const nextSignature = `${status.label}\u0000${status.output}`;
     if (lastEmittedSignature === nextSignature) {
       return;

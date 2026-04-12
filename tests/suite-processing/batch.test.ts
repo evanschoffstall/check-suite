@@ -115,7 +115,6 @@ describe("runStepBatch", () => {
     secondStepGate.resolve(undefined);
     await batchPromise;
 
-    expect(activeSteps).toContainEqual({ label: "first step", output: "" });
     expect(activeSteps).toContainEqual({ label: "first step", output: "ready" });
     expect(activeSteps).toContainEqual({ label: "second step", output: "second line" });
     expect(activeSteps.at(-1)).toBeNull();
@@ -162,6 +161,55 @@ describe("runStepBatch", () => {
     await Bun.sleep(0);
     expect(activeSteps).toContainEqual({ label: "second step", output: "second line" });
     firstStepGate.resolve(undefined);
+    secondStepGate.resolve(undefined);
+    await batchPromise;
+  });
+
+  test("keeps the last visible output while later active steps are still silent", async () => {
+    const activeSteps: (null | { label: string; output: string })[] = [];
+    const firstStepGate = Promise.withResolvers<undefined>();
+    const secondStepGate = Promise.withResolvers<undefined>();
+
+    mock.module("@/step/index.ts", () => ({
+      runStepWithinDeadline: async (
+        step: StepConfig,
+        _deadlineMs: number,
+        _extraArgs: string[],
+        onOutput?: (output: string) => void,
+      ): Promise<Command> => {
+        if (step.key === "first") {
+          onOutput?.("alpha\n");
+          await firstStepGate.promise;
+          return { exitCode: 0, output: "alpha\n", timedOut: false };
+        }
+
+        await secondStepGate.promise;
+        onOutput?.("beta\n");
+        return { exitCode: 0, output: "beta\n", timedOut: false };
+      },
+    }));
+
+    const { runStepBatch } = await import("@/suite-processing/batch.ts");
+    const batchPromise = runStepBatch(
+      [
+        { key: "first", label: "first step" },
+        { key: "second", label: "second step" },
+      ],
+      Date.now() + 5_000,
+      {
+        onActiveStepChange: (step) => {
+          activeSteps.push(step);
+        },
+      },
+    );
+
+    await Bun.sleep(0);
+    firstStepGate.resolve(undefined);
+    await Bun.sleep(0);
+
+    expect(activeSteps).not.toContainEqual({ label: "second step", output: "" });
+    expect(activeSteps.at(-1)).toEqual({ label: "first step", output: "alpha" });
+
     secondStepGate.resolve(undefined);
     await batchPromise;
   });
