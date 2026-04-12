@@ -38,8 +38,8 @@ export interface ComplexityCheckOptions {
   /**
    * Source directories and files to analyze.
    *
-   * When omitted, the platform auto-discovers top-level source directories
-   * from the current working directory using conventional exclusion defaults.
+    * When omitted, the platform asks code-root discovery for directories that
+    * match the current architecture code-target configuration.
    */
   targets?: readonly string[];
   /** Complexity thresholds — any unset field falls back to the platform default. */

@@ -24,6 +24,7 @@ import {
 import { createSafeRegExp, isSafeRegExpPattern } from "check-suite/regex";
 import { defineStep, runGitFileScan } from "check-suite/step";
 
+interface ArchitectureCodeTargetsConfig { declarationFilePatterns: string[]; includePatterns: string[]; resolutionEntrypointNames: string[]; resolutionExtensions: string[]; testFilePatterns: string[]; }
 interface CoverageCommandStepOptions { allowSuiteFlagArgs?: boolean; args: string[]; cmd: string; coverage: CoverageOptions; defaultThreshold: number; enabled?: boolean; ensureDirs?: string[]; failMsg?: string; key: string; label: string; postProcess?: InlineTypeScriptConfig<InlineTypeScriptPostProcessContext, StepPostProcessResult>; serialGroup?: string; timeoutDrainMs?: number | string; timeoutEnvVar?: string; timeoutMs?: number | string; tokens?: Record<string, number | string>; }
 interface CoverageOptions { excludedFiles?: string[]; excludedPaths?: string[]; includedPaths?: string[]; label?: string; path?: string; reportPath?: string; threshold?: number | string; }
 interface CoverageReportPostProcessOptions { defaultThreshold: number; parseConsoleCoverage?: (output: string) => CoverageTotals | null; readExecutionReport: (reportPath: string, commandOutput: string, existsSync: InlineTypeScriptPostProcessContext["existsSync"], readFileSync: InlineTypeScriptPostProcessContext["readFileSync"]) => ExecutionReport; }
@@ -75,14 +76,62 @@ const jscpdSummary = pat("no duplicate stats detected", [{ cellSep: "│", forma
 
 // ── Step declarations ─────────────────────────────────────────────────────────
 
-const { directories: discoveredCodeRoots } = discoverDefaultCodeRoots(process.cwd());
-const srcDirs = discoveredCodeRoots.includes("src") ? ["src"] : discoveredCodeRoots;
-
 const knip = defineStep({
   args: ["knip", "--config", "knip.json", "--cache"],
   failMsg: "knip failed",
   label: "knip",
 });
+const architecture = defineStep({
+  data: {
+    discovery: {
+      ...(() => {
+        const discovery = {
+          codeTargets: {
+            declarationFilePatterns: ["**/*.d.cjs", "**/*.d.js", "**/*.d.jsx", "**/*.d.mjs", "**/*.d.ts", "**/*.d.tsx"],
+            includePatterns: ["**/*.cjs", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.ts", "**/*.tsx"],
+            resolutionEntrypointNames: ["index", "main", "mod"],
+            resolutionExtensions: [".cjs", ".js", ".jsx", ".mjs", ".ts", ".tsx"],
+            testFilePatterns: ["**/*.spec.*", "**/*.test.*"],
+          } satisfies ArchitectureCodeTargetsConfig,
+          ignoredDirectories: ["**/.cache", "**/.git", "**/.idea", "**/.next", "**/.turbo", "**/.vscode", "**/__generated__", "**/build", "**/coverage", "**/dist", "**/generated", "**/node_modules", "**/out", "**/scripts", "**/tmp", "**/ui", "**/vendor"],
+          testDirectories: ["**/__fixtures__", "**/__mocks__", "**/__tests__", "**/fixtures", "**/mocks", "**/test", "**/tests"],
+        } as const;
+        const { directories } = discoverDefaultCodeRoots(process.cwd(), discovery);
+        return {
+          ...discovery,
+          rootDirectories: directories.includes("src") ? ["src"] : directories,
+        };
+      })(),
+    },
+    policy: {
+      infer: true,
+    },
+    rules: {
+      "broad-barrel-surface": { maxReExports: 12 },
+      "central-surface-budget": { maxExports: 66 },
+      "dependency-policy-coverage": { enabled: true },
+      "dependency-policy-cycle": { enabled: true },
+      "dependency-policy-fan-out": { maxDependencies: 5 },
+      "directory-depth": { maxDepth: 3 },
+      "junk-drawer-file": { fileNamePatterns: ["*helper*", "*runtime*", "*util*", "*support*"] },
+      "public-surface-re-export-chain": { allow: false },
+      "public-surface-wildcard-export": { maxWildcardExports: 0 },
+      "repeated-deep-import": { minImporters: 3 },
+      "shared-home": { names: ["types", "contracts", "utils"] },
+      "sibling-import-cohesion": { maxSiblingImports: 7 },
+      "too-many-internal-dependencies": { maxImports: 12 },
+      "type-only-policy-import": { enabled: true },
+    },
+  },
+  failMsg: "architecture violations found",
+  label: "architecture",
+  source: async ({ cwd, data, fail, ok }: InlineTypeScriptContext): Promise<Command> => {
+    const result = await runArchitectureCheck(cwd, data);
+    return result.exitCode === 0 ? ok(result.output) : fail(result.output);
+  },
+});
+const architectureRootDirectories = ((architecture.config as InlineTypeScriptConfig<InlineTypeScriptContext, Command>).data?.discovery as undefined | { rootDirectories?: unknown })?.rootDirectories;
+const srcDirs = Array.isArray(architectureRootDirectories) ? architectureRootDirectories.filter((directory): directory is string => typeof directory === "string") : ["."];
 const madge = defineStep({
   args: ["madge@8", "--circular", "--extensions", "ts,tsx", ...srcDirs],
   failMsg: "circular dependencies found",
@@ -92,36 +141,6 @@ const madge = defineStep({
     type: "stripLines",
   },
   summary: madgeSummary,
-});
-const architecture = defineStep({
-  data: {
-    allowPublicSurfaceReExportChains: false,
-    ignoredDirectoryNames: [".cache", ".git", ".idea", ".next", ".turbo", ".vscode", "build", "coverage", "dist", "node_modules", "out", "scripts", "tmp"],
-    includeRootFiles: false,
-    inferPolicies: true,
-    junkDrawerFileNamePatterns: ["*helper*", "*runtime*", "*util*", "*support*"],
-    maxCentralSurfaceExports: 66,
-    maxDirectoryDepth: 3,
-    maxEntrypointReExports: 12,
-    maxInternalImportsPerFile: 12,
-    maxPolicyFanOut: 5,
-    maxSiblingImports: 7,
-    maxWildcardExportsPerPublicSurface: 0,
-    minRepeatedDeepImports: 3,
-    requireAcyclicDependencyPolicies: true,
-    requireCompleteDependencyPolicyCoverage: true,
-    requireTypeOnlyImportsForTypeOnlyPolicies: true,
-    rootDirectories: srcDirs,
-    sharedHomeNames: ["types", "contracts", "utils"],
-    testDirectoryNames: ["__fixtures__", "__mocks__", "__tests__", "fixtures", "mocks", "test", "tests"],
-    vendorManagedDirectoryNames: ["__generated__", "generated", "vendor", "ui"],
-  },
-  failMsg: "architecture violations found",
-  label: "architecture",
-  source: async ({ cwd, data, fail, ok }: InlineTypeScriptContext): Promise<Command> => {
-    const result = await runArchitectureCheck(cwd, data);
-    return result.exitCode === 0 ? ok(result.output) : fail(result.output);
-  },
 });
 const purgeCss = defineStep({
   data: {

@@ -4,7 +4,7 @@ import ts from "typescript";
 
 import type {
   AliasMapping,
-  ArchitectureAnalyzerConfig,
+  NormalizedArchitectureAnalyzerConfig,
   SourceFileFacts,
   SourceFileReExport,
 } from "@/quality/module-boundaries/foundation/index.ts";
@@ -22,7 +22,7 @@ export function collectSourceFacts(
   cwd: string,
   files: string[],
   aliasMappings: AliasMapping[],
-  config: Required<ArchitectureAnalyzerConfig>,
+  config: NormalizedArchitectureAnalyzerConfig,
 ): SourceFileFacts[] {
   const knownFiles = new Set(files);
 
@@ -38,7 +38,7 @@ function analyzeSourceFile(
   filePath: string,
   knownFiles: ReadonlySet<string>,
   aliasMappings: AliasMapping[],
-  config: Required<ArchitectureAnalyzerConfig>,
+  config: NormalizedArchitectureAnalyzerConfig,
 ): SourceFileFacts {
   const sourceText = readFileSync(join(cwd, filePath), "utf8");
   const sourceFile = ts.createSourceFile(
@@ -54,6 +54,7 @@ function analyzeSourceFile(
     sourceFile,
     knownFiles,
     aliasMappings,
+    config,
   );
 
   return {
@@ -88,6 +89,7 @@ function collectReExports(
   sourceFile: ts.SourceFile,
   knownFiles: ReadonlySet<string>,
   aliasMappings: AliasMapping[],
+  config: NormalizedArchitectureAnalyzerConfig,
 ): SourceFileReExport[] {
   return sourceFile.statements.flatMap((statement) =>
     ts.isExportDeclaration(statement) &&
@@ -102,6 +104,7 @@ function collectReExports(
               statement.moduleSpecifier.text,
               knownFiles,
               aliasMappings,
+              config,
             ),
             specifier: statement.moduleSpecifier.text,
           },

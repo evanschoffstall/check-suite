@@ -1,9 +1,11 @@
 import { dirname, relative, resolve } from "node:path";
 
-import type { AliasMapping } from "@/quality/module-boundaries/foundation/index.ts";
+import type {
+  AliasMapping,
+  NormalizedArchitectureAnalyzerConfig,
+} from "@/quality/module-boundaries/foundation/index.ts";
 
 import {
-  CODE_EXTENSIONS,
   normalizePath,
   trimLeadingDotSlash,
 } from "@/quality/module-boundaries/foundation/index.ts";
@@ -15,6 +17,7 @@ export function resolveModulePath(
   specifier: string,
   knownFiles: ReadonlySet<string>,
   aliasMappings: AliasMapping[],
+  config: Pick<NormalizedArchitectureAnalyzerConfig, "codeTargets">,
 ): null | string {
   if (specifier.startsWith(".")) {
     return resolveCandidatePath(
@@ -22,6 +25,7 @@ export function resolveModulePath(
         relative(cwd, resolve(cwd, dirname(sourcePath), specifier)),
       ),
       knownFiles,
+      config,
     );
   }
 
@@ -35,6 +39,7 @@ export function resolveModulePath(
       const resolvedPath = resolveCandidatePath(
         `${targetRoot}/${remainder}`,
         knownFiles,
+        config,
       );
       if (resolvedPath) {
         return resolvedPath;
@@ -48,21 +53,20 @@ export function resolveModulePath(
 function resolveCandidatePath(
   targetPath: string,
   knownFiles: ReadonlySet<string>,
+  config: Pick<NormalizedArchitectureAnalyzerConfig, "codeTargets">,
 ): null | string {
   const normalizedTargetPath = trimLeadingDotSlash(normalizePath(targetPath));
+  const resolutionExtensions = config.codeTargets.resolutionExtensions ?? [];
+  const resolutionEntrypointNames = config.codeTargets.resolutionEntrypointNames ?? [];
   const candidates = [
     normalizedTargetPath,
-    ...CODE_EXTENSIONS.map(
+    ...resolutionExtensions.map(
       (extension) => `${normalizedTargetPath}${extension}`,
     ),
-    ...CODE_EXTENSIONS.map(
-      (extension) => `${normalizedTargetPath}/index${extension}`,
-    ),
-    ...CODE_EXTENSIONS.map(
-      (extension) => `${normalizedTargetPath}/main${extension}`,
-    ),
-    ...CODE_EXTENSIONS.map(
-      (extension) => `${normalizedTargetPath}/mod${extension}`,
+    ...resolutionEntrypointNames.flatMap((entryName) =>
+      resolutionExtensions.map(
+        (extension) => `${normalizedTargetPath}/${entryName}${extension}`,
+      ),
     ),
   ];
 

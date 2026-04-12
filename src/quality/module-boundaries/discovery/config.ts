@@ -1,9 +1,11 @@
+import { statSync } from "node:fs";
 import { join } from "node:path";
 
 import type {
-  ArchitectureAnalyzerConfig,
+  ArchitectureCodeTargetsConfig,
   ArchitectureEntrypointRule,
   CodeRoots,
+  NormalizedArchitectureAnalyzerConfig,
 } from "@/quality/module-boundaries/foundation/index.ts";
 
 import {
@@ -19,43 +21,32 @@ import {
   directoryContainsCode,
   isIgnoredDirectory,
   isIncludedCodeFile,
+  isTestDirectory,
   safeReadDir,
 } from "@/quality/module-boundaries/scan/index.ts";
+
+import { flattenArchitectureConfigSections } from "./grouped-config.ts";
 
 /** Adds one root-level directory or file to the discovered code roots when applicable. */
 export function collectRootEntry(
   cwd: string,
-  config: Required<ArchitectureAnalyzerConfig>,
+  config: NormalizedArchitectureAnalyzerConfig,
   roots: { directories: string[]; files: string[] },
   entry: { isDirectory(): boolean; isFile(): boolean; name: string },
 ): void {
   if (entry.isDirectory()) {
-    if (
-      config.rootDirectories.length > 0 &&
-      !config.rootDirectories.includes(entry.name)
-    ) {
+    if (isIgnoredDirectory(entry.name, config) || isTestDirectory(entry.name, config)) {
       return;
     }
 
-    if (
-      isIgnoredDirectory(entry.name, config) ||
-      config.testDirectoryNames.includes(entry.name)
-    ) {
-      return;
-    }
-
-    if (directoryContainsCode(join(cwd, entry.name), config)) {
+    if (directoryContainsCode(join(cwd, entry.name), config, entry.name)) {
       roots.directories.push(entry.name);
     }
 
     return;
   }
 
-  if (
-    config.includeRootFiles &&
-    entry.isFile() &&
-    isIncludedCodeFile(entry.name)
-  ) {
+  if (entry.isFile() && isIncludedCodeFile(entry.name, config)) {
     roots.files.push(entry.name);
   }
 }
@@ -63,11 +54,22 @@ export function collectRootEntry(
 /** Discovers root code directories and root code files for the current repository. */
 export function discoverCodeRoots(
   cwd: string,
-  config: Required<ArchitectureAnalyzerConfig>,
+  config: NormalizedArchitectureAnalyzerConfig,
 ): CodeRoots {
   const directories: string[] = [];
   const files: string[] = [];
   const roots = { directories, files };
+
+  if (config.rootDirectories.length > 0) {
+    for (const rootDirectory of config.rootDirectories) {
+      collectConfiguredRoot(cwd, config, roots, rootDirectory);
+    }
+
+    return {
+      directories: [...new Set(directories)].sort(),
+      files: [...new Set(files)].sort(),
+    };
+  }
 
   for (const entry of safeReadDir(cwd)) {
     collectRootEntry(cwd, config, roots, entry);
@@ -78,25 +80,20 @@ export function discoverCodeRoots(
 
 /**
  * Discovers the top-level source directories for a given working directory
- * using the platform's conventional exclusion defaults (build artefacts, test
- * folders, tool caches, package managers, framework output, etc.).
+ * using the caller-provided code-target and directory-skip configuration.
  *
  * The returned `directories` list is suitable as a source-scan target for any
- * platform step that needs to know which directories contain project code,
- * without requiring the user to hardcode names like `"src"`.
+ * platform step that needs to know which directories contain project code.
  */
-export function discoverDefaultCodeRoots(cwd: string): CodeRoots {
-  return discoverCodeRoots(
-    cwd,
-    normalizeArchitectureConfig({ includeRootFiles: false }),
-  );
+export function discoverDefaultCodeRoots(cwd: string, configValue?: unknown): CodeRoots {
+  return discoverCodeRoots(cwd, normalizeArchitectureConfig(configValue ?? {}));
 }
 
 /** Returns the normalized analyzer config, filling in generic defaults. */
 export function normalizeArchitectureConfig(
   value: unknown,
-): Required<ArchitectureAnalyzerConfig> {
-  const record = isRecord(value) ? value : {};
+): NormalizedArchitectureAnalyzerConfig {
+  const record = flattenArchitectureConfigSections(value);
 
   return {
     ...normalizeRootScopeConfig(record),
@@ -106,19 +103,82 @@ export function normalizeArchitectureConfig(
   };
 }
 
+/** Adds one explicitly configured scan root when rootDirectories is provided. */
+function collectConfiguredRoot(
+  cwd: string,
+  config: NormalizedArchitectureAnalyzerConfig,
+  roots: CodeRoots,
+  rootDirectory: string,
+): void {
+  const normalizedRootDirectory = rootDirectory
+    .replace(/^\.\//u, "")
+    .replace(/\/+$/u, "");
+
+  if (normalizedRootDirectory.length === 0 || normalizedRootDirectory === ".") {
+    for (const entry of safeReadDir(cwd)) {
+      collectRootEntry(cwd, config, roots, entry);
+    }
+    return;
+  }
+
+  if (
+    isIgnoredDirectory(normalizedRootDirectory, config) ||
+    isTestDirectory(normalizedRootDirectory, config)
+  ) {
+    return;
+  }
+
+  const absoluteRootPath = join(cwd, normalizedRootDirectory);
+
+  try {
+    if (!statSync(absoluteRootPath).isDirectory()) {
+      return;
+    }
+  } catch {
+    return;
+  }
+
+  if (directoryContainsCode(absoluteRootPath, config, normalizedRootDirectory)) {
+    roots.directories.push(normalizedRootDirectory);
+  }
+}
+
+/** Normalizes file-target overrides that define which files count as code. */
+function normalizeCodeTargetsConfig(value: unknown): Required<ArchitectureCodeTargetsConfig> {
+  const record = isRecord(value) ? value : {};
+
+  return {
+    declarationFilePatterns: normalizeStringListConfig(
+      record.declarationFilePatterns,
+      [],
+    ),
+    includePatterns: normalizeStringListConfig(record.includePatterns, []),
+    resolutionEntrypointNames: normalizeStringListConfig(
+      record.resolutionEntrypointNames,
+      [],
+    ),
+    resolutionExtensions: normalizeStringListConfig(
+      record.resolutionExtensions,
+      [],
+    ),
+    testFilePatterns: normalizeStringListConfig(record.testFilePatterns, []),
+  };
+}
+
 function normalizeDirectoryNameConfig(
   record: Record<string, unknown>,
 ): Pick<
-  Required<ArchitectureAnalyzerConfig>,
+  NormalizedArchitectureAnalyzerConfig,
   | "allowedImpurePublicSurfacePaths"
   | "allowedRootFileStems"
   | "allowPublicSurfaceReExportChains"
   | "centralSurfacePathPrefixes"
+  | "codeTargets"
   | "dependencyPolicies"
   | "entrypointNames"
   | "entrypointRules"
   | "explicitPublicSurfacePaths"
-  | "ignoredDirectoryNames"
+  | "ignoredDirectories"
   | "junkDrawerDirectoryNames"
   | "junkDrawerFileNamePatterns"
   | "junkDrawerFileStems"
@@ -126,8 +186,7 @@ function normalizeDirectoryNameConfig(
   | "requireCompleteDependencyPolicyCoverage"
   | "requireTypeOnlyImportsForTypeOnlyPolicies"
   | "sharedHomeNames"
-  | "testDirectoryNames"
-  | "vendorManagedDirectoryNames"
+  | "testDirectories"
 > {
   return {
     ...normalizePublicSurfaceConfig(record),
@@ -139,24 +198,25 @@ function normalizeDirectoryNameConfig(
 function normalizeDirectoryNamingConfig(
   record: Record<string, unknown>,
 ): Pick<
-  Required<ArchitectureAnalyzerConfig>,
+  NormalizedArchitectureAnalyzerConfig,
   | "allowedRootFileStems"
-  | "ignoredDirectoryNames"
+  | "codeTargets"
+  | "ignoredDirectories"
   | "junkDrawerDirectoryNames"
   | "junkDrawerFileNamePatterns"
   | "junkDrawerFileStems"
   | "sharedHomeNames"
-  | "testDirectoryNames"
-  | "vendorManagedDirectoryNames"
+  | "testDirectories"
 > {
   return {
     allowedRootFileStems: normalizeStringListConfig(
       record.allowedRootFileStems,
       architectureDefaults.DEFAULT_ALLOWED_ROOT_FILE_STEMS,
     ),
-    ignoredDirectoryNames: normalizeStringListConfig(
-      record.ignoredDirectoryNames,
-      architectureDefaults.DEFAULT_IGNORED_DIRECTORY_NAMES,
+    codeTargets: normalizeCodeTargetsConfig(record.codeTargets),
+    ignoredDirectories: normalizeStringListConfig(
+      record.ignoredDirectories,
+      [],
     ),
     junkDrawerDirectoryNames: normalizeStringListConfig(
       record.junkDrawerDirectoryNames,
@@ -174,13 +234,9 @@ function normalizeDirectoryNamingConfig(
       record.sharedHomeNames,
       architectureDefaults.DEFAULT_SHARED_HOME_NAMES,
     ),
-    testDirectoryNames: normalizeStringListConfig(
-      record.testDirectoryNames,
-      architectureDefaults.DEFAULT_TEST_DIRECTORY_NAMES,
-    ),
-    vendorManagedDirectoryNames: normalizeStringListConfig(
-      record.vendorManagedDirectoryNames,
-      architectureDefaults.DEFAULT_VENDOR_MANAGED_DIRECTORY_NAMES,
+    testDirectories: normalizeStringListConfig(
+      record.testDirectories,
+      [],
     ),
   };
 }
@@ -243,7 +299,7 @@ function normalizeEntrypointRules(
 function normalizePolicyConfig(
   record: Record<string, unknown>,
 ): Pick<
-  Required<ArchitectureAnalyzerConfig>,
+  NormalizedArchitectureAnalyzerConfig,
   | "dependencyPolicies"
   | "entrypointNames"
   | "entrypointRules"
@@ -275,7 +331,7 @@ function normalizePolicyConfig(
 function normalizePublicSurfaceConfig(
   record: Record<string, unknown>,
 ): Pick<
-  Required<ArchitectureAnalyzerConfig>,
+  NormalizedArchitectureAnalyzerConfig,
   | "allowedImpurePublicSurfacePaths"
   | "allowPublicSurfaceReExportChains"
   | "centralSurfacePathPrefixes"
@@ -304,14 +360,10 @@ function normalizePublicSurfaceConfig(
 function normalizeRootScopeConfig(
   record: Record<string, unknown>,
 ): Pick<
-  Required<ArchitectureAnalyzerConfig>,
-  "includeRootFiles" | "rootDirectories"
+  NormalizedArchitectureAnalyzerConfig,
+  "rootDirectories"
 > {
   return {
-    includeRootFiles:
-      typeof record.includeRootFiles === "boolean"
-        ? record.includeRootFiles
-        : true,
     rootDirectories: normalizeStringListConfig(record.rootDirectories, []),
   };
 }
@@ -319,7 +371,7 @@ function normalizeRootScopeConfig(
 function normalizeThresholdConfig(
   record: Record<string, unknown>,
 ): Pick<
-  Required<ArchitectureAnalyzerConfig>,
+  NormalizedArchitectureAnalyzerConfig,
   | "maxCentralSurfaceExports"
   | "maxDirectoryDepth"
   | "maxEntrypointReExports"
@@ -372,3 +424,4 @@ function normalizeThresholdConfig(
     ),
   };
 }
+
