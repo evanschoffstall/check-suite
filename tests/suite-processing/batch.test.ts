@@ -69,4 +69,100 @@ describe("runStepBatch", () => {
     ]);
     expect(runs["serial-two"].output).toContain("serial-one:end");
   });
+
+  test("publishes the first active step and its latest output line", async () => {
+    const activeSteps: (null | { label: string; output: string })[] = [];
+    const firstStepGate = Promise.withResolvers<undefined>();
+    const secondStepGate = Promise.withResolvers<undefined>();
+
+    mock.module("@/step/index.ts", () => ({
+      runStepWithinDeadline: async (
+        step: StepConfig,
+        _deadlineMs: number,
+        _extraArgs: string[],
+        onOutput?: (output: string) => void,
+      ): Promise<Command> => {
+        if (step.key === "first") {
+          onOutput?.("booting\n");
+          onOutput?.("booting\nready\n");
+          await firstStepGate.promise;
+          return { exitCode: 0, output: "booting\nready\n", timedOut: false };
+        }
+
+        onOutput?.("second line\n");
+        await secondStepGate.promise;
+        return { exitCode: 0, output: "second line\n", timedOut: false };
+      },
+    }));
+
+    const { runStepBatch } = await import("@/suite-processing/batch.ts");
+    const batchPromise = runStepBatch(
+      [
+        { key: "first", label: "first step" },
+        { key: "second", label: "second step" },
+      ],
+      Date.now() + 5_000,
+      {
+        onActiveStepChange: (step) => {
+          activeSteps.push(step);
+        },
+      },
+    );
+
+    await Bun.sleep(0);
+    firstStepGate.resolve(undefined);
+    await Bun.sleep(0);
+    secondStepGate.resolve(undefined);
+    await batchPromise;
+
+    expect(activeSteps).toContainEqual({ label: "first step", output: "" });
+    expect(activeSteps).toContainEqual({ label: "first step", output: "ready" });
+    expect(activeSteps).toContainEqual({ label: "second step", output: "second line" });
+    expect(activeSteps.at(-1)).toBeNull();
+  });
+
+  test("prefers the first active step that has visible output", async () => {
+    const activeSteps: (null | { label: string; output: string })[] = [];
+    const firstStepGate = Promise.withResolvers<undefined>();
+    const secondStepGate = Promise.withResolvers<undefined>();
+
+    mock.module("@/step/index.ts", () => ({
+      runStepWithinDeadline: async (
+        step: StepConfig,
+        _deadlineMs: number,
+        _extraArgs: string[],
+        onOutput?: (output: string) => void,
+      ): Promise<Command> => {
+        if (step.key === "first") {
+          await firstStepGate.promise;
+          onOutput?.("first line\n");
+          return { exitCode: 0, output: "first line\n", timedOut: false };
+        }
+
+        onOutput?.("second line\n");
+        await secondStepGate.promise;
+        return { exitCode: 0, output: "second line\n", timedOut: false };
+      },
+    }));
+
+    const { runStepBatch } = await import("@/suite-processing/batch.ts");
+    const batchPromise = runStepBatch(
+      [
+        { key: "first", label: "first step" },
+        { key: "second", label: "second step" },
+      ],
+      Date.now() + 5_000,
+      {
+        onActiveStepChange: (step) => {
+          activeSteps.push(step);
+        },
+      },
+    );
+
+    await Bun.sleep(0);
+    expect(activeSteps).toContainEqual({ label: "second step", output: "second line" });
+    firstStepGate.resolve(undefined);
+    secondStepGate.resolve(undefined);
+    await batchPromise;
+  });
 });

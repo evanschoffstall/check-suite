@@ -6,14 +6,21 @@ import type {
 
 import { hasDeadlineExpired } from "@/timeout/index.ts";
 
+import type { ActiveSuiteStepStatus } from "./batch.ts";
+
 import { runStepBatch } from "./batch.ts";
+
+interface SuiteExecutionOptions {
+  onActiveStepChange?: (step: ActiveSuiteStepStatus | null) => void;
+}
 
 export async function executeSuiteSteps(
   preRunSteps: StepConfig[],
   mainSteps: StepConfig[],
   deadlineMs: number,
+  options: SuiteExecutionOptions = {},
 ): Promise<SuiteExecutionState> {
-  const preRunResults = await runStepBatch(preRunSteps, deadlineMs);
+  const preRunResults = await runStepBatch(preRunSteps, deadlineMs, options);
   const preRunTimedOut = didAnyStepTimeOut(preRunResults);
   const suiteExpiredBeforeMain = shouldStopBeforeMainSteps(
     preRunTimedOut,
@@ -25,6 +32,7 @@ export async function executeSuiteSteps(
     executedMainSteps,
     mainSteps,
     deadlineMs,
+    options,
   );
   const runs = { ...preRunResults, ...mainResults };
   const suiteExpiredBeforeOutput = shouldExpireBeforeOutput(
@@ -66,9 +74,10 @@ async function runSelectedMainSteps(
   executedMainSteps: StepConfig[],
   mainSteps: StepConfig[],
   deadlineMs: number,
+  options: SuiteExecutionOptions,
 ): Promise<Record<string, Command>> {
   return executedMainSteps.length === mainSteps.length
-    ? runStepBatch(mainSteps, deadlineMs)
+    ? runStepBatch(mainSteps, deadlineMs, options)
     : {};
 }
 
