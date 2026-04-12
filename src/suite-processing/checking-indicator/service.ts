@@ -45,6 +45,7 @@ const GLYPH_COLUMN_WIDTH = 2;
 const MESSAGE_COLUMN_WIDTH = MESSAGE.length;
 const TRAIL_COLUMN_WIDTH = 3;
 const DEFAULT_FRAME_INTERVAL_MS = 110;
+const STATIC_CHECKING_MESSAGE = `${MESSAGE}...`;
 
 /** Exposes imperative lifecycle control for an active checking indicator. */
 export interface CheckingIndicatorController {
@@ -53,6 +54,7 @@ export interface CheckingIndicatorController {
 
 /** Configures whether and how the animated checking indicator renders. */
 export interface CheckingIndicatorOptions {
+  displayMode?: CheckingIndicatorDisplayMode;
   enabled?: boolean;
   frameIntervalMs?: number;
   output?: TerminalWriter;
@@ -61,6 +63,8 @@ export interface CheckingIndicatorOptions {
 interface ActiveIndicatorRenderer {
   stop: () => Promise<void>;
 }
+
+type CheckingIndicatorDisplayMode = "animated" | "auto" | "static";
 
 /** Terminal-like writer used by the checking indicator for testability. */
 interface TerminalWriter {
@@ -119,8 +123,20 @@ export function startCheckingIndicator(
   options?: CheckingIndicatorOptions,
 ): CheckingIndicatorController {
   const output = options?.output ?? process.stdout;
-  const isEnabled = options?.enabled ?? shouldAnimateCheckingIndicator(output);
+  const isEnabled = options?.enabled ?? true;
   if (!isEnabled) {
+    return createNoopCheckingIndicatorController();
+  }
+
+  const displayMode = resolveCheckingIndicatorDisplayMode(
+    options?.displayMode,
+    output,
+  );
+  if (displayMode === "none") {
+    return createNoopCheckingIndicatorController();
+  }
+  if (displayMode === "static") {
+    output.write(`${STATIC_CHECKING_MESSAGE}\n`);
     return createNoopCheckingIndicatorController();
   }
 
@@ -212,6 +228,21 @@ function interpolateGradientColor(
 
 function mixColorChannel(start: number, end: number, mix: number): number {
   return Math.round(start + (end - start) * mix);
+}
+
+function resolveCheckingIndicatorDisplayMode(
+  requestedDisplayMode: CheckingIndicatorDisplayMode | undefined,
+  output: TerminalWriter,
+): "animated" | "none" | "static" {
+  if (requestedDisplayMode === "static") {
+    return "static";
+  }
+
+  if (requestedDisplayMode === "animated") {
+    return shouldAnimateCheckingIndicator(output) ? "animated" : "none";
+  }
+
+  return shouldAnimateCheckingIndicator(output) ? "animated" : "none";
 }
 
 function resolveTrailForFrame(frameIndex: number): string {

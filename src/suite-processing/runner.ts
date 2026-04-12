@@ -51,7 +51,8 @@ export async function runCheckSuite(
   const { executionState, report } =
     options.indicator === undefined
       ? await withCheckingIndicator(loadSuiteReport, {
-          enabled: !summaryOnly && renderMode === "styled",
+          displayMode: renderMode === "plain" ? "static" : "auto",
+          enabled: !summaryOnly,
         })
       : await runSuiteWithIndicator(options.indicator, loadSuiteReport);
 
@@ -90,36 +91,50 @@ function completeSuiteRun(allOk: boolean, timedOut: boolean): void {
 
 function printSuiteReport(
   executionState: Awaited<ReturnType<typeof executeSuiteSteps>>,
-  reportDetails: {
+  reportOptions: {
     failureOutputLineLimit: null | number;
     missingSteps: Awaited<ReturnType<typeof prepareSuiteReport>>["missingSteps"];
     outputMode: SuiteOutputMode;
-    processedResults: Awaited<ReturnType<typeof prepareSuiteReport>>["processedResults"];
+    processedResults: Awaited<
+      ReturnType<typeof prepareSuiteReport>
+    >["processedResults"];
     renderMode: SuiteRenderMode;
     summaryOnly: boolean;
   },
 ): void {
-  const detailOptions = {
-    failureOutputLineLimit: reportDetails.failureOutputLineLimit,
-    outputMode: reportDetails.outputMode,
-    renderMode: reportDetails.renderMode,
-    runs: executionState.runs,
-  };
+  const {
+    failureOutputLineLimit,
+    missingSteps,
+    outputMode,
+    processedResults,
+    renderMode,
+    summaryOnly,
+  } = reportOptions;
 
   printSuiteOutputs(
     executionState.allExecutedSteps,
-    detailOptions,
-    reportDetails.processedResults,
+    {
+      failureOutputLineLimit,
+      outputMode,
+      renderMode,
+      runs: executionState.runs,
+    },
+    processedResults,
     executionState.suiteExpiredBeforeOutput,
-    reportDetails.summaryOnly,
+    summaryOnly,
   );
   printSuitePostProcessFeedback(
     executionState.executedMainSteps,
-    reportDetails.processedResults,
-    detailOptions,
+    processedResults,
+    {
+      failureOutputLineLimit,
+      outputMode,
+      renderMode,
+      runs: executionState.runs,
+    },
     executionState.suiteExpiredBeforeOutput,
-    reportDetails.summaryOnly,
-    reportDetails.missingSteps,
+    summaryOnly,
+    missingSteps,
   );
 }
 

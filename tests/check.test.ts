@@ -528,6 +528,28 @@ describe("format helpers", () => {
     await indicator.stop();
     expect(writes.at(-1)).toBe("\r\x1b[2K\x1b[?25h");
   });
+
+  test("checking indicator prints a static line in plain mode", async () => {
+    const writes: string[] = [];
+    const output = {
+      isTTY: false,
+      write(chunk: string): boolean {
+        writes.push(chunk);
+        return true;
+      },
+    };
+
+    const indicator = startCheckingIndicator({
+      displayMode: "static",
+      enabled: true,
+      output,
+    });
+
+    expect(writes).toEqual(["Checking...\n"]);
+
+    await indicator.stop();
+    expect(writes).toEqual(["Checking...\n"]);
+  });
 });
 
 describe("regex helpers", () => {

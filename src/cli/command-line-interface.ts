@@ -48,7 +48,10 @@ export async function main(): Promise<void> {
   }
 
   const indicator = shouldShowCheckingIndicator(cliArguments)
-    ? startCheckingIndicator()
+    ? startCheckingIndicator({
+        displayMode:
+          cliArguments.renderMode === "plain" ? "static" : "auto",
+      })
     : null;
 
   try {
@@ -163,11 +166,7 @@ function shouldShowCheckingIndicator(cliArguments: {
   command: string;
   renderMode: "plain" | "styled";
 }): boolean {
-  return (
-    cliArguments.command !== "help" &&
-    cliArguments.command !== "keys" &&
-    cliArguments.renderMode === "styled"
-  );
+  return cliArguments.command !== "help" && cliArguments.command !== "keys";
 }
 
 // ---------------------------------------------------------------------------
