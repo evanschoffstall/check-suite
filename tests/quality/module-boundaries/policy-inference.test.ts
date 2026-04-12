@@ -1,22 +1,53 @@
 import { describe, expect, test } from "bun:test";
 
-import { analyzeArchitecture } from "@/quality/module-boundaries/analyze.ts";
-import { discoverDefaultCodeRoots } from "@/quality/module-boundaries/discovery/index.ts";
+import type { ArchitectureAnalyzerConfig } from "@/quality/module-boundaries/foundation/index.ts";
+
+import { analyzeArchitecture as analyzeArchitectureBase } from "@/quality/module-boundaries/analyze.ts";
+import { discoverDefaultCodeRoots as discoverDefaultCodeRootsBase } from "@/quality/module-boundaries/discovery/index.ts";
 import {
-  inferAllowedRootFileStems,
-  inferCentralSurfacePathPrefixes,
-  inferDependencyPolicies,
-  inferEntrypointNames,
-  inferExplicitPublicSurfacePaths,
+  inferAllowedRootFileStems as inferAllowedRootFileStemsBase,
+  inferCentralSurfacePathPrefixes as inferCentralSurfacePathPrefixesBase,
+  inferDependencyPolicies as inferDependencyPoliciesBase,
+  inferEntrypointNames as inferEntrypointNamesBase,
+  inferExplicitPublicSurfacePaths as inferExplicitPublicSurfacePathsBase,
 } from "@/quality/module-boundaries/policy-inference.ts";
 
 import { createTempRepoFactory } from "./temp-repo";
+import { withTestCodeTargets } from "./test-code-targets";
 
 // ---------------------------------------------------------------------------
 // Shared fixture helpers
 // ---------------------------------------------------------------------------
 
 const createTempRepo = createTempRepoFactory("check-suite-inference-");
+const analyzeArchitecture = (
+  repoDir: string,
+  config: Partial<ArchitectureAnalyzerConfig>,
+) => analyzeArchitectureBase(repoDir, withTestCodeTargets(config));
+const discoverDefaultCodeRoots = (
+  cwd: string,
+  config?: Partial<ArchitectureAnalyzerConfig>,
+) => discoverDefaultCodeRootsBase(cwd, config ? withTestCodeTargets(config) : withTestCodeTargets({}));
+const inferAllowedRootFileStems = (
+  repoDir: string,
+  config: Partial<ArchitectureAnalyzerConfig>,
+) => inferAllowedRootFileStemsBase(repoDir, withTestCodeTargets(config));
+const inferCentralSurfacePathPrefixes = (
+  repoDir: string,
+  config: Partial<ArchitectureAnalyzerConfig>,
+) => inferCentralSurfacePathPrefixesBase(repoDir, withTestCodeTargets(config));
+const inferDependencyPolicies = (
+  repoDir: string,
+  config: Partial<ArchitectureAnalyzerConfig>,
+) => inferDependencyPoliciesBase(repoDir, withTestCodeTargets(config));
+const inferEntrypointNames = (
+  repoDir: string,
+  config: Partial<ArchitectureAnalyzerConfig>,
+) => inferEntrypointNamesBase(repoDir, withTestCodeTargets(config));
+const inferExplicitPublicSurfacePaths = (
+  repoDir: string,
+  config: Partial<ArchitectureAnalyzerConfig>,
+) => inferExplicitPublicSurfacePathsBase(repoDir, withTestCodeTargets(config));
 
 /**
  * Creates a temporary repository directory containing the given source files.
@@ -568,7 +599,6 @@ describe("architecture rule: root-file-ownership", () => {
 
     const violations = analyzeArchitecture(repo, {
       allowedRootFileStems: [],
-      includeRootFiles: false,
       rootDirectories: ["src"],
     });
 
@@ -582,7 +612,6 @@ describe("architecture rule: root-file-ownership", () => {
 
     const violations = analyzeArchitecture(repo, {
       allowedRootFileStems: ["check"],
-      includeRootFiles: false,
       rootDirectories: ["src"],
     });
 
@@ -597,7 +626,6 @@ describe("architecture rule: root-file-ownership", () => {
     const violations = analyzeArchitecture(repo, {
       allowedRootFileStems: [],
       entrypointNames: ["index"],
-      includeRootFiles: false,
       rootDirectories: ["src"],
     });
 
@@ -620,7 +648,6 @@ describe("architecture rule: dependency-policy", () => {
         { mayDependOn: [], name: "cli", pathPrefixes: ["src/cli"] },
         { mayDependOn: [], name: "format", pathPrefixes: ["src/format"] },
       ],
-      includeRootFiles: false,
       rootDirectories: ["src"],
     });
 
@@ -641,7 +668,6 @@ describe("architecture rule: dependency-policy", () => {
         { mayDependOn: ["format"], name: "cli", pathPrefixes: ["src/cli"] },
         { mayDependOn: [], name: "format", pathPrefixes: ["src/format"] },
       ],
-      includeRootFiles: false,
       rootDirectories: ["src"],
     });
 
@@ -658,7 +684,6 @@ describe("architecture rule: dependency-policy-coverage", () => {
 
     const violations = analyzeArchitecture(repo, {
       dependencyPolicies: [],
-      includeRootFiles: false,
       requireCompleteDependencyPolicyCoverage: true,
       rootDirectories: ["src"],
     });
@@ -683,7 +708,6 @@ describe("architecture rule: dependency-policy-cycle", () => {
         { mayDependOn: ["b"], name: "a", pathPrefixes: ["src/a"] },
         { mayDependOn: ["a"], name: "b", pathPrefixes: ["src/b"] },
       ],
-      includeRootFiles: false,
       requireAcyclicDependencyPolicies: true,
       rootDirectories: ["src"],
     });
@@ -718,7 +742,6 @@ describe("architecture rule: dependency-policy-fan-out", () => {
         { mayDependOn: [], name: "c", pathPrefixes: ["src/c"] },
         { mayDependOn: [], name: "d", pathPrefixes: ["src/d"] },
       ],
-      includeRootFiles: false,
       maxPolicyFanOut: 2,
       rootDirectories: ["src"],
     });
@@ -753,7 +776,6 @@ describe("architecture rule: dependency-dependent-allowlist", () => {
           pathPrefixes: ["src/config"],
         },
       ],
-      includeRootFiles: false,
       rootDirectories: ["src"],
     });
 
@@ -786,7 +808,6 @@ describe("architecture rule: runtime-importer-allowlist", () => {
           surfaceTier: "private-runtime",
         },
       ],
-      includeRootFiles: false,
       rootDirectories: ["src"],
     });
 
@@ -808,7 +829,6 @@ describe("architecture rule: type-only-policy-import", () => {
         { mayDependOn: ["types"], name: "process", pathPrefixes: ["src/process"] },
         { isTypeOnly: true, mayDependOn: [], name: "types", pathPrefixes: ["src/types"] },
       ],
-      includeRootFiles: false,
       requireTypeOnlyImportsForTypeOnlyPolicies: true,
       rootDirectories: ["src"],
     });
@@ -829,7 +849,6 @@ describe("architecture rule: type-only-policy-import", () => {
         { mayDependOn: ["types"], name: "process", pathPrefixes: ["src/process"] },
         { isTypeOnly: true, mayDependOn: [], name: "types", pathPrefixes: ["src/types"] },
       ],
-      includeRootFiles: false,
       requireTypeOnlyImportsForTypeOnlyPolicies: true,
       rootDirectories: ["src"],
     });
@@ -857,7 +876,6 @@ describe("architecture rule: public-surface-tier", () => {
         { mayDependOn: [], name: "process", pathPrefixes: ["src/process"] },
       ],
       explicitPublicSurfacePaths: ["src/check.ts"],
-      includeRootFiles: false,
       rootDirectories: ["src"],
     });
 
@@ -873,7 +891,6 @@ describe("architecture rule: public-surface-purity", () => {
 
     const violations = analyzeArchitecture(repo, {
       explicitPublicSurfacePaths: ["src/check.ts"],
-      includeRootFiles: false,
       rootDirectories: ["src"],
     });
 
@@ -891,7 +908,6 @@ describe("architecture rule: public-surface-wildcard-export", () => {
 
     const violations = analyzeArchitecture(repo, {
       explicitPublicSurfacePaths: ["src/check.ts"],
-      includeRootFiles: false,
       maxWildcardExportsPerPublicSurface: 0,
       rootDirectories: ["src"],
     });
@@ -911,7 +927,6 @@ describe("architecture rule: public-surface-re-export-chain", () => {
     const violations = analyzeArchitecture(repo, {
       allowPublicSurfaceReExportChains: false,
       explicitPublicSurfacePaths: ["src/check.ts"],
-      includeRootFiles: false,
       rootDirectories: ["src"],
     });
 
@@ -928,7 +943,6 @@ describe("architecture rule: runtime-only-path", () => {
     });
 
     const violations = analyzeArchitecture(repo, {
-      includeRootFiles: false,
       rootDirectories: ["src"],
     });
 
@@ -944,7 +958,6 @@ describe("architecture rule: directory-depth", () => {
     });
 
     const violations = analyzeArchitecture(repo, {
-      includeRootFiles: false,
       maxDirectoryDepth: 3,
       rootDirectories: ["src"],
     });
@@ -972,7 +985,6 @@ describe("architecture rule: central-surface-budget", () => {
         { mayDependOn: [], name: "check", pathPrefixes: ["src/check.ts"], surfaceTier: "public" },
       ],
       explicitPublicSurfacePaths: ["src/check.ts"],
-      includeRootFiles: false,
       maxCentralSurfaceExports: 3,
       rootDirectories: ["src"],
     });
@@ -991,7 +1003,6 @@ describe("architecture rule: central-surface-budget", () => {
         { mayDependOn: [], name: "check", pathPrefixes: ["src/check.ts"], surfaceTier: "public" },
       ],
       explicitPublicSurfacePaths: ["src/check.ts"],
-      includeRootFiles: false,
       maxCentralSurfaceExports: 10,
       rootDirectories: ["src"],
     });
@@ -1011,14 +1022,13 @@ describe("inference round-trip on actual repository", () => {
     const srcDirs = allDirs.includes("src") ? ["src"] : allDirs;
 
     const discoveryBase = {
-      ignoredDirectoryNames: [
-        ".cache", ".git", ".idea", ".next", ".turbo", ".vscode",
-        "build", "coverage", "dist", "node_modules", "out", "scripts", "tmp",
+      ignoredDirectories: [
+        "**/.cache", "**/.git", "**/.idea", "**/.next", "**/.turbo", "**/.vscode",
+        "**/__generated__", "**/build", "**/coverage", "**/dist", "**/generated", "**/node_modules", "**/out", "**/scripts", "**/tmp", "**/vendor",
       ],
       maxPolicyFanOut: 5,
       rootDirectories: srcDirs,
-      testDirectoryNames: ["__fixtures__", "__mocks__", "__tests__", "fixtures", "mocks", "test", "tests"],
-      vendorManagedDirectoryNames: ["__generated__", "generated", "vendor"],
+      testDirectories: ["**/__fixtures__", "**/__mocks__", "**/__tests__", "**/fixtures", "**/mocks", "**/test", "**/tests"],
     };
 
     const entrypointNames        = inferEntrypointNames(cwd, discoveryBase);
@@ -1041,7 +1051,6 @@ describe("inference round-trip on actual repository", () => {
       allowPublicSurfaceReExportChains: false,
       centralSurfacePathPrefixes: inferCentralSurfacePathPrefixes(cwd, boundaryDiscovery),
       dependencyPolicies: inferDependencyPolicies(cwd, boundaryDiscovery),
-      includeRootFiles: false,
       maxCentralSurfaceExports: 66,
       maxDirectoryDepth: 3,
       maxEntrypointReExports: 12,

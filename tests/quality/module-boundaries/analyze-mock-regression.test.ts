@@ -24,11 +24,17 @@ function createArchitectureProject(
     allowedRootFileStems: [],
     allowPublicSurfaceReExportChains: false,
     centralSurfacePathPrefixes: [],
+    codeTargets: {
+      declarationFilePatterns: ["**/*.d.ts"],
+      includePatterns: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs"],
+      resolutionEntrypointNames: ["index", "main", "mod"],
+      resolutionExtensions: [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"],
+      testFilePatterns: ["**/*.spec.*", "**/*.test.*"],
+    },
     dependencyPolicies: [],
     entrypointNames: ["index"],
     explicitPublicSurfacePaths: [],
-    ignoredDirectoryNames: [],
-    includeRootFiles: false,
+    ignoredDirectories: [],
     junkDrawerDirectoryNames: [],
     junkDrawerFileNamePatterns: [],
     junkDrawerFileStems: [],
@@ -46,8 +52,7 @@ function createArchitectureProject(
     requireTypeOnlyImportsForTypeOnlyPolicies: false,
     rootDirectories: ["src"],
     sharedHomeNames: ["types"],
-    testDirectoryNames: ["tests"],
-    vendorManagedDirectoryNames: ["vendor"],
+    testDirectories: ["**/tests"],
   };
 
   return {
@@ -109,8 +114,8 @@ describe("architecture mock regressions", () => {
       structureProjectMatched: boolean;
       violations: { code: string; message: string }[];
     }>(String.raw`
-const rawConfig = { includeRootFiles: false, rootDirectories: ["src"] };
-const normalizedConfig = { includeRootFiles: true, rootDirectories: ["source"] };
+const rawConfig = { rootDirectories: ["src"] };
+const normalizedConfig = { rootDirectories: ["source"] };
 const project = createArchitectureProject();
 const importViolation = createViolation("import-rule", "zeta import message");
 const sharedViolation = createViolation("shared-rule", "middle shared message");
@@ -156,11 +161,11 @@ console.log(JSON.stringify({
 `);
 
     expect(result.normalizeCalls).toEqual([
-      { includeRootFiles: false, rootDirectories: ["src"] },
+      { rootDirectories: ["src"] },
     ]);
     expect(result.discoveryCalls).toEqual([
       {
-        config: { includeRootFiles: true, rootDirectories: ["source"] },
+        config: { rootDirectories: ["source"] },
         cwd: "/repo",
       },
     ]);

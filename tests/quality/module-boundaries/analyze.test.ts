@@ -1,10 +1,17 @@
 import { describe, expect, test } from "bun:test";
 
-import { analyzeArchitecture } from "@/quality/module-boundaries/analyze.ts";
+import type { ArchitectureAnalyzerConfig } from "@/quality/module-boundaries/foundation/index.ts";
+
+import { analyzeArchitecture as analyzeArchitectureBase } from "@/quality/module-boundaries/analyze.ts";
 
 import { createTempRepoFactory } from "./temp-repo";
+import { withTestCodeTargets } from "./test-code-targets";
 
 const createTempRepo = createTempRepoFactory("check-suite-architecture-");
+const analyzeArchitecture = (
+  repoDir: string,
+  config: Partial<ArchitectureAnalyzerConfig>,
+) => analyzeArchitectureBase(repoDir, withTestCodeTargets(config));
 
 describe("architecture analyzer", () => {
   test("flags unowned root files beneath a code root", () => {
@@ -14,7 +21,6 @@ describe("architecture analyzer", () => {
 
     const violations = analyzeArchitecture(repoDir, {
       allowedRootFileStems: [],
-      includeRootFiles: false,
       rootDirectories: ["src"],
     });
 
@@ -35,7 +41,6 @@ describe("architecture analyzer", () => {
     });
 
     const violations = analyzeArchitecture(repoDir, {
-      includeRootFiles: false,
       junkDrawerFileNamePatterns: ["*runtime*"],
       rootDirectories: ["src"],
     });
@@ -70,7 +75,6 @@ describe("architecture analyzer", () => {
           pathPrefixes: ["src/summary"],
         },
       ],
-      includeRootFiles: false,
       rootDirectories: ["src"],
     });
 
@@ -89,7 +93,6 @@ describe("architecture analyzer", () => {
     });
 
     const violations = analyzeArchitecture(repoDir, {
-      includeRootFiles: false,
       rootDirectories: ["src"],
       sharedHomeNames: ["shared-types"],
     });
@@ -108,9 +111,32 @@ describe("architecture analyzer", () => {
     });
 
     const violations = analyzeArchitecture(repoDir, {
-      includeRootFiles: false,
       maxDirectoryDepth: 3,
       rootDirectories: ["src"],
+    });
+
+    expect(
+      violations.some(
+        (violation) =>
+          violation.code === "directory-depth" &&
+          violation.message.includes("src/a/b/c/d"),
+      ),
+    ).toBe(true);
+  });
+
+  test("accepts grouped discovery and rule config", () => {
+    const repoDir = createTempRepo({
+      "src/a/b/c/d/index.ts": "export const value = 1;\n",
+      "src/a/index.ts": 'export { value } from "./b/c/d/index.ts";\n',
+    });
+
+    const violations = analyzeArchitecture(repoDir, {
+      discovery: {
+        rootDirectories: ["src"],
+      },
+      rules: {
+        "directory-depth": { maxDepth: 3 },
+      },
     });
 
     expect(
@@ -130,7 +156,6 @@ describe("architecture analyzer", () => {
 
     const violations = analyzeArchitecture(repoDir, {
       explicitPublicSurfacePaths: ["src/check.ts"],
-      includeRootFiles: false,
       maxWildcardExportsPerPublicSurface: 0,
       rootDirectories: ["src"],
     });
@@ -149,7 +174,6 @@ describe("architecture analyzer", () => {
 
     const violations = analyzeArchitecture(repoDir, {
       explicitPublicSurfacePaths: ["src/check.ts"],
-      includeRootFiles: false,
       rootDirectories: ["src"],
     });
 
@@ -212,7 +236,6 @@ describe("architecture analyzer", () => {
           name: "route",
         },
       ],
-      includeRootFiles: false,
       requireAcyclicDependencyPolicies: false,
       requireCompleteDependencyPolicyCoverage: false,
       rootDirectories: ["src"],
@@ -255,7 +278,6 @@ describe("architecture analyzer", () => {
       dependencyPolicies: [],
       entrypointNames: entrypointRules.map((entrypointRule) => entrypointRule.name),
       entrypointRules,
-      includeRootFiles: false,
       requireAcyclicDependencyPolicies: false,
       requireCompleteDependencyPolicyCoverage: false,
       rootDirectories: ["src"],
@@ -278,7 +300,6 @@ describe("architecture analyzer", () => {
     const violations = analyzeArchitecture(repoDir, {
       allowPublicSurfaceReExportChains: false,
       explicitPublicSurfacePaths: ["src/check.ts"],
-      includeRootFiles: false,
       rootDirectories: ["src"],
     });
 
@@ -296,7 +317,6 @@ describe("architecture analyzer", () => {
     });
 
     const violations = analyzeArchitecture(repoDir, {
-      includeRootFiles: false,
       rootDirectories: ["src"],
     });
 
@@ -312,7 +332,6 @@ describe("architecture analyzer", () => {
 
     const violations = analyzeArchitecture(repoDir, {
       dependencyPolicies: [],
-      includeRootFiles: false,
       requireCompleteDependencyPolicyCoverage: true,
       rootDirectories: ["src"],
     });
@@ -339,7 +358,6 @@ describe("architecture analyzer", () => {
         { mayDependOn: ["b"], name: "a", pathPrefixes: ["src/a"] },
         { mayDependOn: ["a"], name: "b", pathPrefixes: ["src/b"] },
       ],
-      includeRootFiles: false,
       requireAcyclicDependencyPolicies: true,
       rootDirectories: ["src"],
     });
@@ -373,7 +391,6 @@ describe("architecture analyzer", () => {
         { mayDependOn: [], name: "c", pathPrefixes: ["src/c"] },
         { mayDependOn: [], name: "d", pathPrefixes: ["src/d"] },
       ],
-      includeRootFiles: false,
       maxPolicyFanOut: 2,
       rootDirectories: ["src"],
     });
@@ -392,7 +409,6 @@ describe("architecture analyzer", () => {
       dependencyPolicies: createProcessToConfigPolicies({
         configAllowedDependents: ["cli"],
       }),
-      includeRootFiles: false,
       rootDirectories: ["src"],
     });
 
@@ -415,7 +431,6 @@ describe("architecture analyzer", () => {
       dependencyPolicies: createProcessToConfigPolicies({
         allowedRuntimeImporters: ["config"],
       }),
-      includeRootFiles: false,
       rootDirectories: ["src"],
     });
 
@@ -448,7 +463,6 @@ describe("architecture analyzer", () => {
           pathPrefixes: ["src/types"],
         },
       ],
-      includeRootFiles: false,
       requireTypeOnlyImportsForTypeOnlyPolicies: true,
       rootDirectories: ["src"],
     });
@@ -482,7 +496,6 @@ describe("architecture analyzer", () => {
         },
       ],
       explicitPublicSurfacePaths: ["src/check.ts"],
-      includeRootFiles: false,
       rootDirectories: ["src"],
     });
 
