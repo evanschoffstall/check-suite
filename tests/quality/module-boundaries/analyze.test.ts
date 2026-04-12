@@ -166,7 +166,6 @@ describe("architecture analyzer", () => {
           violation.code === "mixed-file-name-case" &&
           violation.message.includes("src/components") &&
           violation.message.includes("PascalCase") &&
-          violation.message.includes("singlecase") &&
           violation.message.includes("kebab-case"),
       ),
     ).toBe(true);
@@ -195,7 +194,7 @@ describe("architecture analyzer", () => {
         (violation) =>
           violation.code === "mixed-file-name-case" &&
           violation.message.includes("PascalCase") &&
-          violation.message.includes("singlecase"),
+          violation.message.includes("kebab-case"),
       ),
     ).toBe(true);
   });

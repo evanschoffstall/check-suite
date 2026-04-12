@@ -15,14 +15,12 @@ type FileNameCaseStyle =
   | "camelCase"
   | "kebab-case"
   | "PascalCase"
-  | "singlecase"
   | "this_case";
 
 const orderedFileNameCaseStyles: readonly FileNameCaseStyle[] = [
   "PascalCase",
   "camelCase",
   "kebab-case",
-  "singlecase",
   "this_case",
 ];
 const globMatcherCache = new Map<string, (value: string) => boolean>();
@@ -77,7 +75,7 @@ function classifyFileNameCase(stem: string): FileNameCaseStyle | null {
   }
 
   if (isLowerAlphaNumeric(stem)) {
-    return "singlecase";
+    return "kebab-case";
   }
 
   return null;
