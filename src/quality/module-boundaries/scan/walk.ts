@@ -1,26 +1,45 @@
 import { join } from "node:path";
 
-import type { ArchitectureAnalyzerConfig } from "@/quality/module-boundaries/foundation/index.ts";
+import type { NormalizedArchitectureAnalyzerConfig } from "@/quality/module-boundaries/foundation/index.ts";
 
 import { safeReadDir } from "./io";
 import { isIncludedCodeFile, shouldSkipDirectory } from "./rules";
 
 export function directoryContainsCode(
   directoryPath: string,
-  config: Required<ArchitectureAnalyzerConfig>,
+  config: NormalizedArchitectureAnalyzerConfig,
+  relativeDirectoryPath = "",
 ): boolean {
   for (const entry of safeReadDir(directoryPath)) {
     if (entry.isDirectory()) {
-      if (shouldSkipDirectory(entry.name, config)) {
+      const childRelativePath = relativeDirectoryPath
+        ? `${relativeDirectoryPath}/${entry.name}`
+        : entry.name;
+
+      if (shouldSkipDirectory(childRelativePath, config)) {
         continue;
       }
-      if (directoryContainsCode(join(directoryPath, entry.name), config)) {
+
+      if (
+        directoryContainsCode(
+          join(directoryPath, entry.name),
+          config,
+          childRelativePath,
+        )
+      ) {
         return true;
       }
+
       continue;
     }
 
-    if (entry.isFile() && isIncludedCodeFile(entry.name)) return true;
+    if (
+      entry.isFile() &&
+      isIncludedCodeFile(
+        relativeDirectoryPath ? `${relativeDirectoryPath}/${entry.name}` : entry.name,
+        config,
+      )
+    ) return true;
   }
 
   return false;
@@ -29,25 +48,29 @@ export function directoryContainsCode(
 export function visitCodeDirectories(
   cwd: string,
   rootDirectory: string,
-  config: Required<ArchitectureAnalyzerConfig>,
+  config: NormalizedArchitectureAnalyzerConfig,
   visitor: (relativeDirectoryPath: string) => void,
 ): void {
   const queue = [rootDirectory];
 
   while (queue.length > 0) {
     const relativeDirectoryPath = queue.shift();
-    if (!relativeDirectoryPath) continue;
+    if (relativeDirectoryPath === undefined) continue;
     visitor(relativeDirectoryPath);
 
     for (const entry of safeReadDir(join(cwd, relativeDirectoryPath))) {
-      if (!entry.isDirectory() || shouldSkipDirectory(entry.name, config)) {
+      const childRelativePath = relativeDirectoryPath
+        ? `${relativeDirectoryPath}/${entry.name}`
+        : entry.name;
+
+      if (!entry.isDirectory() || shouldSkipDirectory(childRelativePath, config)) {
         continue;
       }
 
-      const childRelativePath = `${relativeDirectoryPath}/${entry.name}`;
-      if (!directoryContainsCode(join(cwd, childRelativePath), config)) {
+      if (!directoryContainsCode(join(cwd, childRelativePath), config, childRelativePath)) {
         continue;
       }
+
       queue.push(childRelativePath);
     }
   }
