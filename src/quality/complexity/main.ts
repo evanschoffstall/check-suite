@@ -78,6 +78,7 @@ export async function runComplexityCheck(
     targets,
     excludedPaths,
     thresholds,
+    cwd,
   );
 
   return {
@@ -91,10 +92,11 @@ function buildComplexityReport(
   targets: readonly string[],
   excludedPaths: readonly string[],
   thresholds: ComplexityThresholds,
+  cwd: string,
 ): ComplexityCheckResult {
   return buildComplexityReportWithFiles(
     functions,
-    collectWorkspaceFileMetrics(functions, targets, excludedPaths),
+    collectWorkspaceFileMetrics(functions, targets, excludedPaths, cwd),
     thresholds,
   );
 }
