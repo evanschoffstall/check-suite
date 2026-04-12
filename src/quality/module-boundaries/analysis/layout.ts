@@ -35,8 +35,7 @@ export function collectCodeFiles(
       config,
       (relativeDirectoryPath) => {
         for (const entry of safeReadDir(join(cwd, relativeDirectoryPath))) {
-          const relativeFilePath = normalizePath(`${relativeDirectoryPath}/${entry.name}`);
-          if (entry.isFile() && isIncludedCodeFile(relativeFilePath, config)) {
+          if (entry.isFile() && isIncludedCodeFile(entry.name, config)) {
             files.add(normalizePath(`${relativeDirectoryPath}/${entry.name}`));
           }
         }
@@ -63,13 +62,7 @@ export function collectDirectoryFacts(
         const absoluteDirectoryPath = join(cwd, relativeDirectoryPath);
         const entries = safeReadDir(absoluteDirectoryPath);
         const codeFilePaths = entries
-          .filter((entry) =>
-            entry.isFile() &&
-            isIncludedCodeFile(
-              normalizePath(`${relativeDirectoryPath}/${entry.name}`),
-              config,
-            ),
-          )
+          .filter((entry) => entry.isFile() && isIncludedCodeFile(entry.name, config))
           .map((entry) =>
             normalizePath(`${relativeDirectoryPath}/${entry.name}`),
           )
@@ -134,12 +127,7 @@ export function discoverBoundaryDirectories(
         const absoluteDirectoryPath = join(cwd, relativeDirectoryPath);
         const entries = safeReadDir(absoluteDirectoryPath);
         const codeFiles = entries.filter(
-          (entry) =>
-            entry.isFile() &&
-            isIncludedCodeFile(
-              normalizePath(`${relativeDirectoryPath}/${entry.name}`),
-              config,
-            ),
+          (entry) => entry.isFile() && isIncludedCodeFile(entry.name, config),
         );
         const entrypointPaths = codeFiles
           .filter((entry) => isArchitectureEntrypoint(config, getCodeStem(entry.name)))

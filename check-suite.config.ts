@@ -93,7 +93,7 @@ const architecture = defineStep({
             resolutionExtensions: [".cjs", ".js", ".jsx", ".mjs", ".ts", ".tsx"],
             testFilePatterns: ["**/*.spec.*", "**/*.test.*"],
           } satisfies ArchitectureCodeTargetsConfig,
-          ignoredDirectories: ["**/.cache", "**/.git", "**/.idea", "**/.next", "**/.turbo", "**/.vscode", "**/__generated__", "**/build", "**/coverage", "**/dist", "**/generated", "**/node_modules", "**/out", "**/scripts", "**/tmp", "**/ui", "**/vendor"],
+          ignoredDirectories: ["**/.*", "**/__generated__", "**/build", "**/coverage", "**/dist", "**/generated", "**/node_modules", "**/out", "**/scripts", "**/tmp", "**/ui", "**/vendor"],
           testDirectories: ["**/__fixtures__", "**/__mocks__", "**/__tests__", "**/fixtures", "**/mocks", "**/test", "**/tests"],
         } as const;
         const { directories } = discoverDefaultCodeRoots(process.cwd(), discovery);

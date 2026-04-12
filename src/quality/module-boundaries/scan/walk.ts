@@ -33,13 +33,7 @@ export function directoryContainsCode(
       continue;
     }
 
-    if (
-      entry.isFile() &&
-      isIncludedCodeFile(
-        relativeDirectoryPath ? `${relativeDirectoryPath}/${entry.name}` : entry.name,
-        config,
-      )
-    ) return true;
+    if (entry.isFile() && isIncludedCodeFile(entry.name, config)) return true;
   }
 
   return false;
