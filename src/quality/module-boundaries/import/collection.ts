@@ -5,19 +5,33 @@ import ts from "typescript";
 import type {
   AliasMapping,
   ImportRecord,
+  NormalizedArchitectureAnalyzerConfig,
 } from "@/quality/module-boundaries/foundation/index.ts";
 
 import { resolveModulePath } from "@/quality/module-boundaries/analysis/index.ts";
+
+interface CreateImportRecordInput {
+  aliasMappings: AliasMapping[];
+  config: NormalizedArchitectureAnalyzerConfig;
+  cwd: string;
+  isReExport: boolean;
+  isSideEffectOnly: boolean;
+  isTypeOnly: boolean;
+  knownFiles: Set<string>;
+  sourcePath: string;
+  specifier: string;
+}
 
 /** Collects import edges for all scanned source files. */
 export function collectImports(
   cwd: string,
   files: string[],
   aliasMappings: AliasMapping[],
+  config: NormalizedArchitectureAnalyzerConfig,
 ): ImportRecord[] {
   const knownFiles = new Set(files);
   return files.flatMap((sourcePath) =>
-    collectFileImports(cwd, sourcePath, knownFiles, aliasMappings),
+    collectFileImports(cwd, sourcePath, knownFiles, aliasMappings, config),
   );
 }
 
@@ -26,6 +40,7 @@ function collectFileImports(
   sourcePath: string,
   knownFiles: Set<string>,
   aliasMappings: AliasMapping[],
+  config: NormalizedArchitectureAnalyzerConfig,
 ): ImportRecord[] {
   const sourceText = readFileSync(join(cwd, sourcePath), "utf8");
   const sourceFile = ts.createSourceFile(
@@ -42,17 +57,18 @@ function collectFileImports(
     ) {
       return [
         createImportRecord(
-          cwd,
-          sourcePath,
-          statement.moduleSpecifier.text,
-          knownFiles,
-          aliasMappings,
           {
+            aliasMappings,
+            config,
+            cwd,
             isReExport: false,
             isSideEffectOnly: statement.importClause === undefined,
             isTypeOnly:
               statement.importClause?.phaseModifier ===
               ts.SyntaxKind.TypeKeyword,
+            knownFiles,
+            sourcePath,
+            specifier: statement.moduleSpecifier.text,
           },
         ),
       ];
@@ -65,15 +81,16 @@ function collectFileImports(
     ) {
       return [
         createImportRecord(
-          cwd,
-          sourcePath,
-          statement.moduleSpecifier.text,
-          knownFiles,
-          aliasMappings,
           {
+            aliasMappings,
+            config,
+            cwd,
             isReExport: true,
             isSideEffectOnly: false,
             isTypeOnly: false,
+            knownFiles,
+            sourcePath,
+            specifier: statement.moduleSpecifier.text,
           },
         ),
       ];
@@ -84,29 +101,21 @@ function collectFileImports(
 }
 
 function createImportRecord(
-  cwd: string,
-  sourcePath: string,
-  specifier: string,
-  knownFiles: Set<string>,
-  aliasMappings: AliasMapping[],
-  options: {
-    isReExport: boolean;
-    isSideEffectOnly: boolean;
-    isTypeOnly: boolean;
-  },
+  input: CreateImportRecordInput,
 ): ImportRecord {
   return {
-    isReExport: options.isReExport,
-    isSideEffectOnly: options.isSideEffectOnly,
-    isTypeOnly: options.isTypeOnly,
+    isReExport: input.isReExport,
+    isSideEffectOnly: input.isSideEffectOnly,
+    isTypeOnly: input.isTypeOnly,
     resolvedPath: resolveModulePath(
-      cwd,
-      sourcePath,
-      specifier,
-      knownFiles,
-      aliasMappings,
+      input.cwd,
+      input.sourcePath,
+      input.specifier,
+      input.knownFiles,
+      input.aliasMappings,
+      input.config,
     ),
-    sourcePath,
-    specifier,
+    sourcePath: input.sourcePath,
+    specifier: input.specifier,
   };
 }

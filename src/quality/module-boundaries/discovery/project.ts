@@ -30,7 +30,7 @@ export function discoverArchitectureProject(
     directories: directoryFacts.map((fact) => fact.path),
     directoryFacts,
     files,
-    imports: collectImports(cwd, files, aliasMappings),
+    imports: collectImports(cwd, files, aliasMappings, config),
     sourceFacts,
   };
 }
