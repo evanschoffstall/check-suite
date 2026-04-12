@@ -39,6 +39,7 @@ export {
 export type {
 	AliasMapping,
 	ArchitectureAnalyzerConfig,
+	ArchitectureCodeTargetsConfig,
 	ArchitectureDependencyPolicy,
 	ArchitectureDependencyPolicyRole,
 	ArchitectureEntrypointRule,
@@ -50,6 +51,7 @@ export type {
 	CodeRoots,
 	DirectoryFacts,
 	ImportRecord,
+	NormalizedArchitectureAnalyzerConfig,
 	SourceFileFacts,
 	SourceFileReExport,
 } from "./types";

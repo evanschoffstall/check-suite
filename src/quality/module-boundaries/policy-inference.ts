@@ -134,7 +134,7 @@ export function inferCentralSurfacePathPrefixes(
  * ```ts
  * const architecture = {
  *   dependencyPolicies: inferDependencyPolicies(process.cwd(), {
- *     ignoredDirectoryNames: ["scripts"],
+ *     ignoredDirectories: ["scripts"],
  *     rootDirectories: srcDirs,
  *   }),
  *   requireAcyclicDependencyPolicies: true,

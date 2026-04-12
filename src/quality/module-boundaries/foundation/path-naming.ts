@@ -1,11 +1,11 @@
 import type {
-  ArchitectureAnalyzerConfig,
   ArchitectureEntrypointRule,
+  NormalizedArchitectureAnalyzerConfig,
 } from "./types";
 
 /** Returns whether a configured entrypoint may legally coexist with peers. */
 function entrypointAllowsSiblingEntrypoints(
-  config: Pick<Required<ArchitectureAnalyzerConfig>, "entrypointRules">,
+  config: Pick<NormalizedArchitectureAnalyzerConfig, "entrypointRules">,
   stem: string,
 ): boolean {
   return (
@@ -15,7 +15,7 @@ function entrypointAllowsSiblingEntrypoints(
 
 /** Returns whether a configured entrypoint may contain top-level statements. */
 function entrypointAllowsTopLevelStatements(
-  config: Pick<Required<ArchitectureAnalyzerConfig>, "entrypointRules">,
+  config: Pick<NormalizedArchitectureAnalyzerConfig, "entrypointRules">,
   stem: string,
 ): boolean {
   return getArchitectureEntrypointRule(config, stem)?.allowTopLevelStatements ?? false;
@@ -23,7 +23,7 @@ function entrypointAllowsTopLevelStatements(
 
 /** Looks up the configured architectural entrypoint rule for a given file stem. */
 function getArchitectureEntrypointRule(
-  config: Pick<Required<ArchitectureAnalyzerConfig>, "entrypointRules">,
+  config: Pick<NormalizedArchitectureAnalyzerConfig, "entrypointRules">,
   stem: string,
 ): ArchitectureEntrypointRule | null {
   return (
@@ -44,7 +44,7 @@ function getLastPathSegment(path: string): string {
 
 /** Returns whether the configured architecture model treats a stem as an entrypoint. */
 function isArchitectureEntrypoint(
-  config: Pick<Required<ArchitectureAnalyzerConfig>, "entrypointRules">,
+  config: Pick<NormalizedArchitectureAnalyzerConfig, "entrypointRules">,
   stem: string,
 ): boolean {
   return getArchitectureEntrypointRule(config, stem) !== null;
