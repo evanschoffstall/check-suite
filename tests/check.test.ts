@@ -485,8 +485,9 @@ describe("format helpers", () => {
 
     expect(stripAnsi(renderCheckingFrame(0))).toContain("Checking");
 
-    const resultPromise = withCheckingIndicator(async () => {
+    const resultPromise = withCheckingIndicator(async (indicator) => {
       taskStarted = true;
+      indicator.setDetailLine({ label: "lint", output: "src/check.ts" });
       return "done";
     }, {
       enabled: true,
@@ -503,6 +504,9 @@ describe("format helpers", () => {
     expect(writes.some((chunk) => stripAnsi(chunk).includes("Checking"))).toBe(
       true,
     );
+    expect(
+      writes.some((chunk) => stripAnsi(chunk).includes("Checking") && stripAnsi(chunk).includes("src/check.ts")),
+    ).toBe(true);
     expect(writes.at(-1)).toBe("\r\x1b[2K\x1b[?25h");
   });
 
@@ -524,6 +528,10 @@ describe("format helpers", () => {
 
     expect(writes[0]).toBe("\x1b[?25l");
     expect(stripAnsi(writes[1])).toContain("Checking");
+    indicator.setDetailLine({ label: "lint", output: "building graph" });
+    expect(
+      writes.some((chunk) => stripAnsi(chunk).includes("Checking") && stripAnsi(chunk).includes("building graph")),
+    ).toBe(true);
 
     await indicator.stop();
     expect(writes.at(-1)).toBe("\r\x1b[2K\x1b[?25h");

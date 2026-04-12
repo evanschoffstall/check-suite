@@ -1,5 +1,6 @@
 const RESET = "\x1b[0m";
 const BOLD = "\x1b[1m";
+const DIM = "\x1b[2m";
 const CLEAR_LINE = "\r\x1b[2K";
 const HIDE_CURSOR = "\x1b[?25l";
 const SHOW_CURSOR = "\x1b[?25h";
@@ -44,11 +45,16 @@ const GLYPH_COLOR_HOLD_FRAMES = 3;
 const GLYPH_COLUMN_WIDTH = 2;
 const MESSAGE_COLUMN_WIDTH = MESSAGE.length;
 const TRAIL_COLUMN_WIDTH = 3;
+const INDICATOR_COLUMN_WIDTH =
+  GLYPH_COLUMN_WIDTH + 1 + MESSAGE_COLUMN_WIDTH + TRAIL_COLUMN_WIDTH;
+const DETAIL_SEPARATOR = "  ";
 const DEFAULT_FRAME_INTERVAL_MS = 110;
 const STATIC_CHECKING_MESSAGE = `${MESSAGE}...`;
+const DEFAULT_DETAIL_WIDTH = 120;
 
 /** Exposes imperative lifecycle control for an active checking indicator. */
 export interface CheckingIndicatorController {
+  setDetailLine: (detail: null | { label: string; output: string }) => void;
   stop: () => Promise<void>;
 }
 
@@ -61,6 +67,7 @@ export interface CheckingIndicatorOptions {
 }
 
 interface ActiveIndicatorRenderer {
+  setDetailLine: (detail: string) => void;
   stop: () => Promise<void>;
 }
 
@@ -68,12 +75,13 @@ type CheckingIndicatorDisplayMode = "animated" | "auto" | "static";
 
 /** Terminal-like writer used by the checking indicator for testability. */
 interface TerminalWriter {
+  columns?: number;
   isTTY?: boolean;
   write(chunk: string): boolean;
 }
 
 /** Builds one animated frame for the suite checking indicator. */
-export function renderCheckingFrame(frameIndex: number): string {
+export function renderCheckingFrame(frameIndex: number, detailLine = ""): string {
   const glyph =
     GLYPHS[
       Math.floor(frameIndex / GLYPH_HOLD_FRAMES) % GLYPHS.length
@@ -86,6 +94,10 @@ export function renderCheckingFrame(frameIndex: number): string {
   const messagePadding = " ".repeat(
     MESSAGE_COLUMN_WIDTH + TRAIL_COLUMN_WIDTH - MESSAGE.length - trail.length,
   );
+  const detail =
+    detailLine.length > 0
+      ? `${DETAIL_SEPARATOR}${DIM}${detailLine}${RESET}`
+      : "";
 
   return [
     CLEAR_LINE,
@@ -104,6 +116,7 @@ export function renderCheckingFrame(frameIndex: number): string {
       TEXT_GRADIENT_STOPS,
     ),
     RESET,
+    detail,
   ].join("");
 }
 
@@ -141,12 +154,20 @@ export function startCheckingIndicator(
   }
 
   const frameIntervalMs = options?.frameIntervalMs ?? DEFAULT_FRAME_INTERVAL_MS;
+  const detailWidth = resolveDetailWidth(output);
   output.write(HIDE_CURSOR);
   output.write(renderCheckingFrame(0));
-  const indicatorRenderer = startIndicatorRenderer(output, frameIntervalMs);
+  const indicatorRenderer = startInProcessIndicatorRenderer(
+    output,
+    frameIntervalMs,
+    detailWidth,
+  );
   let isStopped = false;
 
   return {
+    setDetailLine(detail): void {
+      indicatorRenderer.setDetailLine(formatDetailLine(detail, detailWidth));
+    },
     async stop(): Promise<void> {
       if (isStopped) {
         return;
@@ -167,14 +188,14 @@ export function waitForIndicatorPaint(): Promise<void> {
 
 /** Runs work while rendering the animated checking indicator. */
 export async function withCheckingIndicator<T>(
-  task: () => Promise<T>,
+  task: (indicator: CheckingIndicatorController) => Promise<T>,
   options?: CheckingIndicatorOptions,
 ): Promise<T> {
   const indicator = startCheckingIndicator(options);
 
   try {
     await waitForIndicatorPaint();
-    return await task();
+    return await task(indicator);
   } finally {
     await indicator.stop();
   }
@@ -200,10 +221,26 @@ function colorizeText(
 
 function createNoopCheckingIndicatorController(): CheckingIndicatorController {
   return {
+    setDetailLine(): void {
+      // Intentionally empty.
+    },
     stop(): Promise<void> {
       return Promise.resolve();
     },
   };
+}
+
+function formatDetailLine(
+  detail: null | { label: string; output: string },
+  maxWidth: number,
+): string {
+  if (!detail) {
+    return "";
+  }
+
+  return detail.output.length > 0
+    ? truncateDetailLine(detail.output, maxWidth)
+    : "";
 }
 
 function interpolateGradientColor(
@@ -245,36 +282,42 @@ function resolveCheckingIndicatorDisplayMode(
   return shouldAnimateCheckingIndicator(output) ? "animated" : "none";
 }
 
-function resolveTrailForFrame(frameIndex: number): string {
-  return TRAIL_PATTERNS[Math.floor(frameIndex / 5) % TRAIL_PATTERNS.length];
+function resolveDetailWidth(output: TerminalWriter): number {
+  const terminalWidth = output.columns;
+  if (
+    typeof terminalWidth !== "number" ||
+    terminalWidth <= INDICATOR_COLUMN_WIDTH + DETAIL_SEPARATOR.length
+  ) {
+    return DEFAULT_DETAIL_WIDTH;
+  }
+
+  return Math.max(
+    24,
+    terminalWidth - INDICATOR_COLUMN_WIDTH - DETAIL_SEPARATOR.length - 1,
+  );
 }
 
-function startIndicatorRenderer(
-  output: TerminalWriter,
-  frameIntervalMs: number,
-): ActiveIndicatorRenderer {
-  if (output !== process.stdout) {
-    return startInProcessIndicatorRenderer(output, frameIntervalMs);
-  }
-
-  try {
-    return startSubprocessIndicatorRenderer(frameIntervalMs);
-  } catch {
-    return startInProcessIndicatorRenderer(output, frameIntervalMs);
-  }
+function resolveTrailForFrame(frameIndex: number): string {
+  return TRAIL_PATTERNS[Math.floor(frameIndex / 5) % TRAIL_PATTERNS.length];
 }
 
 function startInProcessIndicatorRenderer(
   output: TerminalWriter,
   frameIntervalMs: number,
+  detailWidth: number,
 ): ActiveIndicatorRenderer {
+  let detailLine = formatDetailLine(null, detailWidth);
   let frameIndex = 1;
   const intervalId = setInterval(() => {
-    output.write(renderCheckingFrame(frameIndex));
+    output.write(renderCheckingFrame(frameIndex, detailLine));
     frameIndex += 1;
   }, frameIntervalMs);
 
   return {
+    setDetailLine(nextDetailLine: string): void {
+      detailLine = nextDetailLine;
+      output.write(renderCheckingFrame(frameIndex, detailLine));
+    },
     stop(): Promise<void> {
       clearInterval(intervalId);
       return Promise.resolve();
@@ -282,28 +325,11 @@ function startInProcessIndicatorRenderer(
   };
 }
 
-function startSubprocessIndicatorRenderer(
-  frameIntervalMs: number,
-): ActiveIndicatorRenderer {
-  const runtimePath = new URL("./frame-loop.ts", import.meta.url).pathname;
-  const child = Bun.spawn(
-    [process.execPath, runtimePath, String(frameIntervalMs), "1"],
-    {
-      cwd: process.cwd(),
-      stderr: "ignore",
-      stdin: "ignore",
-      stdout: "inherit",
-    },
-  );
+function truncateDetailLine(text: string, maxWidth: number): string {
+  const singleLineText = text.replace(/\s+/gu, " ").trim();
+  if (singleLineText.length <= maxWidth) {
+    return singleLineText;
+  }
 
-  return {
-    async stop(): Promise<void> {
-      child.kill();
-      try {
-        await child.exited;
-      } catch {
-        // Best-effort shutdown is enough; the parent clears the line afterward.
-      }
-    },
-  };
+  return `${singleLineText.slice(0, Math.max(1, maxWidth - 1)).trimEnd()}…`;
 }

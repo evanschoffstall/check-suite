@@ -7,6 +7,8 @@ import {
   withCheckingIndicator,
 } from "@/suite-processing/checking-indicator/index.ts";
 
+import type { ActiveSuiteStepStatus } from "./batch.ts";
+
 import {
   printSuiteOutputs,
   printSuitePostProcessFeedback,
@@ -33,7 +35,9 @@ export async function runCheckSuite(
   const outputMode = options.outputMode ?? "failures-only";
   const renderMode = options.renderMode ?? "styled";
   const summaryOnly = options.summaryOnly === true;
-  const loadSuiteReport = async () => {
+  const loadSuiteReport = async (
+    indicator?: CheckingIndicatorController,
+  ) => {
     const excludedKeys = options.excludedKeys ?? new Set<string>();
     const { mainSteps, preRunSteps } = selectSuiteSteps(
       CFG.steps,
@@ -44,6 +48,11 @@ export async function runCheckSuite(
       preRunSteps,
       mainSteps,
       deadlineMs,
+      {
+        onActiveStepChange: (activeStep: ActiveSuiteStepStatus | null) => {
+          indicator?.setDetailLine(activeStep);
+        },
+      },
     );
     const report = await prepareSuiteReport(executionState);
     return { executionState, report };
@@ -140,11 +149,11 @@ function printSuiteReport(
 
 async function runSuiteWithIndicator<T>(
   indicator: CheckingIndicatorController,
-  task: () => Promise<T>,
+  task: (indicator: CheckingIndicatorController) => Promise<T>,
 ): Promise<T> {
   try {
     await waitForIndicatorPaint();
-    return await task();
+    return await task(indicator);
   } finally {
     await indicator.stop();
   }

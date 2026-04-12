@@ -1,3 +1,5 @@
+import type { CheckingIndicatorController } from "@/suite-processing/checking-indicator/index.ts";
+
 import { startCheckingIndicator } from "@/suite-processing/checking-indicator/index.ts";
 
 const HELP_FLAGS = new Set(["--help", "-h", "help"]);
@@ -98,7 +100,7 @@ export async function main(): Promise<void> {
 }
 
 async function exitWithMessage(
-  indicator: null | { stop: () => Promise<void> },
+  indicator: CheckingIndicatorController | null,
   message: string,
   exitCode: number,
 ): Promise<void> {
@@ -129,7 +131,7 @@ async function loadCliArguments(argv: string[]) {
 }
 
 async function runDirectStepCommand(
-  indicator: null | { stop: () => Promise<void> },
+  indicator: CheckingIndicatorController | null,
   directStep: NonNullable<Awaited<ReturnType<typeof loadCliArguments>>["directStep"]>,
   directStepArgs: string[],
 ): Promise<void> {
@@ -148,7 +150,7 @@ async function runDirectStepCommand(
 }
 
 async function runSuiteCommand(
-  indicator: null | { stop: () => Promise<void> },
+  indicator: CheckingIndicatorController | null,
   cliArguments: Awaited<ReturnType<typeof loadCliArguments>>,
 ): Promise<void> {
   const { runCheckSuite } = await import("@/suite-processing/index.ts");
