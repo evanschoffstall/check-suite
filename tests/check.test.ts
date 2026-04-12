@@ -505,7 +505,7 @@ describe("format helpers", () => {
       true,
     );
     expect(
-      writes.some((chunk) => stripAnsi(chunk).includes("Checking") && stripAnsi(chunk).includes("src/check.ts")),
+      writes.some((chunk) => /Checking.*\[\d+\.\d+s\] \[lint\] src\/check\.ts/.test(stripAnsi(chunk))),
     ).toBe(true);
     expect(writes.at(-1)).toBe("\r\x1b[2K\x1b[?25h");
   });
@@ -530,7 +530,7 @@ describe("format helpers", () => {
     expect(stripAnsi(writes[1])).toContain("Checking");
     indicator.setDetailLine({ label: "lint", output: "building graph" });
     expect(
-      writes.some((chunk) => stripAnsi(chunk).includes("Checking") && stripAnsi(chunk).includes("building graph")),
+      writes.some((chunk) => /Checking.*\[\d+\.\d+s\] \[lint\] building graph/.test(stripAnsi(chunk))),
     ).toBe(true);
 
     await indicator.stop();

@@ -48,6 +48,7 @@ const TRAIL_COLUMN_WIDTH = 3;
 const INDICATOR_COLUMN_WIDTH =
   GLYPH_COLUMN_WIDTH + 1 + MESSAGE_COLUMN_WIDTH + TRAIL_COLUMN_WIDTH;
 const DETAIL_SEPARATOR = "  ";
+const DETAIL_TIMER_WIDTH = 9;
 const DEFAULT_FRAME_INTERVAL_MS = 110;
 const STATIC_CHECKING_MESSAGE = `${MESSAGE}...`;
 const DEFAULT_DETAIL_WIDTH = 120;
@@ -90,7 +91,7 @@ export function renderCheckingFrame(frameIndex: number, detailLine = ""): string
   const textPhase = frameIndex * 0.35;
   const trailPhase = frameIndex * 1.15;
   const glyphColumn = glyph.padEnd(GLYPH_COLUMN_WIDTH, " ");
-  const trail = resolveTrailForFrame(frameIndex);
+  const trail = TRAIL_PATTERNS[Math.floor(frameIndex / 5) % TRAIL_PATTERNS.length];
   const messagePadding = " ".repeat(
     MESSAGE_COLUMN_WIDTH + TRAIL_COLUMN_WIDTH - MESSAGE.length - trail.length,
   );
@@ -239,7 +240,13 @@ function formatDetailLine(
   }
 
   return detail.output.length > 0
-    ? truncateDetailLine(detail.output, maxWidth)
+    ? truncateDetailLine(`[${detail.label}] ${detail.output}`, maxWidth)
+    : "";
+}
+
+function formatTimedDetailLine(detailLine: string, elapsedMs: number): string {
+  return detailLine.length > 0
+    ? `[${(Math.max(0, elapsedMs) / 1000).toFixed(1)}s] ${detailLine}`
     : "";
 }
 
@@ -286,19 +293,20 @@ function resolveDetailWidth(output: TerminalWriter): number {
   const terminalWidth = output.columns;
   if (
     typeof terminalWidth !== "number" ||
-    terminalWidth <= INDICATOR_COLUMN_WIDTH + DETAIL_SEPARATOR.length
+    terminalWidth <=
+      INDICATOR_COLUMN_WIDTH + DETAIL_SEPARATOR.length + DETAIL_TIMER_WIDTH
   ) {
     return DEFAULT_DETAIL_WIDTH;
   }
 
   return Math.max(
     24,
-    terminalWidth - INDICATOR_COLUMN_WIDTH - DETAIL_SEPARATOR.length - 1,
+    terminalWidth -
+      INDICATOR_COLUMN_WIDTH -
+      DETAIL_SEPARATOR.length -
+      DETAIL_TIMER_WIDTH -
+      1,
   );
-}
-
-function resolveTrailForFrame(frameIndex: number): string {
-  return TRAIL_PATTERNS[Math.floor(frameIndex / 5) % TRAIL_PATTERNS.length];
 }
 
 function startInProcessIndicatorRenderer(
@@ -306,17 +314,28 @@ function startInProcessIndicatorRenderer(
   frameIntervalMs: number,
   detailWidth: number,
 ): ActiveIndicatorRenderer {
+  const startedAtMs = Date.now();
   let detailLine = formatDetailLine(null, detailWidth);
   let frameIndex = 1;
+
+  const writeFrame = (): void => {
+    output.write(
+      renderCheckingFrame(
+        frameIndex,
+        formatTimedDetailLine(detailLine, Date.now() - startedAtMs),
+      ),
+    );
+  };
+
   const intervalId = setInterval(() => {
-    output.write(renderCheckingFrame(frameIndex, detailLine));
+    writeFrame();
     frameIndex += 1;
   }, frameIntervalMs);
 
   return {
     setDetailLine(nextDetailLine: string): void {
       detailLine = nextDetailLine;
-      output.write(renderCheckingFrame(frameIndex, detailLine));
+      writeFrame();
     },
     stop(): Promise<void> {
       clearInterval(intervalId);
