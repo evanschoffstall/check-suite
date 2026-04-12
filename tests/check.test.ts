@@ -106,6 +106,8 @@ describe("check CLI", () => {
     expect(stdout).toContain("Usage: check-suite [command] [options]");
     expect(stdout).toContain("--output=all");
     expect(stdout).toContain("--output=failures");
+    expect(stdout).toContain("--format=plain");
+    expect(stdout).toContain("--format=styled");
     expect(stdout).toContain("--fail-lines=<n>");
   });
 
@@ -124,6 +126,7 @@ describe("check CLI", () => {
 
   test("parses suite output options and failing output line limits", () => {
     expect(parseCliOptions([]).outputMode).toBe("failures-only");
+    expect(parseCliOptions([]).renderMode).toBe("styled");
     expect(parseCliOptions([]).failureOutputLineLimit).toBeNull();
     expect(parseCliOptions(["--output=all", "--lint"]).outputMode).toBe(
       "all",
@@ -131,9 +134,16 @@ describe("check CLI", () => {
     expect(parseCliOptions(["--output=failures"]).outputMode).toBe(
       "failures-only",
     );
+    expect(parseCliOptions(["--format=plain"]).renderMode).toBe("plain");
+    expect(parseCliOptions(["--format=headless"]).renderMode).toBe("plain");
+    expect(parseCliOptions(["--format=safe"]).renderMode).toBe("plain");
+    expect(parseCliOptions(["--format=styled"]).renderMode).toBe("styled");
     expect(parseCliOptions(["--fail-lines=3"]).failureOutputLineLimit).toBe(3);
     expect(parseCliOptions(["--output=nope"]).invalidOptions).toEqual([
       "--output=nope",
+    ]);
+    expect(parseCliOptions(["--format=nope"]).invalidOptions).toEqual([
+      "--format=nope",
     ]);
     expect(parseCliOptions(["--fail-lines=0"]).invalidOptions).toEqual([
       "--fail-lines=0",
@@ -263,6 +273,39 @@ describe("format helpers", () => {
     expect(writeLines.some((line) => line === "payload\n")).toBe(true);
   });
 
+  test("plain render mode strips special formatting from print helpers", () => {
+    const infoLines: string[] = [];
+    const writeLines: string[] = [];
+    const originalConsoleInfo = console.info;
+    const originalStdoutWrite = process.stdout.write;
+
+    console.info = ((...args: unknown[]) => {
+      infoLines.push(args.join(" "));
+    }) as typeof console.info;
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      writeLines.push(
+        typeof chunk === "string" ? chunk : Buffer.from(chunk).toString("utf8"),
+      );
+      return true;
+    }) as typeof process.stdout.write;
+
+    try {
+      printPostProcessMessages([{ text: "warn message", tone: "warn" }], "plain");
+      printPostProcessSections(
+        [{ items: ["first"], title: "Section", tone: "fail" }],
+        "plain",
+      );
+      printStepOutput("demo", `${ANSI.red}payload${ANSI.reset}`, "plain");
+    } finally {
+      console.info = originalConsoleInfo;
+      process.stdout.write = originalStdoutWrite;
+    }
+
+    expect(infoLines.some((line) => line.includes("\u001b["))).toBe(false);
+    expect(infoLines.some((line) => line.includes("  * first"))).toBe(true);
+    expect(writeLines).toEqual(["payload\n"]);
+  });
+
   test("suite outputs only failing steps by default and can print all output", () => {
     const infoLines: string[] = [];
     const writeLines: string[] = [];
@@ -295,7 +338,12 @@ describe("format helpers", () => {
 
       printSuiteOutputs(
         allExecutedSteps,
-        { failureOutputLineLimit: null, outputMode: "failures-only", runs },
+        {
+          failureOutputLineLimit: null,
+          outputMode: "failures-only",
+          renderMode: "styled",
+          runs,
+        },
         processedResults,
         false,
         false,
@@ -310,7 +358,12 @@ describe("format helpers", () => {
 
       printSuiteOutputs(
         allExecutedSteps,
-        { failureOutputLineLimit: null, outputMode: "all", runs },
+        {
+          failureOutputLineLimit: null,
+          outputMode: "all",
+          renderMode: "styled",
+          runs,
+        },
         processedResults,
         false,
         false,
@@ -357,7 +410,12 @@ describe("format helpers", () => {
 
       printSuiteOutputs(
         allExecutedSteps,
-        { failureOutputLineLimit: 2, outputMode: "all", runs },
+        {
+          failureOutputLineLimit: 2,
+          outputMode: "all",
+          renderMode: "styled",
+          runs,
+        },
         processedResults,
         false,
         false,

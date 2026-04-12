@@ -35,6 +35,7 @@ export interface CliArguments {
   invalidSuiteFlags: string[];
   keyFilter: null | Set<string>;
   outputMode: SuiteOutputMode;
+  renderMode: SuiteRenderMode;
 }
 
 export interface DelayHandle<T> {
@@ -91,6 +92,9 @@ export interface SuiteExecutionState {
 }
 
 export type SuiteOutputMode = "all" | "failures-only";
+
+/** Controls whether suite output is styled for terminals or reduced to plain text. */
+export type SuiteRenderMode = "plain" | "styled";
 
 export type {
   Command,

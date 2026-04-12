@@ -1,6 +1,9 @@
+import type { SuiteRenderMode } from "@/types/index.ts";
+
 import { ANSI, paint } from "./base.ts";
 
 const SUMMARY_LABEL_WIDTH = 13;
+const PLAIN_DIVIDER = "--------------------------------";
 const ANSI_ESCAPE_PATTERN = new RegExp(
   String.raw`\u001B\[[0-?]*[ -/]*[@-~]`,
   "gu",
@@ -43,22 +46,38 @@ export const row = (
   status: "fail" | "pass",
   details = "",
   durationMs?: number,
+  renderMode: SuiteRenderMode = "styled",
 ) => {
+  const normalizedDetails = renderMode === "plain" ? stripAnsi(details) : details;
   const timing =
     durationMs !== undefined
-      ? ` ${paint(formatDuration(durationMs), ANSI.gray)}`
+      ? renderMode === "plain"
+        ? ` ${formatDuration(durationMs)}`
+        : ` ${paint(formatDuration(durationMs), ANSI.gray)}`
       : "";
-  return `${passFail(status)} ${paint(formatSummaryLabel(label), ANSI.bold)} ${details}${timing}`;
+  const formattedLabel = formatSummaryLabel(label);
+  if (renderMode === "plain") {
+    return `${passFail(status, renderMode)} ${formattedLabel} ${normalizedDetails}${timing}`;
+  }
+
+  return `${passFail(status, renderMode)} ${paint(formattedLabel, ANSI.bold)} ${normalizedDetails}${timing}`;
 };
 
 /** Renders a horizontal divider line. */
-export const divider = () =>
-  paint("────────────────────────────────", ANSI.gray);
+export const divider = (renderMode: SuiteRenderMode = "styled") =>
+  renderMode === "plain" ? PLAIN_DIVIDER : paint("────────────────────────────────", ANSI.gray);
 
 /** Renders a bold green PASS or bold red FAIL label. */
-export const passFail = (status: "fail" | "pass") =>
-  paint(
-    status === "pass" ? "PASS" : "FAIL",
-    ANSI.bold,
-    status === "pass" ? ANSI.green : ANSI.red,
-  );
+export const passFail = (
+  status: "fail" | "pass",
+  renderMode: SuiteRenderMode = "styled",
+) =>
+  renderMode === "plain"
+    ? status === "pass"
+      ? "PASS"
+      : "FAIL"
+    : paint(
+        status === "pass" ? "PASS" : "FAIL",
+        ANSI.bold,
+        status === "pass" ? ANSI.green : ANSI.red,
+      );

@@ -18,6 +18,7 @@ export function createBaseCliArguments(): Omit<
     invalidSuiteFlags: [],
     keyFilter: null,
     outputMode: "all",
+    renderMode: "styled",
   };
 }
 
@@ -87,6 +88,7 @@ export function parseSuiteSelectionArguments(
         ? new Set(selectionState.suiteFlags)
         : null,
     outputMode: cliOptions.outputMode,
+    renderMode: cliOptions.renderMode,
   };
 }
 

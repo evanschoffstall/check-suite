@@ -13,6 +13,8 @@ const HELP_TEXT = [
   "Suite Options:",
   "  --output=failures    Show detailed output only for failing steps (default)",
   "  --output=all         Show detailed output for all steps",
+  "  --format=plain      Disable ANSI styling, animation, and decorative glyphs",
+  "  --format=styled     Use the default styled terminal renderer",
   "  --fail-lines=<n>     Show only the first <n> lines of each failing step output",
   "  ---no=<step-key>     Exclude a suite step",
   "  --<step-key>         Run only the named suite step(s)",
@@ -21,6 +23,7 @@ const HELP_TEXT = [
   "Examples:",
   "  check-suite",
   "  check-suite --output=all",
+  "  check-suite --format=plain",
   "  check-suite --fail-lines=25",
   "  check-suite summary --<step-key>",
   "  check-suite <step-key> -- --watch",
@@ -37,16 +40,18 @@ export async function main(): Promise<void> {
     writeOut(HELP_TEXT);
     return;
   }
-  const indicator = shouldShowCheckingIndicator(argv) ? startCheckingIndicator() : null;
+  const cliArguments = await loadCliArguments(argv);
+
+  if (cliArguments.command === "help") {
+    writeOut(HELP_TEXT);
+    return;
+  }
+
+  const indicator = shouldShowCheckingIndicator(cliArguments)
+    ? startCheckingIndicator()
+    : null;
 
   try {
-    const cliArguments = await loadCliArguments(argv);
-
-    if (cliArguments.command === "help") {
-      writeOut(HELP_TEXT);
-      return;
-    }
-
     if (cliArguments.command === "keys") {
       await handleKeysCommand(); return;
     }
@@ -149,12 +154,20 @@ async function runSuiteCommand(
     failureOutputLineLimit: cliArguments.failureOutputLineLimit,
     indicator: indicator ?? undefined,
     outputMode: cliArguments.outputMode,
+    renderMode: cliArguments.renderMode,
     summaryOnly: cliArguments.command === "summary",
   });
 }
 
-function shouldShowCheckingIndicator(argv: string[]): boolean {
-  return argv[2] !== "keys" && !isHelpRequest(argv);
+function shouldShowCheckingIndicator(cliArguments: {
+  command: string;
+  renderMode: "plain" | "styled";
+}): boolean {
+  return (
+    cliArguments.command !== "help" &&
+    cliArguments.command !== "keys" &&
+    cliArguments.renderMode === "styled"
+  );
 }
 
 // ---------------------------------------------------------------------------

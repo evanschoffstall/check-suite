@@ -4,6 +4,7 @@ import type {
   ProcessedResultEntry,
   StepConfig,
   SuiteOutputMode,
+  SuiteRenderMode,
 } from "@/types/index.ts";
 
 import {
@@ -19,6 +20,7 @@ import {
 interface SuiteDetailDisplayOptions {
   failureOutputLineLimit: null | number;
   outputMode: SuiteOutputMode;
+  renderMode: SuiteRenderMode;
   runs: Record<string, Command>;
 }
 
@@ -46,6 +48,7 @@ export function printSuiteOutputs(
         detailOptions.failureOutputLineLimit,
         status,
       ),
+      detailOptions.renderMode,
     );
   }
 }
@@ -62,7 +65,11 @@ export function printSuitePostProcessFeedback(
   if (summaryOnly) return;
   if (suiteExpiredBeforeOutput) {
     console.info(
-      `\n${paint("Suite deadline reached before detailed output; skipping step output and post-processing.", ANSI.bold, ANSI.yellow)}`,
+      `\n${formatNotice(
+        "Suite deadline reached before detailed output; skipping step output and post-processing.",
+        ANSI.yellow,
+        detailOptions.renderMode,
+      )}`,
     );
   }
 
@@ -78,17 +85,24 @@ export function printSuitePostProcessFeedback(
     }
     const processed = processedResults[step.key].postProcess;
     if (processed?.messages?.length) {
-      printPostProcessMessages(processed.messages);
+      printPostProcessMessages(processed.messages, detailOptions.renderMode);
     }
     if (processed?.sections?.length) {
-      printPostProcessSections(processed.sections);
+      printPostProcessSections(processed.sections, detailOptions.renderMode);
     }
   }
 
   if (missingSteps.length > 0) {
-    console.info(
-      `\n${paint("missing/not found:", ANSI.bold, ANSI.yellow)} ${paint(missingSteps.join(", "), ANSI.yellow)}`,
+    const missingLabel = formatNotice(
+      "missing/not found:",
+      ANSI.yellow,
+      detailOptions.renderMode,
     );
+    const missingValue =
+      detailOptions.renderMode === "plain"
+        ? missingSteps.join(", ")
+        : paint(missingSteps.join(", "), ANSI.yellow);
+    console.info(`\n${missingLabel} ${missingValue}`);
   }
 }
 
@@ -97,18 +111,19 @@ export function printSuiteSummary(
   checks: CheckRow[],
   runs: Record<string, Command>,
   startedAtMs: number,
+  renderMode: SuiteRenderMode,
 ): boolean {
   const presentChecks = checks.filter(
     (check) => !check.stepKey || !runs[check.stepKey].notFound,
   );
-  console.info(`\n${paint("Quality Summary", ANSI.bold, ANSI.cyan)}`);
-  console.info(divider());
+  console.info(`\n${formatNotice("Quality Summary", ANSI.cyan, renderMode)}`);
+  console.info(divider(renderMode));
   for (const check of presentChecks) {
     console.info(
-      row(check.label, check.status, check.details, check.durationMs),
+      row(check.label, check.status, check.details, check.durationMs, renderMode),
     );
   }
-  console.info(divider());
+  console.info(divider(renderMode));
 
   const allOk = presentChecks.every((check) => check.status !== "fail");
   const elapsedSeconds = ((Date.now() - startedAtMs) / 1000).toFixed(2);
@@ -117,10 +132,20 @@ export function printSuiteSummary(
       "Overall",
       allOk ? "pass" : "fail",
       `${allOk ? "all checks passed" : "one or more checks failed"} (in ${elapsedSeconds} seconds)`,
+      undefined,
+      renderMode,
     ),
   );
-  console.info(divider());
+  console.info(divider(renderMode));
   return allOk;
+}
+
+function formatNotice(
+  text: string,
+  color: string,
+  renderMode: SuiteRenderMode,
+): string {
+  return renderMode === "plain" ? text : paint(text, ANSI.bold, color);
 }
 
 function getStepStatus(

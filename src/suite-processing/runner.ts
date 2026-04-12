@@ -1,5 +1,5 @@
 import type { CheckingIndicatorController } from "@/suite-processing/checking-indicator/index.ts";
-import type { SuiteOutputMode } from "@/types/index.ts";
+import type { SuiteOutputMode, SuiteRenderMode } from "@/types/index.ts";
 
 import { CFG, SUITE_LABEL, SUITE_TIMEOUT_MS } from "@/runtime-config/index.ts";
 import {
@@ -24,12 +24,14 @@ export async function runCheckSuite(
     failureOutputLineLimit?: null | number;
     indicator?: CheckingIndicatorController;
     outputMode?: SuiteOutputMode;
+    renderMode?: SuiteRenderMode;
     summaryOnly?: boolean;
   } = {},
 ): Promise<void> {
   const startedAtMs = Date.now();
   const deadlineMs = startedAtMs + SUITE_TIMEOUT_MS;
   const outputMode = options.outputMode ?? "failures-only";
+  const renderMode = options.renderMode ?? "styled";
   const summaryOnly = options.summaryOnly === true;
   const loadSuiteReport = async () => {
     const excludedKeys = options.excludedKeys ?? new Set<string>();
@@ -49,21 +51,29 @@ export async function runCheckSuite(
   const { executionState, report } =
     options.indicator === undefined
       ? await withCheckingIndicator(loadSuiteReport, {
-          enabled: !summaryOnly,
+          enabled: !summaryOnly && renderMode === "styled",
         })
       : await runSuiteWithIndicator(options.indicator, loadSuiteReport);
 
   printSuiteReport(
     executionState,
-    options.failureOutputLineLimit ?? null,
-    report.processedResults,
-    outputMode,
-    summaryOnly,
-    report.missingSteps,
+    {
+      failureOutputLineLimit: options.failureOutputLineLimit ?? null,
+      missingSteps: report.missingSteps,
+      outputMode,
+      processedResults: report.processedResults,
+      renderMode,
+      summaryOnly,
+    },
   );
 
   const allOk =
-    printSuiteSummary(report.checks, executionState.runs, startedAtMs) &&
+    printSuiteSummary(
+      report.checks,
+      executionState.runs,
+      startedAtMs,
+      renderMode,
+    ) &&
     !executionState.timedOut;
   completeSuiteRun(allOk, executionState.timedOut);
 }
@@ -80,36 +90,36 @@ function completeSuiteRun(allOk: boolean, timedOut: boolean): void {
 
 function printSuiteReport(
   executionState: Awaited<ReturnType<typeof executeSuiteSteps>>,
-  failureOutputLineLimit: null | number,
-  processedResults: Awaited<
-    ReturnType<typeof prepareSuiteReport>
-  >["processedResults"],
-  outputMode: SuiteOutputMode,
-  summaryOnly: boolean,
-  missingSteps: Awaited<ReturnType<typeof prepareSuiteReport>>["missingSteps"],
+  reportDetails: {
+    failureOutputLineLimit: null | number;
+    missingSteps: Awaited<ReturnType<typeof prepareSuiteReport>>["missingSteps"];
+    outputMode: SuiteOutputMode;
+    processedResults: Awaited<ReturnType<typeof prepareSuiteReport>>["processedResults"];
+    renderMode: SuiteRenderMode;
+    summaryOnly: boolean;
+  },
 ): void {
+  const detailOptions = {
+    failureOutputLineLimit: reportDetails.failureOutputLineLimit,
+    outputMode: reportDetails.outputMode,
+    renderMode: reportDetails.renderMode,
+    runs: executionState.runs,
+  };
+
   printSuiteOutputs(
     executionState.allExecutedSteps,
-    {
-      failureOutputLineLimit,
-      outputMode,
-      runs: executionState.runs,
-    },
-    processedResults,
+    detailOptions,
+    reportDetails.processedResults,
     executionState.suiteExpiredBeforeOutput,
-    summaryOnly,
+    reportDetails.summaryOnly,
   );
   printSuitePostProcessFeedback(
     executionState.executedMainSteps,
-    processedResults,
-    {
-      failureOutputLineLimit,
-      outputMode,
-      runs: executionState.runs,
-    },
+    reportDetails.processedResults,
+    detailOptions,
     executionState.suiteExpiredBeforeOutput,
-    summaryOnly,
-    missingSteps,
+    reportDetails.summaryOnly,
+    reportDetails.missingSteps,
   );
 }
 
