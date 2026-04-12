@@ -3,12 +3,15 @@ export const DEFAULT_ALLOWED_IMPURE_PUBLIC_SURFACE_PATHS: string[] = [];
 export const DEFAULT_ALLOWED_ROOT_FILE_STEMS: string[] = [];
 export const DEFAULT_ALLOW_PUBLIC_SURFACE_RE_EXPORT_CHAINS = true;
 export const DEFAULT_CENTRAL_SURFACE_PATH_PREFIXES: string[] = [];
+export const DEFAULT_ENFORCE_CONSISTENT_FILE_NAME_CASE = false;
 export const DEFAULT_DEPENDENCY_POLICIES: {
   mayDependOn: string[];
   name: string;
   pathPrefixes: string[];
 }[] = [];
 export const DEFAULT_EXPLICIT_PUBLIC_SURFACE_PATHS: string[] = [];
+export const DEFAULT_FILE_NAME_CASE_IGNORE_FILE_GLOBS: string[] = [];
+export const DEFAULT_FILE_NAME_CASE_IGNORE_PATH_GLOBS: string[] = [];
 
 export const DEFAULT_JUNK_DRAWER_DIRECTORY_NAMES: string[] = [];
 export const DEFAULT_JUNK_DRAWER_FILE_NAME_PATTERNS: string[] = [];

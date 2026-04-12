@@ -175,9 +175,12 @@ function normalizeDirectoryNameConfig(
   | "centralSurfacePathPrefixes"
   | "codeTargets"
   | "dependencyPolicies"
+  | "enforceConsistentFileNameCase"
   | "entrypointNames"
   | "entrypointRules"
   | "explicitPublicSurfacePaths"
+  | "fileNameCaseIgnoreFileGlobs"
+  | "fileNameCaseIgnorePathGlobs"
   | "ignoredDirectories"
   | "junkDrawerDirectoryNames"
   | "junkDrawerFileNamePatterns"
@@ -201,6 +204,9 @@ function normalizeDirectoryNamingConfig(
   NormalizedArchitectureAnalyzerConfig,
   | "allowedRootFileStems"
   | "codeTargets"
+  | "enforceConsistentFileNameCase"
+  | "fileNameCaseIgnoreFileGlobs"
+  | "fileNameCaseIgnorePathGlobs"
   | "ignoredDirectories"
   | "junkDrawerDirectoryNames"
   | "junkDrawerFileNamePatterns"
@@ -214,6 +220,18 @@ function normalizeDirectoryNamingConfig(
       architectureDefaults.DEFAULT_ALLOWED_ROOT_FILE_STEMS,
     ),
     codeTargets: normalizeCodeTargetsConfig(record.codeTargets),
+    enforceConsistentFileNameCase: normalizeBooleanConfig(
+      record.enforceConsistentFileNameCase,
+      architectureDefaults.DEFAULT_ENFORCE_CONSISTENT_FILE_NAME_CASE,
+    ),
+    fileNameCaseIgnoreFileGlobs: normalizeStringListConfig(
+      record.fileNameCaseIgnoreFileGlobs,
+      architectureDefaults.DEFAULT_FILE_NAME_CASE_IGNORE_FILE_GLOBS,
+    ),
+    fileNameCaseIgnorePathGlobs: normalizeStringListConfig(
+      record.fileNameCaseIgnorePathGlobs,
+      architectureDefaults.DEFAULT_FILE_NAME_CASE_IGNORE_PATH_GLOBS,
+    ),
     ignoredDirectories: normalizeStringListConfig(
       record.ignoredDirectories,
       [],

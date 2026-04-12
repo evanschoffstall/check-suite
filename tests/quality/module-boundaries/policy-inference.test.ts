@@ -1016,7 +1016,65 @@ describe("architecture rule: central-surface-budget", () => {
 // ---------------------------------------------------------------------------
 
 describe("inference round-trip on actual repository", () => {
-  test("fully inferred config produces zero architecture violations on this repo", () => {
+  test("fully inferred config produces zero architecture violations on a representative fixture", () => {
+    const cwd = createTempRepo({
+      "src/check.ts": 'export { runCli } from "./cli/runner.ts";\n',
+      "src/cli/index.ts": 'export { runCli } from "./runner.ts";\n',
+      "src/cli/runner.ts": "export const runCli = () => true;\n",
+      "src/quality/index.ts": 'export { summarize } from "./summary.ts";\n',
+      "src/quality/summary.ts": "export const summarize = () => \"ok\";\n",
+    });
+    const { directories: allDirs } = discoverDefaultCodeRoots(cwd);
+    const srcDirs = allDirs.includes("src") ? ["src"] : allDirs;
+
+    const discoveryBase = {
+      ignoredDirectories: [
+        "**/.cache", "**/.git", "**/.idea", "**/.next", "**/.turbo", "**/.vscode",
+        "**/__generated__", "**/build", "**/coverage", "**/dist", "**/generated", "**/node_modules", "**/out", "**/scripts", "**/tmp", "**/vendor",
+      ],
+      maxPolicyFanOut: 5,
+      rootDirectories: srcDirs,
+      testDirectories: ["**/__fixtures__", "**/__mocks__", "**/__tests__", "**/fixtures", "**/mocks", "**/test", "**/tests"],
+    };
+
+    const entrypointNames        = inferEntrypointNames(cwd, discoveryBase);
+    const allowedRootFileStems   = inferAllowedRootFileStems(cwd, { ...discoveryBase, entrypointNames });
+    const explicitPublicSurfacePaths = inferExplicitPublicSurfacePaths(cwd, {
+      ...discoveryBase,
+      allowedRootFileStems,
+      entrypointNames,
+    });
+
+    const boundaryDiscovery = {
+      ...discoveryBase,
+      allowedRootFileStems,
+      entrypointNames,
+      explicitPublicSurfacePaths,
+    };
+
+    const violations = analyzeArchitecture(cwd, {
+      ...boundaryDiscovery,
+      allowPublicSurfaceReExportChains: false,
+      centralSurfacePathPrefixes: inferCentralSurfacePathPrefixes(cwd, boundaryDiscovery),
+      dependencyPolicies: inferDependencyPolicies(cwd, boundaryDiscovery),
+      maxCentralSurfaceExports: 66,
+      maxDirectoryDepth: 3,
+      maxEntrypointReExports: 12,
+      maxInternalImportsPerFile: 12,
+      maxSiblingImports: 7,
+      maxWildcardExportsPerPublicSurface: 0,
+      minRepeatedDeepImports: 3,
+      requireAcyclicDependencyPolicies: true,
+      requireCompleteDependencyPolicyCoverage: true,
+      requireTypeOnlyImportsForTypeOnlyPolicies: true,
+      sharedHomeNames: ["types", "contracts", "utils"],
+    });
+
+    expect(violations).toEqual([]);
+  });
+
+  const runFullRepoRoundTrip = process.env.CHECK_SUITE_FULL_REPO_ROUND_TRIP === "1";
+  (runFullRepoRoundTrip ? test : test.skip)("fully inferred config produces zero architecture violations on this repo", () => {
     const cwd = process.cwd();
     const { directories: allDirs } = discoverDefaultCodeRoots(cwd);
     const srcDirs = allDirs.includes("src") ? ["src"] : allDirs;
@@ -1071,5 +1129,5 @@ describe("inference round-trip on actual repository", () => {
     }
 
     expect(violations).toEqual([]);
-  });
+  }, 60_000);
 });

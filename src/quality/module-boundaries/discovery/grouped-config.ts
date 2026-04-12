@@ -75,11 +75,16 @@ function flattenImportRules(
 function flattenNamingRules(
   junkDrawerDirectory: Record<string, unknown>,
   junkDrawerFile: Record<string, unknown>,
+  mixedFileNameCase: Record<string, unknown>,
   rootFileOwnership: Record<string, unknown>,
   sharedHome: Record<string, unknown>,
 ): Record<string, unknown> {
   return {
     allowedRootFileStems: rootFileOwnership.allowedRootFileStems,
+    enforceConsistentFileNameCase:
+      mixedFileNameCase.enabled ?? Object.keys(mixedFileNameCase).length > 0,
+    fileNameCaseIgnoreFileGlobs: mixedFileNameCase.ignoreFileGlobs,
+    fileNameCaseIgnorePathGlobs: mixedFileNameCase.ignorePathGlobs,
     junkDrawerDirectoryNames: junkDrawerDirectory.directoryNames,
     junkDrawerFileNamePatterns: junkDrawerFile.fileNamePatterns,
     junkDrawerFileStems: junkDrawerFile.fileStems,
@@ -141,6 +146,7 @@ function flattenRulesSection(
     ...flattenNamingRules(
       namingRules.junkDrawerDirectory,
       namingRules.junkDrawerFile,
+      namingRules.mixedFileNameCase,
       namingRules.rootFileOwnership,
       namingRules.sharedHome,
     ),
@@ -186,12 +192,14 @@ function readImportRuleSections(section: Record<string, unknown>): {
 function readNamingRuleSections(section: Record<string, unknown>): {
   junkDrawerDirectory: Record<string, unknown>;
   junkDrawerFile: Record<string, unknown>;
+  mixedFileNameCase: Record<string, unknown>;
   rootFileOwnership: Record<string, unknown>;
   sharedHome: Record<string, unknown>;
 } {
   return {
     junkDrawerDirectory: toConfigSectionRecord(section["junk-drawer-directory"]),
     junkDrawerFile: toConfigSectionRecord(section["junk-drawer-file"]),
+    mixedFileNameCase: toConfigSectionRecord(section["mixed-file-name-case"]),
     rootFileOwnership: toConfigSectionRecord(section["root-file-ownership"]),
     sharedHome: toConfigSectionRecord(section["shared-home"]),
   };

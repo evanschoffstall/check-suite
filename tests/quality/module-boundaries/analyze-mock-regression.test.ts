@@ -336,6 +336,7 @@ mock.module("@/quality/module-boundaries/structure/rule/index.ts", () => ({
     return [];
   },
   buildJunkDrawerViolations: (): ArchitectureViolation[] => [],
+  buildMixedFileNameCaseViolations: (): ArchitectureViolation[] => [],
   buildMultipleEntrypointViolations: (): ArchitectureViolation[] => [],
   buildMixedTypesViolations: (sharedHomeNames: string[]): ArchitectureViolation[] => {
     mixedTypeCalls.push(sharedHomeNames);

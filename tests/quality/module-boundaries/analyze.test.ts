@@ -148,6 +148,78 @@ describe("architecture analyzer", () => {
     ).toBe(true);
   });
 
+  test("flags sibling files that mix recognized file-name case styles", () => {
+    const repoDir = createTempRepo({
+      "src/components/button-group.ts": "export const buttonGroup = true;\n",
+      "src/components/Button.ts": "export const Button = true;\n",
+      "src/components/button.ts": "export const button = true;\n",
+    });
+
+    const violations = analyzeArchitecture(repoDir, {
+      enforceConsistentFileNameCase: true,
+      rootDirectories: ["src"],
+    });
+
+    expect(
+      violations.some(
+        (violation) =>
+          violation.code === "mixed-file-name-case" &&
+          violation.message.includes("src/components") &&
+          violation.message.includes("PascalCase") &&
+          violation.message.includes("singlecase") &&
+          violation.message.includes("kebab-case"),
+      ),
+    ).toBe(true);
+  });
+
+  test("accepts grouped mixed-file-name-case rule config", () => {
+    const repoDir = createTempRepo({
+      "src/components/Button.ts": "export const Button = true;\n",
+      "src/components/button.ts": "export const button = true;\n",
+      "src/components/index.ts": 'export { Button } from "./Button.ts";\n',
+    });
+
+    const violations = analyzeArchitecture(repoDir, {
+      discovery: {
+        rootDirectories: ["src"],
+      },
+      rules: {
+        "mixed-file-name-case": {
+          ignoreFileGlobs: ["index.ts"],
+        },
+      },
+    });
+
+    expect(
+      violations.some(
+        (violation) =>
+          violation.code === "mixed-file-name-case" &&
+          violation.message.includes("PascalCase") &&
+          violation.message.includes("singlecase"),
+      ),
+    ).toBe(true);
+  });
+
+  test("ignores configured file and path globs for mixed file-name case checks", () => {
+    const repoDir = createTempRepo({
+      "src/components/Button.ts": "export const Button = true;\n",
+      "src/components/index.ts": 'export { Button } from "./Button.ts";\n',
+      "src/generated/Card.ts": "export const Card = true;\n",
+      "src/generated/card.ts": "export const card = true;\n",
+    });
+
+    const violations = analyzeArchitecture(repoDir, {
+      enforceConsistentFileNameCase: true,
+      fileNameCaseIgnoreFileGlobs: ["index.ts"],
+      fileNameCaseIgnorePathGlobs: ["src/generated/**"],
+      rootDirectories: ["src"],
+    });
+
+    expect(
+      violations.some((violation) => violation.code === "mixed-file-name-case"),
+    ).toBe(false);
+  });
+
   test("flags wildcard exports on explicit public surfaces", () => {
     const repoDir = createTempRepo({
       "src/check.ts": 'export * from "./types/index.ts";\n',

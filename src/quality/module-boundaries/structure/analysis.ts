@@ -13,6 +13,7 @@ import {
   buildDirectoryFactViolations,
   buildFlattenedFeatureViolations,
   buildJunkDrawerViolations,
+  buildMixedFileNameCaseViolations,
   buildMixedTypesViolations,
   buildMultipleEntrypointViolations,
   buildPeerBoundaryConsistencyViolations,
@@ -154,6 +155,7 @@ function collectParentLayoutViolations(
       siblingFiles,
       project.config.entrypointNames,
     ),
+    ...buildMixedFileNameCaseViolations(parentPath, siblingFiles, project),
     ...buildMixedTypesViolations(
       project.config.sharedHomeNames,
       parentPath,

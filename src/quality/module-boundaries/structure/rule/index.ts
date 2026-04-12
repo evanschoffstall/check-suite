@@ -9,6 +9,7 @@ export {
   buildPolicyFanOutViolations,
   buildPublicSurfaceTierViolations,
 } from "./dependency-graph-violations";
+export { buildMixedFileNameCaseViolations } from "./file-name-case-violations";
 export {
   buildFlattenedFeatureViolations,
   buildJunkDrawerViolations,

@@ -13,9 +13,15 @@ export interface ArchitectureAnalyzerConfig {
   codeTargets?: ArchitectureCodeTargetsConfig;
   dependencyPolicies?: ArchitectureDependencyPolicy[];
   discovery?: ArchitectureDiscoveryConfig;
+  /** Enables directory-level file-name case consistency checks. */
+  enforceConsistentFileNameCase?: boolean;
   entrypointNames?: string[];
   entrypointRules?: ArchitectureEntrypointRule[];
   explicitPublicSurfacePaths?: string[];
+  /** Glob patterns matched against file basenames or stems, e.g. `index.ts`. */
+  fileNameCaseIgnoreFileGlobs?: string[];
+  /** Glob patterns matched against repo-relative file paths such as generated-file trees. */
+  fileNameCaseIgnorePathGlobs?: string[];
   ignoredDirectories?: string[];
   junkDrawerDirectoryNames?: string[];
   /** Glob patterns matched against file basenames and stems, e.g. `*helper*`. */
@@ -122,6 +128,7 @@ export interface ArchitectureRulesConfig {
   "directory-depth"?: DirectoryDepthRuleConfig;
   "junk-drawer-directory"?: JunkDrawerDirectoryRuleConfig;
   "junk-drawer-file"?: JunkDrawerFileRuleConfig;
+  "mixed-file-name-case"?: MixedFileNameCaseRuleConfig;
   "public-surface-purity"?: PublicSurfacePurityRuleConfig;
   "public-surface-re-export-chain"?: PublicSurfaceReExportChainRuleConfig;
   "public-surface-wildcard-export"?: PublicSurfaceWildcardExportRuleConfig;
@@ -210,6 +217,13 @@ export interface JunkDrawerDirectoryRuleConfig {
 export interface JunkDrawerFileRuleConfig {
   fileNamePatterns?: string[];
   fileStems?: string[];
+}
+
+/** Rule options for mixed file-name case violations within one directory. */
+export interface MixedFileNameCaseRuleConfig {
+  enabled?: boolean;
+  ignoreFileGlobs?: string[];
+  ignorePathGlobs?: string[];
 }
 
 /** Fully normalized runtime config used by the analyzer after grouped input is flattened. */
