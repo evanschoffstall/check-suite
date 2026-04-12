@@ -11,6 +11,7 @@ import {
   createProcessEnv,
   getPreflightFailure,
 } from "@/process/preflight/environment.ts";
+import { withMissingDetection } from "@/process/runner.ts";
 
 describe("process preflight", () => {
   test("bunx target parsing and version checks", () => {
@@ -93,5 +94,33 @@ describe("process collectors/io", () => {
       1,
     );
     expect(timedOut.kind).toBe("timeout");
+  });
+});
+
+describe("withMissingDetection", () => {
+  test("does not classify generic cannot-find-module/package output as missing", () => {
+    const moduleResult = withMissingDetection({
+      exitCode: 1,
+      output: "Cannot find module './src/ui/Particles.tsx'\n",
+      timedOut: false,
+    });
+    const packageResult = withMissingDetection({
+      exitCode: 1,
+      output: "cannot find package 'some-tool'\n",
+      timedOut: false,
+    });
+
+    expect(moduleResult.notFound).toBeUndefined();
+    expect(packageResult.notFound).toBeUndefined();
+  });
+
+  test("classifies command-not-found output as missing", () => {
+    const result = withMissingDetection({
+      exitCode: 127,
+      output: "bash: semgrep: command not found:\n",
+      timedOut: false,
+    });
+
+    expect(result.notFound).toBe(true);
   });
 });

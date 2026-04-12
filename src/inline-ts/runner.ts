@@ -9,7 +9,6 @@ import type {
 } from "@/types/index.ts";
 
 import { isRecord } from "@/foundation/index.ts";
-import { withMissingDetection } from "@/process/index.ts";
 
 import { resolveInlineTypeScriptRunner } from "./compiler";
 import { toInlineTypeScriptConfig } from "./config.ts";
@@ -54,6 +53,7 @@ export async function runInlineTypeScriptStep(
       1,
       `${step.label} failed: ${error instanceof Error ? error.message : String(error)}\n`,
       Date.now() - startMs,
+      isInlineMissingDependencyError(error),
     );
     overrides.onOutput?.(command.output);
     return command;
@@ -73,16 +73,18 @@ export function toCommand(
     return null;
   }
 
-  return withMissingDetection({
+  return {
     durationMs:
       typeof value.durationMs === "number"
         ? value.durationMs
         : fallbackDurationMs,
     exitCode: value.exitCode,
+    // Preserve an explicit notFound the inline step chose to set, but do not
+    // infer it from output text — inline steps are always "found" by definition.
     notFound: value.notFound === true ? true : undefined,
     output: value.output,
     timedOut: value.timedOut,
-  });
+  };
 }
 
 function buildInlineTypeScriptContext(
@@ -104,15 +106,28 @@ function buildInlineTypeScriptContext(
   };
 }
 
+function isInlineMissingDependencyError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /cannot find package ['"][^'"]+['"][^\n]*from ['"][^'"]+[\\/]src[\\/]inline-ts[\\/]runner\.ts['"]/i.test(
+    message,
+  );
+}
+
+// Inline steps are always "found" — they are TypeScript code, not a binary to
+// locate. Output text matching hasMissingSignal patterns (e.g. "Cannot find
+// module") represents a genuine failure, not a missing tool, so we must NOT
+// apply withMissingDetection here.
 function makeInlineResult(
   exitCode: number,
   output: string,
   durationMs?: number,
+  notFound?: boolean,
 ): Command {
-  return withMissingDetection({
+  return {
     durationMs,
     exitCode,
+    notFound: notFound === true ? true : undefined,
     output,
     timedOut: false,
-  });
+  };
 }
