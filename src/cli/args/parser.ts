@@ -4,8 +4,10 @@ import {
   createBaseCliArguments,
   createDirectStepArguments,
   createKeysArguments,
+  parseCliOptions,
   parseSuiteSelectionArguments,
   resolveDirectStepFromArg,
+  splitSuiteArguments,
 } from "@/cli/args/selection/index.ts";
 
 const HELP_FLAGS = new Set(["--help", "-h", "help"]);
@@ -28,10 +30,25 @@ export function parseCliArguments(argv: string[]): CliArguments {
     suiteArgStartIndex,
   );
   if (directStep) {
+    const directCommandArguments = splitSuiteArguments(
+      argv,
+      suiteArgStartIndex + 1,
+    );
+    const cliOptions = parseCliOptions(directCommandArguments.selectionArgs);
+
     return createDirectStepArguments(
       suiteCommand,
       directStep,
-      argv.slice(suiteArgStartIndex + 1),
+      [
+        ...cliOptions.selectionArgs,
+        ...directCommandArguments.explicitStepArgs,
+      ],
+      {
+        failureOutputLineLimit: cliOptions.failureOutputLineLimit,
+        invalidOptions: cliOptions.invalidOptions,
+        outputMode: cliOptions.outputMode,
+        renderMode: cliOptions.renderMode,
+      },
     );
   }
 

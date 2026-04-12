@@ -9,6 +9,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { parseCliArguments } from "../src/cli/args/parser.ts";
 import { parseCliOptions } from "../src/cli/args/selection/options.ts";
 import {
   ANSI,
@@ -151,6 +152,40 @@ describe("check CLI", () => {
     expect(parseCliOptions(["--fail-lines=nope"]).invalidOptions).toEqual([
       "--fail-lines=nope",
     ]);
+  });
+
+  test("parses reserved CLI options for direct step commands before passthrough args", () => {
+    const cliArguments = parseCliArguments([
+      "bun",
+      "./bin/check-suite",
+      "types",
+      "--format=plain",
+      "--output=all",
+      "--fail-lines=3",
+      "--",
+      "--pretty",
+    ]);
+
+    expect(cliArguments.directStep?.key).toBe("types");
+    expect(cliArguments.renderMode).toBe("plain");
+    expect(cliArguments.outputMode).toBe("all");
+    expect(cliArguments.failureOutputLineLimit).toBe(3);
+    expect(cliArguments.invalidOptions).toEqual([]);
+    expect(cliArguments.directStepArgs).toEqual(["--pretty"]);
+  });
+
+  test("keeps reserved-looking direct step args after the passthrough separator", () => {
+    const cliArguments = parseCliArguments([
+      "bun",
+      "./bin/check-suite",
+      "types",
+      "--",
+      "--format=plain",
+    ]);
+
+    expect(cliArguments.directStep?.key).toBe("types");
+    expect(cliArguments.renderMode).toBe("styled");
+    expect(cliArguments.directStepArgs).toEqual(["--format=plain"]);
   });
 
   test("loads a TypeScript config module with multiline inline functions", async () => {

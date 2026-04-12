@@ -26,9 +26,19 @@ export function createDirectStepArguments(
   command: CliArguments["command"],
   directStep: StepConfig,
   directStepArgs: string[],
+  overrides: Partial<
+    Pick<
+      CliArguments,
+      | "failureOutputLineLimit"
+      | "invalidOptions"
+      | "outputMode"
+      | "renderMode"
+    >
+  > = {},
 ): CliArguments {
   return {
     ...createBaseCliArguments(),
+    ...overrides,
     command,
     directStep,
     directStepArgs,
