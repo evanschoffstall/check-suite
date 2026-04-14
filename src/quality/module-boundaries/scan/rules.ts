@@ -24,7 +24,7 @@ export function isIncludedCodeFile(
   fileName: string,
   config: Pick<NormalizedArchitectureAnalyzerConfig, "codeTargets">,
 ): boolean {
-  const normalizedFilePath = normalizeFilePath(fileName);
+  const normalizedFilePath = normalizeDirectoryPath(fileName);
 
   return (
     matchesCodeTargetPatterns(
@@ -125,8 +125,8 @@ function matchesDirectoryGlob(directoryPath: string, pattern: string): boolean {
 
 /** Matches slashless patterns against a file basename, path globs against the full path. */
 function matchesFileGlob(filePath: string, pattern: string): boolean {
-  const normalizedPath = normalizeFilePath(filePath);
-  const normalizedPattern = normalizeFilePath(pattern);
+  const normalizedPath = normalizeDirectoryPath(filePath);
+  const normalizedPattern = normalizeDirectoryPath(pattern);
   const fileName = getLastPathSegment(normalizedPath);
 
   if (!normalizedPattern.includes("/")) {
@@ -154,8 +154,4 @@ function matchesFileGlob(filePath: string, pattern: string): boolean {
 /** Normalizes one directory path before applying glob-based skip rules. */
 function normalizeDirectoryPath(directoryPath: string): string {
   return normalizePath(directoryPath).replace(/^\.\//u, "").replace(/\/+$/u, "");
-}
-
-function normalizeFilePath(filePath: string): string {
-  return normalizeDirectoryPath(filePath);
 }

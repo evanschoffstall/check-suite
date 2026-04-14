@@ -22,18 +22,6 @@ export async function runStepPostProcess(
   const inlineConfig = getRunnablePostProcessConfig(step, command);
   if (!inlineConfig || command.notFound || command.timedOut) return null;
 
-  return executePostProcessor(step, command, displayOutput, inlineConfig);
-}
-
-async function executePostProcessor(
-  step: StepConfig,
-  command: Command,
-  displayOutput: string,
-  inlineConfig: {
-    data?: Record<string, unknown>;
-    source: InlineTypeScriptPostProcessor | string;
-  },
-): Promise<StepPostProcessResult> {
   try {
     const postProcessor = (await resolveInlineTypeScriptRunner<
       InlineTypeScriptPostProcessContext,

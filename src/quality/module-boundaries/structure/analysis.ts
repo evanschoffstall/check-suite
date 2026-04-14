@@ -53,17 +53,11 @@ export function analyzeStructureRules(
   return dedupeArchitectureViolations(violations);
 }
 
-function buildBoundaryViolations(
-  project: ArchitectureProject,
-): ArchitectureViolation[] {
-  return buildMultipleEntrypointViolations(project);
-}
-
 function buildCoreStructureViolations(
   project: ArchitectureProject,
 ): ArchitectureViolation[] {
   return [
-    ...buildBoundaryViolations(project),
+    ...buildMultipleEntrypointViolations(project),
     ...buildDirectoryViolations(project),
     ...buildScatteredFeatureHomeViolations(project),
     ...buildJunkDrawerViolations(project),

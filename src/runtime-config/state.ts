@@ -10,7 +10,12 @@ import { resolveCheckSuiteConfigPath } from "./config-files.ts";
 
 export const CHECK_SUITE_CONFIG_PATH = resolveCheckSuiteConfigPath();
 
-export const CFG: CheckConfig = await loadCheckSuiteConfig();
+export const CFG: CheckConfig = await (async (): Promise<CheckConfig> => {
+  const moduleNamespace = (await import(
+    pathToFileURL(CHECK_SUITE_CONFIG_PATH).href
+  )) as Record<string, unknown>;
+  return parseCheckConfigModule(moduleNamespace);
+})();
 
 export const SUITE_TIMEOUT_MS = resolveTimeoutMs(
   CFG.suite?.timeoutEnvVar ?? "",
@@ -28,10 +33,3 @@ export const PATH_TOKENS: Record<string, string> = (() => {
   }
   return tokens;
 })();
-
-async function loadCheckSuiteConfig(): Promise<CheckConfig> {
-  const moduleNamespace = (await import(
-    pathToFileURL(CHECK_SUITE_CONFIG_PATH).href
-  )) as Record<string, unknown>;
-  return parseCheckConfigModule(moduleNamespace);
-}

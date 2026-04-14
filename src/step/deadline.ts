@@ -17,15 +17,6 @@ export function runStepWithinDeadline(
     return Promise.resolve(makeTimedOutCommand(step.label, 0));
   }
 
-  return runStep(step, timeoutMs, extraArgs, onOutput);
-}
-
-function runStep(
-  step: StepConfig,
-  timeoutMs?: number,
-  extraArgs: string[] = [],
-  onOutput?: (output: string) => void,
-): Promise<Command> {
   if (step.handler) {
     return runHandledStep(step, timeoutMs, extraArgs, onOutput);
   }
