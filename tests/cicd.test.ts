@@ -13,9 +13,9 @@ describe("cicd release candidate preparation", () => {
     );
   });
 
-  test("auto-stages when release changes are still only in the worktree", () => {
+  test("uses a worktree snapshot when release changes are still only in the worktree", () => {
     expect(determineReleaseCandidatePreparationAction(false, true)).toBe(
-      "auto-stage",
+      "use-worktree",
     );
   });
 
