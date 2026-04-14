@@ -47,6 +47,14 @@ describe("cicd main branch sync action", () => {
 });
 
 describe("semantic-release local tag collisions", () => {
+  test("explains when fetched remote tags would clobber a divergent local tag", () => {
+    expect(
+      formatExistingLocalTagFailure(
+        "! [rejected]        v1.6.0 -> v1.6.0 (would clobber existing tag)",
+      ),
+    ).toContain("Force-refresh local tags from origin");
+  });
+
   test("explains that an existing local tag blocks semantic-release", () => {
     expect(
       formatExistingLocalTagFailure("fatal: tag 'v1.6.0' already exists"),

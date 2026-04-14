@@ -59,6 +59,11 @@ export function determineReleaseCandidatePreparationAction(hasStagedReleaseCandi
  * message so local tag state is fixed before the workflow retries.
  */
 export function formatExistingLocalTagFailure(stderr: string): string | undefined {
+  const conflictingFetchedTagMatch = conflictingFetchedTagPattern.exec(stderr);
+  if (conflictingFetchedTagMatch) {
+    const [, tagName] = conflictingFetchedTagMatch;
+    return `semantic-release could not synchronize tag ${tagName} because the local tag points at a different object than origin. Force-refresh local tags from origin before releasing so semantic-release reads the canonical remote tag history.`;
+  }
   const tagMatch = existingLocalTagPattern.exec(stderr);
   if (!tagMatch) return undefined;
   const [, tagName] = tagMatch;
