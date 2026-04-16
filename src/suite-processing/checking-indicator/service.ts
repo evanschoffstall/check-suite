@@ -52,6 +52,7 @@ const DETAIL_TIMER_WIDTH = 9;
 const DEFAULT_FRAME_INTERVAL_MS = 110;
 const STATIC_CHECKING_MESSAGE = `${MESSAGE}...`;
 const DEFAULT_DETAIL_WIDTH = 120;
+const ELAPSED_TIME_PRECISION = 1;
 
 /** Exposes imperative lifecycle control for an active checking indicator. */
 export interface CheckingIndicatorController {
@@ -82,16 +83,18 @@ interface TerminalWriter {
 }
 
 /** Builds one animated frame for the suite checking indicator. */
-export function renderCheckingFrame(frameIndex: number, detailLine = ""): string {
+export function renderCheckingFrame(
+  frameIndex: number,
+  detailLine = "",
+): string {
   const glyph =
-    GLYPHS[
-      Math.floor(frameIndex / GLYPH_HOLD_FRAMES) % GLYPHS.length
-    ];
+    GLYPHS[Math.floor(frameIndex / GLYPH_HOLD_FRAMES) % GLYPHS.length];
   const glyphPhase = frameIndex / GLYPH_COLOR_HOLD_FRAMES;
   const textPhase = frameIndex * 0.35;
   const trailPhase = frameIndex * 1.15;
   const glyphColumn = glyph.padEnd(GLYPH_COLUMN_WIDTH, " ");
-  const trail = TRAIL_PATTERNS[Math.floor(frameIndex / 5) % TRAIL_PATTERNS.length];
+  const trail =
+    TRAIL_PATTERNS[Math.floor(frameIndex / 5) % TRAIL_PATTERNS.length];
   const messagePadding = " ".repeat(
     MESSAGE_COLUMN_WIDTH + TRAIL_COLUMN_WIDTH - MESSAGE.length - trail.length,
   );
@@ -244,10 +247,11 @@ function formatDetailLine(
     : "";
 }
 
+/** Formats the live elapsed timer and appends detail text when available. */
 function formatTimedDetailLine(detailLine: string, elapsedMs: number): string {
-  return detailLine.length > 0
-    ? `[${(Math.max(0, elapsedMs) / 1000).toFixed(1)}s] ${detailLine}`
-    : "";
+  const elapsedLabel = `[${(Math.max(0, elapsedMs) / 1000).toFixed(ELAPSED_TIME_PRECISION)}s]`;
+
+  return detailLine.length > 0 ? `${elapsedLabel} ${detailLine}` : elapsedLabel;
 }
 
 function interpolateGradientColor(

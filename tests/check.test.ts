@@ -537,6 +537,31 @@ describe("format helpers", () => {
     expect(writes.at(-1)).toBe("\r\x1b[2K\x1b[?25h");
   });
 
+  test("checking indicator keeps a live timer visible without detail messages", async () => {
+    const writes: string[] = [];
+    const output = {
+      isTTY: true,
+      write(chunk: string): boolean {
+        writes.push(chunk);
+        return true;
+      },
+    };
+
+    const indicator = startCheckingIndicator({
+      enabled: true,
+      frameIntervalMs: 1,
+      output,
+    });
+
+    await Bun.sleep(5);
+
+    expect(
+      writes.some((chunk) => /Checking.*\[\d+\.\d+s\]/.test(stripAnsi(chunk))),
+    ).toBe(true);
+
+    await indicator.stop();
+  });
+
   test("checking indicator prints a static line in plain mode", async () => {
     const writes: string[] = [];
     const output = {
