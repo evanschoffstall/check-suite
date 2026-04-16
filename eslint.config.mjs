@@ -5,7 +5,6 @@ import pluginEslintComments from "eslint-plugin-eslint-comments";
 import pluginImport from "eslint-plugin-import";
 import pluginNoOnlyTests from "eslint-plugin-no-only-tests";
 import perfectionist from "eslint-plugin-perfectionist";
-import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
 import pluginPromise from "eslint-plugin-promise";
 import pluginReactHooks from "eslint-plugin-react-hooks";
 import pluginRegexp from "eslint-plugin-regexp";
@@ -259,14 +258,5 @@ export default [
   {
     files: testFiles,
     rules: testTypeScriptRelaxedRules,
-  },
-  // Keep this last so eslint-config-prettier disables conflicting formatting
-  // rules from earlier configs.
-  eslintPluginPrettierRecommended,
-  {
-    files: ["**/*.{jsx,tsx,js,ts}"],
-    rules: {
-      "prettier/prettier": "off",
-    },
   },
 ];

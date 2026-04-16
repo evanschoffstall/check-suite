@@ -275,6 +275,13 @@ const lizard = defineStep({
   },
   summary: lizardSummary,
 });
+
+const prettier = defineStep({
+  args: ["prettier", "-w", "src/"],
+  failMsg: "prettier failed",
+  label: "prettier",
+});
+
 const jscpd = defineStep({
   args: ["jscpd", "--config", ".jscpd.json"],
   failMsg: "duplicates found",
@@ -317,6 +324,7 @@ export default defineCheckSuiteConfig([
   tsc,
   eslint,
   lizard,
+  prettier,
   jscpd,
   junit,
   playwright,
