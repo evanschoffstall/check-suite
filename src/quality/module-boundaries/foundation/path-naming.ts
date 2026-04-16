@@ -9,7 +9,8 @@ function entrypointAllowsSiblingEntrypoints(
   stem: string,
 ): boolean {
   return (
-    getArchitectureEntrypointRule(config, stem)?.allowSiblingEntrypoints ?? false
+    getArchitectureEntrypointRule(config, stem)?.allowSiblingEntrypoints ??
+    false
   );
 }
 
@@ -18,7 +19,10 @@ function entrypointAllowsTopLevelStatements(
   config: Pick<NormalizedArchitectureAnalyzerConfig, "entrypointRules">,
   stem: string,
 ): boolean {
-  return getArchitectureEntrypointRule(config, stem)?.allowTopLevelStatements ?? false;
+  return (
+    getArchitectureEntrypointRule(config, stem)?.allowTopLevelStatements ??
+    false
+  );
 }
 
 /** Looks up the configured architectural entrypoint rule for a given file stem. */
@@ -27,8 +31,9 @@ function getArchitectureEntrypointRule(
   stem: string,
 ): ArchitectureEntrypointRule | null {
   return (
-    config.entrypointRules.find((entrypointRule) => entrypointRule.name === stem) ??
-    null
+    config.entrypointRules.find(
+      (entrypointRule) => entrypointRule.name === stem,
+    ) ?? null
   );
 }
 

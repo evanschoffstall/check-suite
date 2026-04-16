@@ -27,12 +27,15 @@ export async function runArchitectureCheck(
   configValue: unknown,
 ): Promise<ArchitectureCheckResult> {
   const serializedConfig = serializeArchitectureConfig(configValue);
-  const child = Bun.spawn([process.execPath, architectureWorkerPath, cwd, serializedConfig], {
-    cwd: packageRoot,
-    stderr: "pipe",
-    stdin: "ignore",
-    stdout: "pipe",
-  });
+  const child = Bun.spawn(
+    [process.execPath, architectureWorkerPath, cwd, serializedConfig],
+    {
+      cwd: packageRoot,
+      stderr: "pipe",
+      stdin: "ignore",
+      stdout: "pipe",
+    },
+  );
   const [rawStdout, rawStderr, workerExitCode] = await Promise.all([
     new Response(child.stdout).text(),
     new Response(child.stderr).text(),
@@ -57,7 +60,8 @@ function buildWorkerFailureMessage(
   rawStdout: string,
   workerExitCode: number,
 ): string {
-  const details = rawStderr.trim() || rawStdout.trim() || "architecture worker failed";
+  const details =
+    rawStderr.trim() || rawStdout.trim() || "architecture worker failed";
   return [
     `architecture worker exited with code ${workerExitCode}`,
     details,

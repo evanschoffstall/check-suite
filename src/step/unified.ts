@@ -75,8 +75,15 @@ export function defineStep(
   }
   if ("source" in options) {
     const input = options as InlineStepInput;
-    return defineInlineStep({ ...input, key: input.key ?? input.label } as InlineStepOptions);
+    return defineInlineStep({
+      ...input,
+      key: input.key ?? input.label,
+    } as InlineStepOptions);
   }
   const input = options as CommandStepInput;
-  return defineCommandStep({ ...input, cmd: input.cmd ?? "bunx", key: input.key ?? input.label } as CommandStepOptions);
+  return defineCommandStep({
+    ...input,
+    cmd: input.cmd ?? "bunx",
+    key: input.key ?? input.label,
+  } as CommandStepOptions);
 }

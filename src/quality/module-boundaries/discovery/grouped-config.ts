@@ -115,7 +115,8 @@ function flattenPublicSurfaceRules(
     allowedImpurePublicSurfacePaths: publicSurfacePurity.allowedPaths,
     allowPublicSurfaceReExportChains: publicSurfaceReExportChain.allow,
     explicitPublicSurfacePaths: publicSurfacePurity.explicitPaths,
-    maxWildcardExportsPerPublicSurface: publicSurfaceWildcardExport.maxWildcardExports,
+    maxWildcardExportsPerPublicSurface:
+      publicSurfaceWildcardExport.maxWildcardExports,
     ...flattenCentralSurfaceBudgetRule(centralSurfaceBudget),
   };
 }
@@ -123,7 +124,9 @@ function flattenPublicSurfaceRules(
 function flattenRulesSection(
   section: Record<string, unknown>,
 ): Record<string, unknown> {
-  const broadBarrelSurface = toConfigSectionRecord(section["broad-barrel-surface"]);
+  const broadBarrelSurface = toConfigSectionRecord(
+    section["broad-barrel-surface"],
+  );
   const dependencyPolicyRules = readDependencyPolicyRuleSections(section);
   const importRules = readImportRuleSections(section);
   const namingRules = readNamingRuleSections(section);
@@ -183,8 +186,12 @@ function readImportRuleSections(section: Record<string, unknown>): {
 } {
   return {
     repeatedDeepImport: toConfigSectionRecord(section["repeated-deep-import"]),
-    siblingImportCohesion: toConfigSectionRecord(section["sibling-import-cohesion"]),
-    tooManyInternalDependencies: toConfigSectionRecord(section["too-many-internal-dependencies"]),
+    siblingImportCohesion: toConfigSectionRecord(
+      section["sibling-import-cohesion"],
+    ),
+    tooManyInternalDependencies: toConfigSectionRecord(
+      section["too-many-internal-dependencies"],
+    ),
   };
 }
 
@@ -197,7 +204,9 @@ function readNamingRuleSections(section: Record<string, unknown>): {
   sharedHome: Record<string, unknown>;
 } {
   return {
-    junkDrawerDirectory: toConfigSectionRecord(section["junk-drawer-directory"]),
+    junkDrawerDirectory: toConfigSectionRecord(
+      section["junk-drawer-directory"],
+    ),
     junkDrawerFile: toConfigSectionRecord(section["junk-drawer-file"]),
     mixedFileNameCase: toConfigSectionRecord(section["mixed-file-name-case"]),
     rootFileOwnership: toConfigSectionRecord(section["root-file-ownership"]),
@@ -213,10 +222,18 @@ function readPublicSurfaceRuleSections(section: Record<string, unknown>): {
   publicSurfaceWildcardExport: Record<string, unknown>;
 } {
   return {
-    centralSurfaceBudget: toConfigSectionRecord(section["central-surface-budget"]),
-    publicSurfacePurity: toConfigSectionRecord(section["public-surface-purity"]),
-    publicSurfaceReExportChain: toConfigSectionRecord(section["public-surface-re-export-chain"]),
-    publicSurfaceWildcardExport: toConfigSectionRecord(section["public-surface-wildcard-export"]),
+    centralSurfaceBudget: toConfigSectionRecord(
+      section["central-surface-budget"],
+    ),
+    publicSurfacePurity: toConfigSectionRecord(
+      section["public-surface-purity"],
+    ),
+    publicSurfaceReExportChain: toConfigSectionRecord(
+      section["public-surface-re-export-chain"],
+    ),
+    publicSurfaceWildcardExport: toConfigSectionRecord(
+      section["public-surface-wildcard-export"],
+    ),
   };
 }
 

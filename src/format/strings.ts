@@ -48,7 +48,8 @@ export const row = (
   durationMs?: number,
   renderMode: SuiteRenderMode = "styled",
 ) => {
-  const normalizedDetails = renderMode === "plain" ? stripAnsi(details) : details;
+  const normalizedDetails =
+    renderMode === "plain" ? stripAnsi(details) : details;
   const timing =
     durationMs !== undefined
       ? renderMode === "plain"
@@ -65,7 +66,9 @@ export const row = (
 
 /** Renders a horizontal divider line. */
 export const divider = (renderMode: SuiteRenderMode = "styled") =>
-  renderMode === "plain" ? PLAIN_DIVIDER : paint("────────────────────────────────", ANSI.gray);
+  renderMode === "plain"
+    ? PLAIN_DIVIDER
+    : paint("────────────────────────────────", ANSI.gray);
 
 /** Renders a bold green PASS or bold red FAIL label. */
 export const passFail = (

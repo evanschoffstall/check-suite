@@ -62,7 +62,9 @@ export function collectDirectoryFacts(
         const absoluteDirectoryPath = join(cwd, relativeDirectoryPath);
         const entries = safeReadDir(absoluteDirectoryPath);
         const codeFilePaths = entries
-          .filter((entry) => entry.isFile() && isIncludedCodeFile(entry.name, config))
+          .filter(
+            (entry) => entry.isFile() && isIncludedCodeFile(entry.name, config),
+          )
           .map((entry) =>
             normalizePath(`${relativeDirectoryPath}/${entry.name}`),
           )
@@ -130,7 +132,9 @@ export function discoverBoundaryDirectories(
           (entry) => entry.isFile() && isIncludedCodeFile(entry.name, config),
         );
         const entrypointPaths = codeFiles
-          .filter((entry) => isArchitectureEntrypoint(config, getCodeStem(entry.name)))
+          .filter((entry) =>
+            isArchitectureEntrypoint(config, getCodeStem(entry.name)),
+          )
           .map((entry) =>
             normalizePath(`${relativeDirectoryPath}/${entry.name}`),
           );

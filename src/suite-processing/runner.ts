@@ -35,9 +35,7 @@ export async function runCheckSuite(
   const outputMode = options.outputMode ?? "failures-only";
   const renderMode = options.renderMode ?? "styled";
   const summaryOnly = options.summaryOnly === true;
-  const loadSuiteReport = async (
-    indicator?: CheckingIndicatorController,
-  ) => {
+  const loadSuiteReport = async (indicator?: CheckingIndicatorController) => {
     const excludedKeys = options.excludedKeys ?? new Set<string>();
     const { mainSteps, preRunSteps } = selectSuiteSteps(
       CFG.steps,
@@ -65,17 +63,14 @@ export async function runCheckSuite(
         })
       : await runSuiteWithIndicator(options.indicator, loadSuiteReport);
 
-  printSuiteReport(
-    executionState,
-    {
-      failureOutputLineLimit: options.failureOutputLineLimit ?? null,
-      missingSteps: report.missingSteps,
-      outputMode,
-      processedResults: report.processedResults,
-      renderMode,
-      summaryOnly,
-    },
-  );
+  printSuiteReport(executionState, {
+    failureOutputLineLimit: options.failureOutputLineLimit ?? null,
+    missingSteps: report.missingSteps,
+    outputMode,
+    processedResults: report.processedResults,
+    renderMode,
+    summaryOnly,
+  });
 
   const allOk =
     printSuiteSummary(
@@ -83,8 +78,7 @@ export async function runCheckSuite(
       executionState.runs,
       startedAtMs,
       renderMode,
-    ) &&
-    !executionState.timedOut;
+    ) && !executionState.timedOut;
   completeSuiteRun(allOk, executionState.timedOut);
 }
 
@@ -102,7 +96,9 @@ function printSuiteReport(
   executionState: Awaited<ReturnType<typeof executeSuiteSteps>>,
   reportOptions: {
     failureOutputLineLimit: null | number;
-    missingSteps: Awaited<ReturnType<typeof prepareSuiteReport>>["missingSteps"];
+    missingSteps: Awaited<
+      ReturnType<typeof prepareSuiteReport>
+    >["missingSteps"];
     outputMode: SuiteOutputMode;
     processedResults: Awaited<
       ReturnType<typeof prepareSuiteReport>

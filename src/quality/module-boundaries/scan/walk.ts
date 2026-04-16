@@ -57,11 +57,20 @@ export function visitCodeDirectories(
         ? `${relativeDirectoryPath}/${entry.name}`
         : entry.name;
 
-      if (!entry.isDirectory() || shouldSkipDirectory(childRelativePath, config)) {
+      if (
+        !entry.isDirectory() ||
+        shouldSkipDirectory(childRelativePath, config)
+      ) {
         continue;
       }
 
-      if (!directoryContainsCode(join(cwd, childRelativePath), config, childRelativePath)) {
+      if (
+        !directoryContainsCode(
+          join(cwd, childRelativePath),
+          config,
+          childRelativePath,
+        )
+      ) {
         continue;
       }
 

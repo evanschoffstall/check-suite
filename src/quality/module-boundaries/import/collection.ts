@@ -56,21 +56,18 @@ function collectFileImports(
       ts.isStringLiteralLike(statement.moduleSpecifier)
     ) {
       return [
-        createImportRecord(
-          {
-            aliasMappings,
-            config,
-            cwd,
-            isReExport: false,
-            isSideEffectOnly: statement.importClause === undefined,
-            isTypeOnly:
-              statement.importClause?.phaseModifier ===
-              ts.SyntaxKind.TypeKeyword,
-            knownFiles,
-            sourcePath,
-            specifier: statement.moduleSpecifier.text,
-          },
-        ),
+        createImportRecord({
+          aliasMappings,
+          config,
+          cwd,
+          isReExport: false,
+          isSideEffectOnly: statement.importClause === undefined,
+          isTypeOnly:
+            statement.importClause?.phaseModifier === ts.SyntaxKind.TypeKeyword,
+          knownFiles,
+          sourcePath,
+          specifier: statement.moduleSpecifier.text,
+        }),
       ];
     }
 
@@ -80,19 +77,17 @@ function collectFileImports(
       ts.isStringLiteralLike(statement.moduleSpecifier)
     ) {
       return [
-        createImportRecord(
-          {
-            aliasMappings,
-            config,
-            cwd,
-            isReExport: true,
-            isSideEffectOnly: false,
-            isTypeOnly: false,
-            knownFiles,
-            sourcePath,
-            specifier: statement.moduleSpecifier.text,
-          },
-        ),
+        createImportRecord({
+          aliasMappings,
+          config,
+          cwd,
+          isReExport: true,
+          isSideEffectOnly: false,
+          isTypeOnly: false,
+          knownFiles,
+          sourcePath,
+          specifier: statement.moduleSpecifier.text,
+        }),
       ];
     }
 
@@ -100,9 +95,7 @@ function collectFileImports(
   });
 }
 
-function createImportRecord(
-  input: CreateImportRecordInput,
-): ImportRecord {
+function createImportRecord(input: CreateImportRecordInput): ImportRecord {
   return {
     isReExport: input.isReExport,
     isSideEffectOnly: input.isSideEffectOnly,

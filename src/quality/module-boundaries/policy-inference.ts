@@ -9,7 +9,10 @@ import {
   discoverArchitectureProject,
   normalizeArchitectureConfig,
 } from "@/quality/module-boundaries/discovery/index.ts";
-import { getCodeStem, getLastPathSegment } from "@/quality/module-boundaries/foundation/index.ts";
+import {
+  getCodeStem,
+  getLastPathSegment,
+} from "@/quality/module-boundaries/foundation/index.ts";
 
 // ---------------------------------------------------------------------------
 // Structural inference helpers
@@ -51,16 +54,27 @@ interface PolicyUnit {
  */
 export function inferAllowedRootFileStems(
   cwd: string,
-  config?: Partial<Omit<ArchitectureAnalyzerConfig, "allowedRootFileStems" | "dependencyPolicies">>,
+  config?: Partial<
+    Omit<
+      ArchitectureAnalyzerConfig,
+      "allowedRootFileStems" | "dependencyPolicies"
+    >
+  >,
 ): string[] {
-  const normalized = normalizeArchitectureConfig({ ...config, dependencyPolicies: [] });
+  const normalized = normalizeArchitectureConfig({
+    ...config,
+    dependencyPolicies: [],
+  });
   const project = discoverArchitectureProject(cwd, normalized);
   const codeRootSet = new Set(project.codeRoots.directories);
   const entrypointStemsSet = new Set(normalized.entrypointNames);
   const stems = new Set<string>();
 
   for (const fact of project.sourceFacts) {
-    if (codeRootSet.has(fact.directoryPath) && !entrypointStemsSet.has(fact.stem)) {
+    if (
+      codeRootSet.has(fact.directoryPath) &&
+      !entrypointStemsSet.has(fact.stem)
+    ) {
       stems.add(fact.stem);
     }
   }
@@ -86,20 +100,32 @@ export function inferAllowedRootFileStems(
  */
 export function inferCentralSurfacePathPrefixes(
   cwd: string,
-  config?: Partial<Omit<ArchitectureAnalyzerConfig, "centralSurfacePathPrefixes" | "dependencyPolicies">>,
+  config?: Partial<
+    Omit<
+      ArchitectureAnalyzerConfig,
+      "centralSurfacePathPrefixes" | "dependencyPolicies"
+    >
+  >,
 ): string[] {
-  const normalized = normalizeArchitectureConfig({ ...config, dependencyPolicies: [] });
+  const normalized = normalizeArchitectureConfig({
+    ...config,
+    dependencyPolicies: [],
+  });
   const project = discoverArchitectureProject(cwd, normalized);
   const codeRootSet = new Set(project.codeRoots.directories);
-  const boundaryEntrypointSet = new Set(project.boundaries.flatMap((b) => b.entrypointPaths));
+  const boundaryEntrypointSet = new Set(
+    project.boundaries.flatMap((b) => b.entrypointPaths),
+  );
 
   const surfaceFacts = project.sourceFacts.filter(
-    (f) => codeRootSet.has(f.directoryPath) || boundaryEntrypointSet.has(f.path),
+    (f) =>
+      codeRootSet.has(f.directoryPath) || boundaryEntrypointSet.has(f.path),
   );
   if (surfaceFacts.length === 0) return [];
 
   const mean =
-    surfaceFacts.reduce((sum, f) => sum + f.reExports.length, 0) / surfaceFacts.length;
+    surfaceFacts.reduce((sum, f) => sum + f.reExports.length, 0) /
+    surfaceFacts.length;
 
   return surfaceFacts
     .filter((f) => f.reExports.length > mean)
@@ -146,9 +172,16 @@ export function inferDependencyPolicies(
   cwd: string,
   config?: Partial<Omit<ArchitectureAnalyzerConfig, "dependencyPolicies">>,
 ): ArchitectureDependencyPolicy[] {
-  const normalized = normalizeArchitectureConfig({ ...config, dependencyPolicies: [] });
+  const normalized = normalizeArchitectureConfig({
+    ...config,
+    dependencyPolicies: [],
+  });
   const project = discoverArchitectureProject(cwd, normalized);
-  const units = buildPolicyUnits(project.boundaries.map((b) => b.path), project.files, normalized);
+  const units = buildPolicyUnits(
+    project.boundaries.map((b) => b.path),
+    project.files,
+    normalized,
+  );
   const prefixToUnit = buildPrefixToUnitMap(units);
   const connectionState = collectPolicyConnections(
     units,
@@ -194,7 +227,10 @@ export function inferEntrypointNames(
   cwd: string,
   config?: Partial<Omit<ArchitectureAnalyzerConfig, "dependencyPolicies">>,
 ): string[] {
-  const normalized = normalizeArchitectureConfig({ ...config, dependencyPolicies: [] });
+  const normalized = normalizeArchitectureConfig({
+    ...config,
+    dependencyPolicies: [],
+  });
   const project = discoverArchitectureProject(cwd, normalized);
   const stems = new Set<string>();
 
@@ -226,17 +262,28 @@ export function inferEntrypointNames(
  */
 export function inferExplicitPublicSurfacePaths(
   cwd: string,
-  config?: Partial<Omit<ArchitectureAnalyzerConfig, "dependencyPolicies" | "explicitPublicSurfacePaths">>,
+  config?: Partial<
+    Omit<
+      ArchitectureAnalyzerConfig,
+      "dependencyPolicies" | "explicitPublicSurfacePaths"
+    >
+  >,
 ): string[] {
-  const normalized = normalizeArchitectureConfig({ ...config, dependencyPolicies: [] });
+  const normalized = normalizeArchitectureConfig({
+    ...config,
+    dependencyPolicies: [],
+  });
   const project = discoverArchitectureProject(cwd, normalized);
   const codeRootSet = new Set(project.codeRoots.directories);
 
-  const rootFacts = project.sourceFacts.filter((f) => codeRootSet.has(f.directoryPath));
+  const rootFacts = project.sourceFacts.filter((f) =>
+    codeRootSet.has(f.directoryPath),
+  );
   if (rootFacts.length === 0) return [];
 
   const mean =
-    rootFacts.reduce((sum, f) => sum + f.exportedSymbolCount, 0) / rootFacts.length;
+    rootFacts.reduce((sum, f) => sum + f.exportedSymbolCount, 0) /
+    rootFacts.length;
 
   return rootFacts
     .filter((f) => f.exportedSymbolCount >= mean)
@@ -257,9 +304,12 @@ function buildDependencyPolicy(
   maxPolicyFanOut: number,
 ): ArchitectureDependencyPolicy {
   const mayDependOn = [...(state.outgoing.get(unit.pathPrefix) ?? [])].sort();
-  const allowedDependents = [...(state.incoming.get(unit.pathPrefix) ?? [])].sort();
+  const allowedDependents = [
+    ...(state.incoming.get(unit.pathPrefix) ?? []),
+  ].sort();
   const isTypeOnly =
-    allowedDependents.length > 0 && !state.nonTypeOnlyTargets.has(unit.pathPrefix);
+    allowedDependents.length > 0 &&
+    !state.nonTypeOnlyTargets.has(unit.pathPrefix);
   const role = inferPolicyRole(mayDependOn, maxPolicyFanOut);
   const surfaceTier = inferPolicySurfaceTier(
     unit.pathPrefix,
@@ -366,7 +416,9 @@ function collectRuntimeBoundaryPrefixes(
 }
 
 /** Initializes inbound and outbound relationship sets for each discovered unit. */
-function createPolicyConnectionState(units: PolicyUnit[]): PolicyConnectionState {
+function createPolicyConnectionState(
+  units: PolicyUnit[],
+): PolicyConnectionState {
   const incoming = new Map<string, Set<string>>();
   const outgoing = new Map<string, Set<string>>();
 
@@ -403,7 +455,10 @@ function inferPolicySurfaceTier(
   return runtimeBoundaries.has(pathPrefix) ? "private-runtime" : undefined;
 }
 
-function isInsideBoundary(filePath: string, boundaryPaths: Set<string>): boolean {
+function isInsideBoundary(
+  filePath: string,
+  boundaryPaths: Set<string>,
+): boolean {
   for (const bp of boundaryPaths) {
     if (filePath.startsWith(`${bp}/`)) return true;
   }

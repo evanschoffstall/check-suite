@@ -227,9 +227,11 @@ export interface MixedFileNameCaseRuleConfig {
 }
 
 /** Fully normalized runtime config used by the analyzer after grouped input is flattened. */
-export type NormalizedArchitectureAnalyzerConfig = Pick<ArchitectureAnalyzerConfig, "discovery" | "policy" | "rules"> & Required<
-  Omit<ArchitectureAnalyzerConfig, "discovery" | "policy" | "rules">
->;
+export type NormalizedArchitectureAnalyzerConfig = Pick<
+  ArchitectureAnalyzerConfig,
+  "discovery" | "policy" | "rules"
+> &
+  Required<Omit<ArchitectureAnalyzerConfig, "discovery" | "policy" | "rules">>;
 
 /** Rule options for the public-surface-purity violation. */
 export interface PublicSurfacePurityRuleConfig {

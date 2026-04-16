@@ -1,6 +1,11 @@
 import { availableParallelism, cpus } from "node:os";
 
-import type { Command, LintConfig, StepConfig, Summary } from "@/types/index.ts";
+import type {
+  Command,
+  LintConfig,
+  StepConfig,
+  Summary,
+} from "@/types/index.ts";
 
 import { run } from "@/process/index.ts";
 
@@ -28,7 +33,12 @@ export const STANDARD_LINT_SKIP_DIRS: readonly string[] = [
 ];
 
 const DEFAULT_GLOB_EXTENSIONS: readonly string[] = [
-  "js", "mjs", "cjs", "ts", "jsx", "tsx",
+  "js",
+  "mjs",
+  "cjs",
+  "ts",
+  "jsx",
+  "tsx",
 ];
 const DEFAULT_MAX_FILES = 5000;
 
@@ -124,7 +134,8 @@ async function buildConcurrencyArgs(cfg: LintConfig): Promise<string[]> {
     return [];
   }
 
-  const overrideEnvVar = cfg.concurrencyEnvVar ?? "CHECK_SUITE_LINT_CONCURRENCY";
+  const overrideEnvVar =
+    cfg.concurrencyEnvVar ?? "CHECK_SUITE_LINT_CONCURRENCY";
   const overrideValue = process.env[overrideEnvVar];
   const concurrency =
     overrideValue && /^\d+$/.test(overrideValue)

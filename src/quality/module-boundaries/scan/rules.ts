@@ -56,8 +56,10 @@ export function shouldSkipDirectory(
   directoryPath: string,
   config: NormalizedArchitectureAnalyzerConfig,
 ): boolean {
-  return isIgnoredDirectory(directoryPath, config) ||
-    isTestDirectory(directoryPath, config);
+  return (
+    isIgnoredDirectory(directoryPath, config) ||
+    isTestDirectory(directoryPath, config)
+  );
 }
 
 /** Reuses compiled glob matchers across scans. */
@@ -114,8 +116,10 @@ function matchesDirectoryGlob(directoryPath: string, pattern: string): boolean {
       return directoryName === suffixPattern;
     }
 
-    return getDirectoryGlobMatcher(normalizedPattern)(normalizedPath) ||
-      getDirectoryGlobMatcher(suffixPattern)(normalizedPath);
+    return (
+      getDirectoryGlobMatcher(normalizedPattern)(normalizedPath) ||
+      getDirectoryGlobMatcher(suffixPattern)(normalizedPath)
+    );
   }
 
   return normalizedPattern.includes("*")
@@ -142,8 +146,10 @@ function matchesFileGlob(filePath: string, pattern: string): boolean {
       return fileName === suffixPattern;
     }
 
-    return getFileGlobMatcher(normalizedPattern)(normalizedPath) ||
-      getFileGlobMatcher(suffixPattern)(normalizedPath);
+    return (
+      getFileGlobMatcher(normalizedPattern)(normalizedPath) ||
+      getFileGlobMatcher(suffixPattern)(normalizedPath)
+    );
   }
 
   return normalizedPattern.includes("*")
@@ -153,5 +159,7 @@ function matchesFileGlob(filePath: string, pattern: string): boolean {
 
 /** Normalizes one directory path before applying glob-based skip rules. */
 function normalizeDirectoryPath(directoryPath: string): string {
-  return normalizePath(directoryPath).replace(/^\.\//u, "").replace(/\/+$/u, "");
+  return normalizePath(directoryPath)
+    .replace(/^\.\//u, "")
+    .replace(/\/+$/u, "");
 }

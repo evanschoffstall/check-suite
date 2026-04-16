@@ -7,12 +7,15 @@ export interface ProcessCollectors {
   stdoutCollector: StreamCollector;
 }
 
-export function createProcessCollectors(child: {
-  stderr: null | ReadableStream<Uint8Array> | undefined;
-  stdout: null | ReadableStream<Uint8Array> | undefined;
-}, options: {
-  onOutput?: (output: string) => void;
-} = {}): ProcessCollectors {
+export function createProcessCollectors(
+  child: {
+    stderr: null | ReadableStream<Uint8Array> | undefined;
+    stdout: null | ReadableStream<Uint8Array> | undefined;
+  },
+  options: {
+    onOutput?: (output: string) => void;
+  } = {},
+): ProcessCollectors {
   return {
     stderrCollector: createStreamCollector(child.stderr, options.onOutput),
     stdoutCollector: createStreamCollector(child.stdout, options.onOutput),

@@ -70,7 +70,9 @@ function parseFailureLineOption(argument: string): null | number | undefined {
     return undefined;
   }
 
-  const requestedLineLimit = Number(argument.slice(FAILURE_LINE_OPTION_PREFIX.length));
+  const requestedLineLimit = Number(
+    argument.slice(FAILURE_LINE_OPTION_PREFIX.length),
+  );
   return Number.isInteger(requestedLineLimit) && requestedLineLimit > 0
     ? requestedLineLimit
     : null;
@@ -102,9 +104,9 @@ function parseRenderModeOption(
 
   const requestedRenderMode = argument.slice(FORMAT_OPTION_PREFIX.length);
   if (
-    requestedRenderMode === "headless"
-    || requestedRenderMode === "plain"
-    || requestedRenderMode === "safe"
+    requestedRenderMode === "headless" ||
+    requestedRenderMode === "plain" ||
+    requestedRenderMode === "safe"
   ) {
     return "plain";
   }

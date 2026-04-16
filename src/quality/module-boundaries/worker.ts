@@ -48,8 +48,10 @@ function hasMatchingPolicyName(
   inferredPolicy: ReturnType<typeof inferDependencyPolicies>[number],
   configuredPolicy: RawDependencyPolicyEntry,
 ): boolean {
-  return typeof configuredPolicy.name === "string"
-    && configuredPolicy.name === inferredPolicy.name;
+  return (
+    typeof configuredPolicy.name === "string" &&
+    configuredPolicy.name === inferredPolicy.name
+  );
 }
 
 /**
@@ -65,15 +67,17 @@ function hasSharedPathPrefix(
 
   return configuredPathPrefixes.some(
     (configuredPathPrefix) =>
-      typeof configuredPathPrefix === "string"
-      && inferredPathPrefixes.includes(configuredPathPrefix),
+      typeof configuredPathPrefix === "string" &&
+      inferredPathPrefixes.includes(configuredPathPrefix),
   );
 }
 
 /**
  * Guards dependency-policy overrides before the worker merges them into inferred policy state.
  */
-function isRawDependencyPolicyEntry(value: unknown): value is RawDependencyPolicyEntry {
+function isRawDependencyPolicyEntry(
+  value: unknown,
+): value is RawDependencyPolicyEntry {
   return typeof value === "object" && value !== null;
 }
 
@@ -99,8 +103,13 @@ function matchesConfiguredPolicy(
   inferredPolicy: ReturnType<typeof inferDependencyPolicies>[number],
   configuredPolicy: RawDependencyPolicyEntry,
 ): boolean {
-  return hasMatchingPolicyName(inferredPolicy, configuredPolicy)
-    || hasSharedPathPrefix(inferredPolicy.pathPrefixes, configuredPolicy.pathPrefixes);
+  return (
+    hasMatchingPolicyName(inferredPolicy, configuredPolicy) ||
+    hasSharedPathPrefix(
+      inferredPolicy.pathPrefixes,
+      configuredPolicy.pathPrefixes,
+    )
+  );
 }
 
 /**
@@ -116,7 +125,7 @@ function mergeDependencyPolicies(
 
   for (const configuredPolicy of configuredPolicies) {
     const matchingIndex = inferredPolicies.findIndex((inferredPolicy) =>
-      matchesConfiguredPolicy(inferredPolicy, configuredPolicy)
+      matchesConfiguredPolicy(inferredPolicy, configuredPolicy),
     );
 
     if (matchingIndex === -1) {
@@ -139,7 +148,9 @@ function parseWorkerInput(argv: string[]): ArchitectureWorkerInput {
     throw new Error("architecture worker requires a target cwd argument");
   }
   if (typeof serializedConfig !== "string") {
-    throw new Error("architecture worker requires a serialized config argument");
+    throw new Error(
+      "architecture worker requires a serialized config argument",
+    );
   }
 
   let configValue: unknown;
@@ -175,7 +186,7 @@ function readConfiguredStringArray(
   key: string,
 ): string[] | undefined {
   const value = rawConfig[key];
-  return Array.isArray(value) ? value as string[] : undefined;
+  return Array.isArray(value) ? (value as string[]) : undefined;
 }
 
 /**
@@ -235,21 +246,21 @@ function resolveSurfaceConfig(
   baseConfig: WorkerConfig,
 ): Omit<ResolvedInferenceConfig, "dependencyPolicies"> {
   const entrypointNames =
-    readConfiguredStringArray(rawConfig, "entrypointNames")
-    ?? inferEntrypointNames(cwd, baseConfig);
+    readConfiguredStringArray(rawConfig, "entrypointNames") ??
+    inferEntrypointNames(cwd, baseConfig);
   const allowedRootFileStems =
-    readConfiguredStringArray(rawConfig, "allowedRootFileStems")
-    ?? inferAllowedRootFileStems(cwd, { ...baseConfig, entrypointNames });
+    readConfiguredStringArray(rawConfig, "allowedRootFileStems") ??
+    inferAllowedRootFileStems(cwd, { ...baseConfig, entrypointNames });
   const explicitPublicSurfacePaths =
-    readConfiguredStringArray(rawConfig, "explicitPublicSurfacePaths")
-    ?? inferExplicitPublicSurfacePaths(cwd, {
+    readConfiguredStringArray(rawConfig, "explicitPublicSurfacePaths") ??
+    inferExplicitPublicSurfacePaths(cwd, {
       ...baseConfig,
       allowedRootFileStems,
       entrypointNames,
     });
   const centralSurfacePathPrefixes =
-    readConfiguredStringArray(rawConfig, "centralSurfacePathPrefixes")
-    ?? inferCentralSurfacePathPrefixes(cwd, {
+    readConfiguredStringArray(rawConfig, "centralSurfacePathPrefixes") ??
+    inferCentralSurfacePathPrefixes(cwd, {
       ...baseConfig,
       allowedRootFileStems,
       entrypointNames,

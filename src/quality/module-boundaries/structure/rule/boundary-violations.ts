@@ -50,7 +50,8 @@ export function buildDirectoryFactViolations(
     directoryFact.childDirectoryPaths.length > 0;
   const shouldRequireEntrypoint =
     implementationFiles.length > 1 ||
-    (implementationFiles.length > 0 && directoryFact.childDirectoryPaths.length > 0);
+    (implementationFiles.length > 0 &&
+      directoryFact.childDirectoryPaths.length > 0);
   const violations: ArchitectureViolation[] = [];
 
   if (
@@ -95,7 +96,10 @@ export function buildMultipleEntrypointViolations(
       entrypointAllowsSiblingEntrypoints(project.config, stem),
     );
 
-    if (uniqueEntrypointCount === boundary.entrypointPaths.length && allAllowSiblings) {
+    if (
+      uniqueEntrypointCount === boundary.entrypointPaths.length &&
+      allAllowSiblings
+    ) {
       return [];
     }
 

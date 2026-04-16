@@ -38,8 +38,8 @@ export interface ComplexityCheckOptions {
   /**
    * Source directories and files to analyze.
    *
-    * When omitted, the platform asks code-root discovery for directories that
-    * match the current architecture code-target configuration.
+   * When omitted, the platform asks code-root discovery for directories that
+   * match the current architecture code-target configuration.
    */
   targets?: readonly string[];
   /** Complexity thresholds — any unset field falls back to the platform default. */
@@ -63,7 +63,10 @@ export async function runComplexityCheck(
   };
   const excludedPaths = config.excludedPaths ?? [];
   const targets = config.targets ?? discoverDefaultCodeRoots(cwd).directories;
-  const analysisArgs = config.analyzer.buildAnalysisArgs(targets, excludedPaths);
+  const analysisArgs = config.analyzer.buildAnalysisArgs(
+    targets,
+    excludedPaths,
+  );
 
   const analysisOutput = await config.analyzer.runAnalysis({
     analysisArgs,

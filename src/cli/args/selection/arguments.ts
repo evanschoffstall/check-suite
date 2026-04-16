@@ -29,10 +29,7 @@ export function createDirectStepArguments(
   overrides: Partial<
     Pick<
       CliArguments,
-      | "failureOutputLineLimit"
-      | "invalidOptions"
-      | "outputMode"
-      | "renderMode"
+      "failureOutputLineLimit" | "invalidOptions" | "outputMode" | "renderMode"
     >
   > = {},
 ): CliArguments {

@@ -1,11 +1,5 @@
-
-
-import type {
-  ComplexityAnalyzerAdapter,
-} from "@/quality/complexity/main.ts";
-import type {
-  FunctionMetrics,
-} from "@/quality/complexity/shared/index.ts";
+import type { ComplexityAnalyzerAdapter } from "@/quality/complexity/main.ts";
+import type { FunctionMetrics } from "@/quality/complexity/shared/index.ts";
 
 /**
  * Maps {@link FunctionMetrics} field names to zero-based column indices in a
@@ -102,7 +96,10 @@ export function createSpawnComplexityAdapter(
         );
       }
 
-      if (missingModulePattern.test(stderr) || missingModulePattern.test(stdout)) {
+      if (
+        missingModulePattern.test(stderr) ||
+        missingModulePattern.test(stdout)
+      ) {
         failWithOutput(
           [
             `${opts.failureLabel}: 0 function violations · 0 file violations`,
@@ -160,8 +157,7 @@ export function parseCsvComplexityRows(
         endLine: Number.parseInt(cells[columnMap.endLine], 10),
         functionName: fn.length > 0 ? fn : "(anonymous)",
         length: Number.parseInt(cells[columnMap.length], 10),
-        location:
-          loc.length > 0 ? loc : p.length > 0 ? p : "unknown-location",
+        location: loc.length > 0 ? loc : p.length > 0 ? p : "unknown-location",
         nestingDepth: 0,
         nloc: Number.parseInt(cells[columnMap.nloc], 10),
         parameterCount: Number.parseInt(cells[columnMap.parameterCount], 10),
@@ -174,12 +170,10 @@ export function parseCsvComplexityRows(
 
 /** Splits a single RFC-4180-style CSV line into unquoted cell strings. */
 function parseCsvRow(line: string): string[] {
-  return (line.match(/(?:^|,)("(?:[^"]|"")*"|[^,]*)/g) ?? []).map(
-    (value) => {
-      const cell = value.startsWith(",") ? value.slice(1) : value;
-      return cell.startsWith('"') && cell.endsWith('"')
-        ? cell.slice(1, -1).replaceAll('""', '"')
-        : cell;
-    },
-  );
+  return (line.match(/(?:^|,)("(?:[^"]|"")*"|[^,]*)/g) ?? []).map((value) => {
+    const cell = value.startsWith(",") ? value.slice(1) : value;
+    return cell.startsWith('"') && cell.endsWith('"')
+      ? cell.slice(1, -1).replaceAll('""', '"')
+      : cell;
+  });
 }

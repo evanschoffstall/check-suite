@@ -1,10 +1,7 @@
 /// <reference types="bun" />
 /// <reference types="node" />
 
-export type {
-  ComplexityAnalyzerAdapter,
-  ComplexityCheckOptions,
-} from "./main";
+export type { ComplexityAnalyzerAdapter, ComplexityCheckOptions } from "./main";
 export type { ComplexityCheckResult } from "./main";
 export { runComplexityCheck } from "./main";
 export {
@@ -33,9 +30,7 @@ export {
   findFunctionViolations,
   formatViolations,
 } from "@/quality/complexity/report/index.ts";
-export {
-  DEFAULT_COMPLEXITY_THRESHOLDS,
-} from "@/quality/complexity/shared/index.ts";
+export { DEFAULT_COMPLEXITY_THRESHOLDS } from "@/quality/complexity/shared/index.ts";
 export type {
   ComplexityThresholds,
   ComplexityViolation,

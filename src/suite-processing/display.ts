@@ -36,7 +36,11 @@ export function printSuiteOutputs(
 
   for (const step of allExecutedSteps) {
     if (detailOptions.runs[step.key].notFound) continue;
-    const status = getStepStatus(step.key, detailOptions.runs, processedResults);
+    const status = getStepStatus(
+      step.key,
+      detailOptions.runs,
+      processedResults,
+    );
     if (!shouldPrintStepDetails(status, detailOptions.outputMode)) {
       continue;
     }
@@ -120,7 +124,13 @@ export function printSuiteSummary(
   console.info(divider(renderMode));
   for (const check of presentChecks) {
     console.info(
-      row(check.label, check.status, check.details, check.durationMs, renderMode),
+      row(
+        check.label,
+        check.status,
+        check.details,
+        check.durationMs,
+        renderMode,
+      ),
     );
   }
   console.info(divider(renderMode));
@@ -177,8 +187,7 @@ function limitFailingOutputLines(
     return output;
   }
 
-  const truncatedLabel =
-    failureOutputLineLimit === 1 ? "line" : "lines";
+  const truncatedLabel = failureOutputLineLimit === 1 ? "line" : "lines";
   return `${visibleLines.slice(0, failureOutputLineLimit).join("\n")}\n... truncated to first ${failureOutputLineLimit} ${truncatedLabel} of failing output (--fail-lines=${failureOutputLineLimit})`;
 }
 
@@ -192,4 +201,3 @@ function shouldPrintStepDetails(
 
   return status === "fail";
 }
-

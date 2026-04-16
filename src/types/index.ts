@@ -1,8 +1,4 @@
-import type {
-  Command,
-  StepConfig,
-  StepPostProcessResult,
-} from "./step-types";
+import type { Command, StepConfig, StepPostProcessResult } from "./step-types";
 
 export interface CheckConfig {
   paths: Record<string, string>;

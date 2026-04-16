@@ -37,7 +37,9 @@ function formatGroupHeading(code: string, count: number): string {
 }
 
 /** Renders numbered violation lines for one group, truncating if over the limit. */
-function formatGroupViolationLines(violations: ArchitectureViolation[]): string[] {
+function formatGroupViolationLines(
+  violations: ArchitectureViolation[],
+): string[] {
   const lines: string[] = [];
 
   for (const [index, violation] of violations

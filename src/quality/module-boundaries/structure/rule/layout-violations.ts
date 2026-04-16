@@ -4,7 +4,10 @@ import type {
 } from "@/quality/module-boundaries/foundation/index.ts";
 
 import { createGlobMatcher } from "@/foundation/index.ts";
-import { getCodeStem, getLastPathSegment } from "@/quality/module-boundaries/foundation/index.ts";
+import {
+  getCodeStem,
+  getLastPathSegment,
+} from "@/quality/module-boundaries/foundation/index.ts";
 
 import {
   isDirectChildOfCodeRoot,
@@ -36,9 +39,10 @@ export function buildJunkDrawerViolations(
   project: ArchitectureProject,
 ): ArchitectureViolation[] {
   const violations: ArchitectureViolation[] = [];
-  const junkDrawerFileNameMatchers = project.config.junkDrawerFileNamePatterns.map(
-    (pattern) => createGlobMatcher(pattern),
-  );
+  const junkDrawerFileNameMatchers =
+    project.config.junkDrawerFileNamePatterns.map((pattern) =>
+      createGlobMatcher(pattern),
+    );
 
   for (const directoryFact of project.directoryFacts) {
     const directoryName = getLastPathSegment(directoryFact.path);

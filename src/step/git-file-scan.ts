@@ -165,7 +165,6 @@ async function runFileBatches(
   // Batches are intentionally sequential: a non-soft failure stops further
   // processing, and exit-code ordering is deterministic.
   for (const batch of chunkPaths(paths, options.fileArgs, maxLen)) {
-     
     const result = await spawnBuffered(cwd, options.command, [
       ...options.fileArgs,
       ...batch,

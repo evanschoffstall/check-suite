@@ -66,7 +66,9 @@ function createActiveStepProgressTracker(
       return;
     }
 
-    const firstVisibleStatus = activeStatuses.find((step) => step.output.length > 0);
+    const firstVisibleStatus = activeStatuses.find(
+      (step) => step.output.length > 0,
+    );
     if (firstVisibleStatus) {
       lastVisibleStatus = firstVisibleStatus;
     }

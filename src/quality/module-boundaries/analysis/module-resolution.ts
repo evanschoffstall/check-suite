@@ -57,7 +57,8 @@ function resolveCandidatePath(
 ): null | string {
   const normalizedTargetPath = trimLeadingDotSlash(normalizePath(targetPath));
   const resolutionExtensions = config.codeTargets.resolutionExtensions ?? [];
-  const resolutionEntrypointNames = config.codeTargets.resolutionEntrypointNames ?? [];
+  const resolutionEntrypointNames =
+    config.codeTargets.resolutionEntrypointNames ?? [];
   const candidates = [
     normalizedTargetPath,
     ...resolutionExtensions.map(

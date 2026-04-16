@@ -39,10 +39,7 @@ export function parseCliArguments(argv: string[]): CliArguments {
     return createDirectStepArguments(
       suiteCommand,
       directStep,
-      [
-        ...cliOptions.selectionArgs,
-        ...directCommandArguments.explicitStepArgs,
-      ],
+      [...cliOptions.selectionArgs, ...directCommandArguments.explicitStepArgs],
       {
         failureOutputLineLimit: cliOptions.failureOutputLineLimit,
         invalidOptions: cliOptions.invalidOptions,
@@ -67,7 +64,9 @@ function createHelpArguments(): CliArguments {
 function hasHelpFlag(args: string[]): boolean {
   const passthroughSeparatorIndex = args.indexOf("--");
   const parsedArgs =
-    passthroughSeparatorIndex >= 0 ? args.slice(0, passthroughSeparatorIndex) : args;
+    passthroughSeparatorIndex >= 0
+      ? args.slice(0, passthroughSeparatorIndex)
+      : args;
   return parsedArgs.some((arg) => HELP_FLAGS.has(arg));
 }
 

@@ -38,7 +38,11 @@ export function buildMixedFileNameCaseViolations(
     return [];
   }
 
-  const groupedFiles = collectGroupedCaseFiles(parentPath, siblingFiles, project);
+  const groupedFiles = collectGroupedCaseFiles(
+    parentPath,
+    siblingFiles,
+    project,
+  );
   if (groupedFiles.size < 2) {
     return [];
   }
@@ -89,8 +93,11 @@ function collectGroupedCaseFiles(
 ): Map<FileNameCaseStyle, string[]> {
   const filesByStyle = new Map<FileNameCaseStyle, string[]>();
 
-  for (const fileName of siblingFiles.slice().sort((left, right) => left.localeCompare(right))) {
-    const filePath = parentPath.length === 0 ? fileName : `${parentPath}/${fileName}`;
+  for (const fileName of siblingFiles
+    .slice()
+    .sort((left, right) => left.localeCompare(right))) {
+    const filePath =
+      parentPath.length === 0 ? fileName : `${parentPath}/${fileName}`;
     if (shouldIgnoreFileNameCase(fileName, filePath, project)) {
       continue;
     }
@@ -107,11 +114,15 @@ function collectGroupedCaseFiles(
 
   return new Map(
     [...filesByStyle.entries()]
-      .sort(([leftStyle], [rightStyle]) =>
-        orderedFileNameCaseStyles.indexOf(leftStyle) -
-        orderedFileNameCaseStyles.indexOf(rightStyle),
+      .sort(
+        ([leftStyle], [rightStyle]) =>
+          orderedFileNameCaseStyles.indexOf(leftStyle) -
+          orderedFileNameCaseStyles.indexOf(rightStyle),
       )
-      .map(([style, files]) => [style, files.sort((left, right) => left.localeCompare(right))]),
+      .map(([style, files]) => [
+        style,
+        files.sort((left, right) => left.localeCompare(right)),
+      ]),
   );
 }
 
@@ -131,9 +142,11 @@ function getGlobMatcher(pattern: string): (value: string) => boolean {
 }
 
 function isAsciiAlphaNumeric(codePoint: number): boolean {
-  return isAsciiDigit(codePoint) ||
+  return (
+    isAsciiDigit(codePoint) ||
     isAsciiLowercaseLetter(codePoint) ||
-    isAsciiUppercaseLetter(codePoint);
+    isAsciiUppercaseLetter(codePoint)
+  );
 }
 
 function isAsciiDigit(codePoint: number): boolean {
@@ -154,7 +167,10 @@ function isDelimitedLowerAlphaNumeric(
   delimiter: "-" | "_",
 ): boolean {
   const segments = value.split(delimiter);
-  return segments.length > 1 && segments.every((segment) => isLowerAlphaNumeric(segment));
+  return (
+    segments.length > 1 &&
+    segments.every((segment) => isLowerAlphaNumeric(segment))
+  );
 }
 
 /** Returns whether the value consists of lowercase letters and digits only. */
@@ -186,9 +202,10 @@ function matchesLeadingAlphaNumericStyle(
   }
 
   const firstCodePoint = value.charCodeAt(0);
-  const firstCharacterMatches = firstCharacterCase === "lower"
-    ? isAsciiLowercaseLetter(firstCodePoint)
-    : isAsciiUppercaseLetter(firstCodePoint);
+  const firstCharacterMatches =
+    firstCharacterCase === "lower"
+      ? isAsciiLowercaseLetter(firstCodePoint)
+      : isAsciiUppercaseLetter(firstCodePoint);
   if (!firstCharacterMatches) {
     return false;
   }
@@ -217,11 +234,13 @@ function shouldIgnoreFileNameCase(
     .replace(/\/+$/u, "");
   const stem = getCodeStem(fileName);
 
-  return project.config.fileNameCaseIgnorePathGlobs.some((pattern) =>
-    getGlobMatcher(pattern)(normalizedFilePath),
-  ) ||
+  return (
+    project.config.fileNameCaseIgnorePathGlobs.some((pattern) =>
+      getGlobMatcher(pattern)(normalizedFilePath),
+    ) ||
     project.config.fileNameCaseIgnoreFileGlobs.some((pattern) => {
       const matchesPattern = getGlobMatcher(pattern);
       return matchesPattern(fileName) || matchesPattern(stem);
-    });
+    })
+  );
 }

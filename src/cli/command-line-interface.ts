@@ -51,14 +51,14 @@ export async function main(): Promise<void> {
 
   const indicator = shouldShowCheckingIndicator(cliArguments)
     ? startCheckingIndicator({
-        displayMode:
-          cliArguments.renderMode === "plain" ? "static" : "auto",
+        displayMode: cliArguments.renderMode === "plain" ? "static" : "auto",
       })
     : null;
 
   try {
     if (cliArguments.command === "keys") {
-      await handleKeysCommand(); return;
+      await handleKeysCommand();
+      return;
     }
 
     if (cliArguments.invalidOptions.length > 0) {
@@ -66,7 +66,8 @@ export async function main(): Promise<void> {
         indicator,
         `unknown option(s): ${cliArguments.invalidOptions.join(", ")}`,
         1,
-      ); return;
+      );
+      return;
     }
 
     if (cliArguments.invalidSuiteFlags.length > 0) {
@@ -74,7 +75,8 @@ export async function main(): Promise<void> {
         indicator,
         `unknown suite flag(s): ${cliArguments.invalidSuiteFlags.join(", ")}`,
         1,
-      ); return;
+      );
+      return;
     }
 
     if (cliArguments.invalidSuiteExclusions.length > 0) {
@@ -82,7 +84,8 @@ export async function main(): Promise<void> {
         indicator,
         `unknown suite exclusion(s): ${cliArguments.invalidSuiteExclusions.join(", ")}`,
         1,
-      ); return;
+      );
+      return;
     }
 
     if (cliArguments.directStep) {
@@ -90,7 +93,8 @@ export async function main(): Promise<void> {
         indicator,
         cliArguments.directStep,
         cliArguments.directStepArgs,
-      ); return;
+      );
+      return;
     }
 
     await runSuiteCommand(indicator, cliArguments);
@@ -110,9 +114,8 @@ async function exitWithMessage(
 }
 
 async function handleKeysCommand(): Promise<void> {
-  const { getConfiguredStepKeys } = await import(
-    "@/cli/args/selection/arguments.ts"
-  );
+  const { getConfiguredStepKeys } =
+    await import("@/cli/args/selection/arguments.ts");
   writeOut(getConfiguredStepKeys().join(", "));
   process.exit(0);
 }
@@ -121,7 +124,9 @@ function isHelpRequest(argv: string[]): boolean {
   const args = argv.slice(2);
   const passthroughSeparatorIndex = args.indexOf("--");
   const parsedArgs =
-    passthroughSeparatorIndex >= 0 ? args.slice(0, passthroughSeparatorIndex) : args;
+    passthroughSeparatorIndex >= 0
+      ? args.slice(0, passthroughSeparatorIndex)
+      : args;
   return parsedArgs.some((arg) => HELP_FLAGS.has(arg));
 }
 
@@ -132,7 +137,9 @@ async function loadCliArguments(argv: string[]) {
 
 async function runDirectStepCommand(
   indicator: CheckingIndicatorController | null,
-  directStep: NonNullable<Awaited<ReturnType<typeof loadCliArguments>>["directStep"]>,
+  directStep: NonNullable<
+    Awaited<ReturnType<typeof loadCliArguments>>["directStep"]
+  >,
   directStepArgs: string[],
 ): Promise<void> {
   const [{ SUITE_TIMEOUT_MS }, { runStepWithinDeadline }] = await Promise.all([

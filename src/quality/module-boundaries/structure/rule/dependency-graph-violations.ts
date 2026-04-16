@@ -193,8 +193,9 @@ function isHighFanOutPolicy(
   policyName: string,
 ): boolean {
   return (
-    project.config.dependencyPolicies.find((policy) => policy.name === policyName)
-      ?.role === "orchestration"
+    project.config.dependencyPolicies.find(
+      (policy) => policy.name === policyName,
+    )?.role === "orchestration"
   );
 }
 
