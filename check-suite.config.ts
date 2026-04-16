@@ -113,7 +113,7 @@ const architecture = defineStep({
       "dependency-policy-cycle": { enabled: true },
       "dependency-policy-fan-out": { maxDependencies: 5 },
       "directory-depth": { maxDepth: 3 },
-      "junk-drawer-file": { fileNamePatterns: ["*helper*", "*runtime*", "*util*", "*support*"] },
+      "junk-drawer-file": { fileNamePatterns: ["*helper*", "*Helper*", "*runtime*", "*Runtime*", "*util*", "*Util*", "*support*", "*Support*"] },
       "mixed-file-name-case": { enabled: true, ignoreFileGlobs: ["index.ts"] },
       "public-surface-re-export-chain": { allow: false },
       "public-surface-wildcard-export": { maxWildcardExports: 0 },
