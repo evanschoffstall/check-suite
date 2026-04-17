@@ -1,9 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
-import type { StepConfig } from "@/types/index.ts";
+import type { InlineTypeScriptContext, StepConfig } from "@/types/index.ts";
 
 import { runInlineTypeScriptStep } from "@/inline-ts/index.ts";
 import { toCommand } from "@/inline-ts/runner.ts";
+import { runHandledStep } from "@/step/handlers.ts";
 
 // ---------------------------------------------------------------------------
 // toCommand — inline result coercion
@@ -75,7 +76,9 @@ describe("toCommand", () => {
 // ---------------------------------------------------------------------------
 
 const minimalStep = (
-  source: (ctx: { fail: (o: string) => object; ok: (o: string) => object; }) => object,
+  source: (
+    ctx: Pick<InlineTypeScriptContext, "fail" | "ok" | "signal" | "throwIfAborted">
+  ) => object,
 ): StepConfig => ({
   config: { source },
   enabled: true,
@@ -145,5 +148,31 @@ describe("runInlineTypeScriptStep", () => {
     expect(result.exitCode).toBe(0);
     expect(result.notFound).toBeUndefined();
     expect(result.output).toBe("all good\n");
+  });
+
+  test("timed out inline steps abort before committing stale output", async () => {
+    const sideEffects: string[] = [];
+    const outputs: string[] = [];
+    const step = minimalStep(async ({ ok, throwIfAborted }) => {
+      await Bun.sleep(25);
+      throwIfAborted();
+      sideEffects.push("committed");
+      return ok("late result\n");
+    });
+
+    const result = await runHandledStep(step, 1, [], (output) => {
+      outputs.push(output);
+    });
+
+    expect(result).toEqual({
+      exitCode: 124,
+      output: "test-step exceeded the 1ms timeout\n",
+      timedOut: true,
+    });
+
+    await Bun.sleep(40);
+
+    expect(sideEffects).toEqual([]);
+    expect(outputs).toEqual([]);
   });
 });

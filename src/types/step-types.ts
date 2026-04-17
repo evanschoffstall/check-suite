@@ -24,12 +24,15 @@ export interface InlineTypeScriptContext {
   join: typeof join;
   ok: (output: string, durationMs?: number) => Command;
   readFileSync: typeof readFileSync;
+  signal: AbortSignal;
   step: Record<string, unknown>;
+  throwIfAborted: () => void;
 }
 
 export interface InlineTypeScriptOverrides {
   importModule?: (specifier: string) => Promise<unknown>;
   onOutput?: (output: string) => void;
+  signal?: AbortSignal;
 }
 
 export interface InlineTypeScriptPostProcessContext {

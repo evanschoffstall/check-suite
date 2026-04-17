@@ -11,20 +11,24 @@ export async function withStepTimeout(
   label: string,
   stepPromise: Promise<Command>,
   timeoutMs?: number,
+  options: {
+    onTimeout?: () => void;
+  } = {},
 ): Promise<Command> {
   if (timeoutMs === undefined || timeoutMs <= 0) return stepPromise;
 
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  let timeoutId!: ReturnType<typeof setTimeout>;
   try {
     return await Promise.race([
       stepPromise,
       new Promise<Command>((resolve) => {
         timeoutId = setTimeout(() => {
+          options.onTimeout?.();
           resolve(makeTimedOutCommand(label, timeoutMs));
         }, timeoutMs);
       }),
     ]);
   } finally {
-    if (timeoutId !== undefined) clearTimeout(timeoutId);
+    clearTimeout(timeoutId);
   }
 }
