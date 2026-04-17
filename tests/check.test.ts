@@ -13,6 +13,7 @@ import { parseCliArguments } from "../src/cli/args/parser.ts";
 import { parseCliOptions } from "../src/cli/args/selection/options.ts";
 import {
   ANSI,
+  buildSummaryRowLayout,
   divider,
   formatDuration,
   formatSummaryLabel,
@@ -26,6 +27,7 @@ import {
   row,
   splitLines,
   stripAnsi,
+  summaryHeaderRow,
 } from "../src/format/index.ts";
 import {
   createSafeRegExp,
@@ -247,12 +249,28 @@ describe("format helpers", () => {
     );
     expect(stripAnsi(passFail("pass"))).toBe("PASS");
     expect(stripAnsi(passFail("fail"))).toBe("FAIL");
-    expect(formatSummaryLabel("short")).toBe("short        ");
+    expect(formatSummaryLabel("short")).toBe("short");
     expect(formatSummaryLabel("very-long-summary-label")).toBe("very-long-...");
     expect(formatDuration(125)).toBe("125ms");
     expect(formatDuration(1250)).toBe("1.25s");
-    expect(stripAnsi(row("alpha", "pass", "done", 250))).toContain(
-      "PASS alpha         done 250ms",
+    const layout = buildSummaryRowLayout([
+      { details: "done", durationMs: 250, label: "alpha" },
+    ]);
+
+    expect(summaryHeaderRow(layout, "plain")).toContain(
+      "RESULT | CHECK         | SUMMARY          |  TIME",
+    );
+    expect(
+      row({
+        details: "done",
+        durationMs: 250,
+        label: "alpha",
+        layout,
+        renderMode: "plain",
+        status: "pass",
+      }),
+    ).toContain(
+      "PASS   | alpha         | done             | 250ms",
     );
     expect(stripAnsi(divider())).toContain("────────────────────────────────");
   });

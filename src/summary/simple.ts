@@ -5,7 +5,7 @@ import { splitLines } from "@/format/index.ts";
 /** Builds the default summary for steps without pattern-based summary configuration. */
 export function buildSimpleSummary(step: StepConfig, cmd: Command): string {
   if (cmd.exitCode === 0) {
-    return "passed";
+    return "";
   }
 
   if (cmd.timedOut) {
@@ -15,9 +15,7 @@ export function buildSimpleSummary(step: StepConfig, cmd: Command): string {
   const firstError = splitLines(cmd.output).find(
     (line) => !line.startsWith("$ "),
   );
-  return firstError
-    ? `${step.failMsg ?? "failed"}: ${firstError}`
-    : (step.failMsg ?? "failed");
+  return firstError ?? step.failMsg ?? "failed";
 }
 
 function buildTimedOutSummary(step: StepConfig, output: string): string {
@@ -27,5 +25,5 @@ function buildTimedOutSummary(step: StepConfig, output: string): string {
       .find((line) => /\btimeout\b/i.test(line)) ??
     `${step.label} exceeded its timeout`;
 
-  return step.failMsg ? `${step.failMsg}: ${timeoutLine}` : timeoutLine;
+  return timeoutLine;
 }
