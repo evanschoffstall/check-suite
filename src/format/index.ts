@@ -5,6 +5,7 @@ export {
   printStepOutput,
 } from "./post-process.ts";
 export {
+  buildSummaryRowLayout,
   divider,
   formatDuration,
   formatSummaryLabel,
@@ -13,5 +14,6 @@ export {
   row,
   splitLines,
   stripAnsi,
+  summaryHeaderRow,
 } from "./strings.ts";
 export { getToneColor } from "./tone.ts";

@@ -8,6 +8,16 @@ export interface ActiveSuiteStepStatus {
   output: string;
 }
 
+/** Captures previewable state for one step while it is still running. */
+interface ActiveStepPreviewState {
+  lastOutputSequence: number;
+  output: string;
+}
+
+interface RankedActiveSuiteStepStatus extends ActiveSuiteStepStatus {
+  sequence: number;
+}
+
 /** Runs a batch in config order while refusing to start steps after the deadline. */
 export async function runStepBatch(
   steps: StepConfig[],
@@ -44,20 +54,21 @@ function createActiveStepProgressTracker(
   startStep: (step: StepConfig) => void;
   updateStepOutput: (step: StepConfig, output: string) => void;
 } {
-  const activeSteps = new Map<string, string>();
-  let lastVisibleStatus: ActiveSuiteStepStatus | null = null;
+  const activeSteps = new Map<string, ActiveStepPreviewState>();
   let lastEmittedSignature = "";
+  let outputSequence = 0;
 
+  /** Emits only live step output so completed steps cannot keep owning the preview. */
   const emitActiveStep = (): void => {
-    const activeStatuses = steps
+    const liveStatuses: RankedActiveSuiteStepStatus[] = steps
       .filter((step) => activeSteps.has(step.key))
       .map((step) => ({
         label: step.label,
-        output: extractLastOutputLine(activeSteps.get(step.key) ?? ""),
+        output: extractLastOutputLine(activeSteps.get(step.key)?.output ?? ""),
+        sequence: activeSteps.get(step.key)?.lastOutputSequence ?? -1,
       }));
 
-    if (activeStatuses.length === 0) {
-      lastVisibleStatus = null;
+    if (liveStatuses.length === 0) {
       if (lastEmittedSignature === "__empty__") {
         return;
       }
@@ -66,24 +77,30 @@ function createActiveStepProgressTracker(
       return;
     }
 
-    const firstVisibleStatus = activeStatuses.find(
-      (step) => step.output.length > 0,
-    );
-    if (firstVisibleStatus) {
-      lastVisibleStatus = firstVisibleStatus;
-    }
-
-    const status = firstVisibleStatus ?? lastVisibleStatus;
-    if (!status) {
+    const visibleStatus = liveStatuses
+      .filter((step) => step.output.length > 0)
+      .sort((left, right) => right.sequence - left.sequence)
+      .at(0);
+    if (!visibleStatus) {
+      if (lastEmittedSignature === "__empty__") {
+        return;
+      }
+      lastEmittedSignature = "__empty__";
+      onActiveStepChange?.(null);
       return;
     }
+
+    const status = {
+      label: visibleStatus.label,
+      output: visibleStatus.output,
+    } satisfies ActiveSuiteStepStatus;
 
     const nextSignature = `${status.label}\u0000${status.output}`;
     if (lastEmittedSignature === nextSignature) {
       return;
     }
     lastEmittedSignature = nextSignature;
-    onActiveStepChange?.(status);
+    onActiveStepChange?.({ label: status.label, output: status.output });
   };
 
   return {
@@ -92,14 +109,17 @@ function createActiveStepProgressTracker(
       emitActiveStep();
     },
     startStep(step): void {
-      activeSteps.set(step.key, "");
+      activeSteps.set(step.key, { lastOutputSequence: -1, output: "" });
       emitActiveStep();
     },
     updateStepOutput(step, output): void {
-      if (!activeSteps.has(step.key)) {
+      const activeStep = activeSteps.get(step.key);
+      if (!activeStep) {
         return;
       }
-      activeSteps.set(step.key, output);
+      activeStep.output = output;
+      activeStep.lastOutputSequence = outputSequence;
+      outputSequence += 1;
       emitActiveStep();
     },
   };

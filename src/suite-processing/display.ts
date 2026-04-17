@@ -9,12 +9,14 @@ import type {
 
 import {
   ANSI,
+  buildSummaryRowLayout,
   divider,
   paint,
   printPostProcessMessages,
   printPostProcessSections,
   printStepOutput,
   row,
+  summaryHeaderRow,
 } from "@/format/index.ts";
 
 interface SuiteDetailDisplayOptions {
@@ -113,6 +115,7 @@ export function printSuitePostProcessFeedback(
 /** Prints the quality summary table and returns `true` when all checks passed. */
 export function printSuiteSummary(
   checks: CheckRow[],
+  missingSteps: string[],
   runs: Record<string, Command>,
   startedAtMs: number,
   renderMode: SuiteRenderMode,
@@ -120,34 +123,65 @@ export function printSuiteSummary(
   const presentChecks = checks.filter(
     (check) => !check.stepKey || !runs[check.stepKey].notFound,
   );
-  console.info(`\n${formatNotice("Quality Summary", ANSI.cyan, renderMode)}`);
-  console.info(divider(renderMode));
-  for (const check of presentChecks) {
-    console.info(
-      row(
-        check.label,
-        check.status,
-        check.details,
-        check.durationMs,
-        renderMode,
-      ),
-    );
-  }
-  console.info(divider(renderMode));
-
-  const allOk = presentChecks.every((check) => check.status !== "fail");
   const elapsedSeconds = ((Date.now() - startedAtMs) / 1000).toFixed(2);
+  const passCount = presentChecks.filter(
+    (check) => check.status === "pass",
+  ).length;
+  const failCount = presentChecks.length - passCount;
+  const summaryLayout = buildSummaryRowLayout([
+    ...presentChecks,
+    {
+      details: allChecksSummaryDetails(failCount, elapsedSeconds),
+      label: "Overall",
+    },
+  ]);
+
+  console.info(`\n${formatNotice("Quality Summary", ANSI.cyan, renderMode)}`);
   console.info(
-    row(
-      "Overall",
-      allOk ? "pass" : "fail",
-      `${allOk ? "all checks passed" : "one or more checks failed"} (in ${elapsedSeconds} seconds)`,
-      undefined,
+    formatSummaryMeta(
+      passCount,
+      failCount,
+      missingSteps.length,
+      elapsedSeconds,
       renderMode,
     ),
   );
-  console.info(divider(renderMode));
+  console.info(divider(renderMode, summaryLayout.totalWidth));
+  console.info(summaryHeaderRow(summaryLayout, renderMode));
+  console.info(divider(renderMode, summaryLayout.totalWidth));
+  for (const check of presentChecks) {
+    console.info(
+      row({
+        details: resolveSummaryDetails(check.details, check.status),
+        durationMs: check.durationMs,
+        label: check.label,
+        layout: summaryLayout,
+        renderMode,
+        status: check.status,
+      }),
+    );
+  }
+  console.info(divider(renderMode, summaryLayout.totalWidth));
+
+  const allOk = presentChecks.every((check) => check.status !== "fail");
+  console.info(
+    row({
+      details: allChecksSummaryDetails(failCount, elapsedSeconds),
+      label: "Overall",
+      layout: summaryLayout,
+      renderMode,
+      status: allOk ? "pass" : "fail",
+    }),
+  );
+  console.info(divider(renderMode, summaryLayout.totalWidth));
   return allOk;
+}
+
+function allChecksSummaryDetails(
+  failCount: number,
+  elapsedSeconds: string,
+): string {
+  return `${failCount === 0 ? "all checks passed" : "one or more checks failed"} in ${elapsedSeconds}s`;
 }
 
 function formatNotice(
@@ -156,6 +190,41 @@ function formatNotice(
   renderMode: SuiteRenderMode,
 ): string {
   return renderMode === "plain" ? text : paint(text, ANSI.bold, color);
+}
+
+function formatSummaryMeta(
+  passCount: number,
+  failCount: number,
+  missingCount: number,
+  elapsedSeconds: string,
+  renderMode: SuiteRenderMode,
+): string {
+  const parts = [
+    renderMode === "plain"
+      ? `${passCount} passed`
+      : paint(`${passCount} passed`, ANSI.green),
+    renderMode === "plain"
+      ? `${failCount} failed`
+      : paint(`${failCount} failed`, failCount > 0 ? ANSI.red : ANSI.gray),
+  ];
+
+  if (missingCount > 0) {
+    parts.push(
+      renderMode === "plain"
+        ? `${missingCount} missing`
+        : paint(`${missingCount} missing`, ANSI.yellow),
+    );
+  }
+
+  parts.push(
+    renderMode === "plain"
+      ? `${elapsedSeconds}s total`
+      : paint(`${elapsedSeconds}s total`, ANSI.gray),
+  );
+
+  return parts.join(
+    renderMode === "plain" ? " | " : ` ${paint("•", ANSI.gray)} `,
+  );
 }
 
 function getStepStatus(
@@ -189,6 +258,17 @@ function limitFailingOutputLines(
 
   const truncatedLabel = failureOutputLineLimit === 1 ? "line" : "lines";
   return `${visibleLines.slice(0, failureOutputLineLimit).join("\n")}\n... truncated to first ${failureOutputLineLimit} ${truncatedLabel} of failing output (--fail-lines=${failureOutputLineLimit})`;
+}
+
+function resolveSummaryDetails(
+  details: string,
+  status: "fail" | "pass",
+): string {
+  if (details.trim().length > 0) {
+    return details;
+  }
+
+  return status === "pass" ? "completed" : "failed";
 }
 
 function shouldPrintStepDetails(

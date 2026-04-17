@@ -75,6 +75,7 @@ export async function runCheckSuite(
   const allOk =
     printSuiteSummary(
       report.checks,
+      report.missingSteps,
       executionState.runs,
       startedAtMs,
       renderMode,
