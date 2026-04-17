@@ -18,6 +18,7 @@ export async function runInlineTypeScriptStep(
   overrides: InlineTypeScriptOverrides = {},
 ): Promise<Command> {
   const startMs = Date.now();
+  throwIfInlineExecutionAborted(overrides.signal);
   const inlineConfig = toInlineTypeScriptConfig<
     InlineTypeScriptContext,
     Command
@@ -31,14 +32,17 @@ export async function runInlineTypeScriptStep(
   }
 
   try {
+    throwIfInlineExecutionAborted(overrides.signal);
     const runner = await resolveInlineTypeScriptRunner<
       InlineTypeScriptContext,
       Command
     >(inlineConfig.source);
+    throwIfInlineExecutionAborted(overrides.signal);
     const durationMs = Date.now() - startMs;
     const result = await runner(
       buildInlineTypeScriptContext(step, inlineConfig.data ?? {}, overrides),
     );
+    throwIfInlineExecutionAborted(overrides.signal);
     const command =
       toCommand(result, durationMs) ??
       makeInlineResult(
@@ -46,16 +50,23 @@ export async function runInlineTypeScriptStep(
         `${step.label} returned an invalid inline TypeScript result\n`,
         durationMs,
       );
-    overrides.onOutput?.(command.output);
+    if (!overrides.signal?.aborted) {
+      overrides.onOutput?.(command.output);
+    }
     return command;
   } catch (error) {
+    if (isInlineAbortError(error)) {
+      throw error;
+    }
     const command = makeInlineResult(
       1,
       `${step.label} failed: ${error instanceof Error ? error.message : String(error)}\n`,
       Date.now() - startMs,
       isInlineMissingDependencyError(error),
     );
-    overrides.onOutput?.(command.output);
+    if (!overrides.signal?.aborted) {
+      overrides.onOutput?.(command.output);
+    }
     return command;
   }
 }
@@ -92,6 +103,7 @@ function buildInlineTypeScriptContext(
   data: Record<string, unknown>,
   overrides: InlineTypeScriptOverrides,
 ): InlineTypeScriptContext {
+  const signal = overrides.signal ?? new AbortController().signal;
   return {
     cwd: process.cwd(),
     data,
@@ -102,8 +114,22 @@ function buildInlineTypeScriptContext(
     join,
     ok: (output, durationMs) => makeInlineResult(0, output, durationMs),
     readFileSync,
+    signal,
     step: step as unknown as Record<string, unknown>,
+    throwIfAborted: () => {
+      throwIfInlineExecutionAborted(signal);
+    },
   };
+}
+
+function createInlineAbortError(): Error {
+  const error = new Error("inline TypeScript step aborted");
+  error.name = "AbortError";
+  return error;
+}
+
+function isInlineAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError";
 }
 
 function isInlineMissingDependencyError(error: unknown): boolean {
@@ -130,4 +156,10 @@ function makeInlineResult(
     output,
     timedOut: false,
   };
+}
+
+function throwIfInlineExecutionAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) {
+    throw createInlineAbortError();
+  }
 }

@@ -12,7 +12,7 @@ import type {
   Summary,
 } from "check-suite/types";
 
-import { hasPackageScript } from "check-suite/config";
+import { DECLARED_BUNX_TARGETS, hasPackageScript } from "check-suite/config";
 import { defineCheckSuiteConfig } from "check-suite/config-schema";
 import {
   createSpawnComplexityAdapter,
@@ -23,6 +23,7 @@ import {
 } from "check-suite/quality";
 import { createSafeRegExp, isSafeRegExpPattern } from "check-suite/regex";
 import { defineStep, runGitFileScan } from "check-suite/step";
+import { existsSync } from "node:fs";
 
 interface ArchitectureCodeTargetsConfig { declarationFilePatterns: string[]; includePatterns: string[]; resolutionEntrypointNames: string[]; resolutionExtensions: string[]; testFilePatterns: string[]; }
 interface CoverageCommandStepOptions { allowSuiteFlagArgs?: boolean; args: string[]; cmd: string; coverage: CoverageOptions; defaultThreshold: number; enabled?: boolean; ensureDirs?: string[]; failMsg?: string; key: string; label: string; postProcess?: InlineTypeScriptConfig<InlineTypeScriptPostProcessContext, StepPostProcessResult>; serialGroup?: string; timeoutDrainMs?: number | string; timeoutEnvVar?: string; timeoutMs?: number | string; tokens?: Record<string, number | string>; }
@@ -38,6 +39,9 @@ interface PurgeCssConfig { contentGlobs: string[]; cssFiles: string[]; safelists
 
 // ── Helper functions ──────────────────────────────────────────────────────────
 const BUN_LINE_COVERAGE_PATTERN = /(?:^|\n)\s*[│|]\s*Lines\s*[│|]\s*([\d.]+)\s*%\s*[│|]\s*([\d,]+)\s*[│|]\s*[\d,]+\s*[│|]\s*([\d,]+)\s*[│|]/u;
+const hasWorkspaceEntries = (...paths: string[]): boolean =>
+  paths.every((path) => existsSync(path));
+
 async function analyzePurgeCss({ config, cwd, importModule, joinPath }: { config: PurgeCssConfig; cwd: string; importModule: (specifier: string) => Promise<unknown>; joinPath: InlineTypeScriptContext["join"]; }): Promise<PurgeCssCheckResult> { if (!config.safelists.every((pattern) => isSafeRegExpPattern(pattern))) return { kind: "invalid-safelist", message: "purgecss config contains an unsafe safelist pattern\n" }; const compiledSafelists = config.safelists.map((pattern) => createSafeRegExp(pattern)), safeSelectorPattern = compiledSafelists.length > 0 ? createSafeRegExp(compiledSafelists.map((pattern) => pattern.source).join("|")) : null; const purgeCssModule = (await importModule("purgecss")) as { PurgeCSS: new () => { purge: (options: { content: string[]; css: string[]; rejected: boolean; safelist: { greedy: RegExp[] } }) => Promise<{ rejected?: string[] }[]> } }; const [result] = await new purgeCssModule.PurgeCSS().purge({ content: config.contentGlobs.map((file) => joinPath(cwd, file)), css: config.cssFiles.map((file) => joinPath(cwd, file)), rejected: true, safelist: { greedy: compiledSafelists } }); return { kind: "ok", unusedSelectors: Array.isArray(result.rejected) ? result.rejected.filter((selector) => selector.startsWith(config.selectorPrefix) && !(safeSelectorPattern ? safeSelectorPattern.test(selector) : false)) : [] }; }
 function appendCoverageCheckResult(input: { coverageLabel: string; coveragePath?: string; coverageThreshold: number; totals: CoverageTotals | null }, messages: PostProcessMessage[], extraChecks: ProcessedCheck[]): boolean { if (!input.totals) { messages.push({ text: `Coverage report not found: ${input.coveragePath ?? "(unset)"}`, tone: "fail" }); extraChecks.push({ details: `0.00% (0/0) · threshold ${input.coverageThreshold.toFixed(1)}%`, label: input.coverageLabel, status: "fail" }); return true; } const status: "fail" | "pass" = input.totals.found > 0 && input.totals.pct >= input.coverageThreshold ? "pass" : "fail"; extraChecks.push({ details: `${input.totals.pct.toFixed(2)}% (${input.totals.covered}/${input.totals.found}) · threshold ${input.coverageThreshold.toFixed(1)}%`, label: input.coverageLabel, status }); if (input.totals.found === 0) messages.push({ text: "No executable lines found in coverage report", tone: "fail" }); return status === "fail"; }
 function appendExecutionResultSections(executionReport: Pick<ExecutionReport, "failedItems" | "skippedItems">, sections: PostProcessSection[], failedTitle: string, skippedTitle: string): boolean { let hasFailures = false; if (executionReport.failedItems.length > 0) { sections.push({ items: executionReport.failedItems, title: failedTitle, tone: "fail" }); hasFailures = true; } if (executionReport.skippedItems.length > 0) sections.push({ items: executionReport.skippedItems, title: skippedTitle, tone: "warn" }); return hasFailures; }
@@ -150,6 +154,9 @@ const purgeCss = defineStep({
     safelists: ["^dark$", "^motion-profile-"],
     selectorPrefix: ".",
   } satisfies PurgeCssConfig,
+  enabled:
+    DECLARED_BUNX_TARGETS.has("purgecss") &&
+    hasWorkspaceEntries("src/components/components.css", "src/app/globals.css"),
   failMsg: "unused CSS selectors found",
   label: "purgecss",
   source: async ({ cwd, data, fail, importModule, join, ok }: InlineTypeScriptContext) => {
@@ -205,6 +212,9 @@ const gitleaks = defineStep({
 });
 const tsd = defineStep({
   args: ["tsd", "--typings", "next-env.d.ts", "--files", "next-env.test-d.ts"],
+  enabled:
+    DECLARED_BUNX_TARGETS.has("tsd") &&
+    hasWorkspaceEntries("next-env.d.ts", "next-env.test-d.ts"),
   failMsg: "tsd failed",
   label: "tsd",
 });

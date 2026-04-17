@@ -13,12 +13,23 @@ type StepRunner = (
 ) => Promise<Command>;
 
 export const HANDLERS: Partial<Record<string, StepRunner>> = {
-  "inline-ts": (step, timeoutMs, _extraArgs, onOutput) =>
-    withStepTimeout(
+  "inline-ts": (step, timeoutMs, _extraArgs, onOutput) => {
+    const abortController = new AbortController();
+
+    return withStepTimeout(
       step.label,
-      runInlineTypeScriptStep(step, { onOutput }),
+      runInlineTypeScriptStep(step, {
+        onOutput,
+        signal: abortController.signal,
+      }),
       timeoutMs,
-    ),
+      {
+        onTimeout: () => {
+          abortController.abort();
+        },
+      },
+    );
+  },
   lint: (step, timeoutMs, extraArgs = [], onOutput) =>
     runLint(
       step,
