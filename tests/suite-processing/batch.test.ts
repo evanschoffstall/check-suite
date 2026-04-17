@@ -70,7 +70,7 @@ describe("runStepBatch", () => {
     expect(runs["serial-two"].output).toContain("serial-one:end");
   });
 
-  test("publishes the first active step and its latest output line", async () => {
+  test("publishes the latest output line from the most recently updated active step", async () => {
     const activeSteps: (null | { label: string; output: string })[] = [];
     const firstStepGate = Promise.withResolvers<undefined>();
     const secondStepGate = Promise.withResolvers<undefined>();
@@ -120,7 +120,7 @@ describe("runStepBatch", () => {
     expect(activeSteps.at(-1)).toBeNull();
   });
 
-  test("prefers the first active step that has visible output", async () => {
+  test("prefers newer active output over older active output", async () => {
     const activeSteps: (null | { label: string; output: string })[] = [];
     const firstStepGate = Promise.withResolvers<undefined>();
     const secondStepGate = Promise.withResolvers<undefined>();
@@ -161,11 +161,13 @@ describe("runStepBatch", () => {
     await Bun.sleep(0);
     expect(activeSteps).toContainEqual({ label: "second step", output: "second line" });
     firstStepGate.resolve(undefined);
+    await Bun.sleep(0);
+    expect(activeSteps).toContainEqual({ label: "first step", output: "first line" });
     secondStepGate.resolve(undefined);
     await batchPromise;
   });
 
-  test("keeps the last visible output while later active steps are still silent", async () => {
+  test("clears completed step output when the remaining active steps are still silent", async () => {
     const activeSteps: (null | { label: string; output: string })[] = [];
     const firstStepGate = Promise.withResolvers<undefined>();
     const secondStepGate = Promise.withResolvers<undefined>();
@@ -208,7 +210,7 @@ describe("runStepBatch", () => {
     await Bun.sleep(0);
 
     expect(activeSteps).not.toContainEqual({ label: "second step", output: "" });
-    expect(activeSteps.at(-1)).toEqual({ label: "first step", output: "alpha" });
+    expect(activeSteps.at(-1)).toBeNull();
 
     secondStepGate.resolve(undefined);
     await batchPromise;
