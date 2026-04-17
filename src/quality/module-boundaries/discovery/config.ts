@@ -175,6 +175,35 @@ function normalizeCodeTargetsConfig(
   };
 }
 
+/** Normalizes one configured entrypoint rule while preserving prior defaults. */
+function normalizeConfiguredEntrypointRule(
+  candidate: unknown,
+  rulesByName: ReadonlyMap<string, ArchitectureEntrypointRule>,
+): ArchitectureEntrypointRule | null {
+  if (!isRecord(candidate) || typeof candidate.name !== "string") {
+    return null;
+  }
+
+  const name = candidate.name.trim();
+  if (name.length === 0) {
+    return null;
+  }
+
+  const previousRule = rulesByName.get(name);
+
+  return {
+    allowSiblingEntrypoints:
+      typeof candidate.allowSiblingEntrypoints === "boolean"
+        ? candidate.allowSiblingEntrypoints
+        : (previousRule?.allowSiblingEntrypoints ?? false),
+    allowTopLevelStatements:
+      typeof candidate.allowTopLevelStatements === "boolean"
+        ? candidate.allowTopLevelStatements
+        : (previousRule?.allowTopLevelStatements ?? false),
+    name,
+  };
+}
+
 function normalizeDirectoryNameConfig(
   record: Record<string, unknown>,
 ): Pick<
@@ -269,7 +298,7 @@ function normalizeDirectoryNamingConfig(
 function normalizeEntrypointRules(
   record: Record<string, unknown>,
 ): ArchitectureEntrypointRule[] {
-  const defaultRules = normalizeStringListConfig(
+  const defaultRules: ArchitectureEntrypointRule[] = normalizeStringListConfig(
     record.entrypointNames,
     architectureDefaults.DEFAULT_ENTRYPOINT_NAMES,
   ).map((name) => ({
@@ -288,32 +317,12 @@ function normalizeEntrypointRules(
   }
 
   for (const candidate of record.entrypointRules) {
-    if (!isRecord(candidate)) {
+    const nextRule = normalizeConfiguredEntrypointRule(candidate, rulesByName);
+    if (!nextRule) {
       continue;
     }
 
-    const rawName = candidate.name;
-    if (typeof rawName !== "string") {
-      continue;
-    }
-
-    const name = rawName.trim();
-    if (name.length === 0) {
-      continue;
-    }
-
-    const previousRule = rulesByName.get(name);
-    rulesByName.set(name, {
-      allowSiblingEntrypoints:
-        typeof candidate.allowSiblingEntrypoints === "boolean"
-          ? candidate.allowSiblingEntrypoints
-          : (previousRule?.allowSiblingEntrypoints ?? false),
-      allowTopLevelStatements:
-        typeof candidate.allowTopLevelStatements === "boolean"
-          ? candidate.allowTopLevelStatements
-          : (previousRule?.allowTopLevelStatements ?? false),
-      name,
-    });
+    rulesByName.set(nextRule.name, nextRule);
   }
 
   return [...rulesByName.values()].sort((left, right) =>

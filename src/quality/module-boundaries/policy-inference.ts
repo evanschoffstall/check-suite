@@ -1,8 +1,6 @@
 import type {
   ArchitectureAnalyzerConfig,
   ArchitectureDependencyPolicy,
-  ArchitectureDependencyPolicyRole,
-  ArchitectureSurfaceTier,
 } from "@/quality/module-boundaries/foundation/index.ts";
 
 import {
@@ -25,6 +23,12 @@ interface PolicyConnectionState {
   incoming: Map<string, Set<string>>;
   nonTypeOnlyTargets: Set<string>;
   outgoing: Map<string, Set<string>>;
+}
+
+interface PolicyInferenceContext {
+  codeRootSet: Set<string>;
+  normalized: ReturnType<typeof normalizeArchitectureConfig>;
+  project: ArchitectureProject;
 }
 
 /** A single unit for which an {@link ArchitectureDependencyPolicy} is generated. */
@@ -61,12 +65,10 @@ export function inferAllowedRootFileStems(
     >
   >,
 ): string[] {
-  const normalized = normalizeArchitectureConfig({
-    ...config,
-    dependencyPolicies: [],
-  });
-  const project = discoverArchitectureProject(cwd, normalized);
-  const codeRootSet = new Set(project.codeRoots.directories);
+  const { codeRootSet, normalized, project } = createPolicyInferenceContext(
+    cwd,
+    config,
+  );
   const entrypointStemsSet = new Set(normalized.entrypointNames);
   const stems = new Set<string>();
 
@@ -107,12 +109,7 @@ export function inferCentralSurfacePathPrefixes(
     >
   >,
 ): string[] {
-  const normalized = normalizeArchitectureConfig({
-    ...config,
-    dependencyPolicies: [],
-  });
-  const project = discoverArchitectureProject(cwd, normalized);
-  const codeRootSet = new Set(project.codeRoots.directories);
+  const { codeRootSet, project } = createPolicyInferenceContext(cwd, config);
   const boundaryEntrypointSet = new Set(
     project.boundaries.flatMap((b) => b.entrypointPaths),
   );
@@ -121,16 +118,8 @@ export function inferCentralSurfacePathPrefixes(
     (f) =>
       codeRootSet.has(f.directoryPath) || boundaryEntrypointSet.has(f.path),
   );
-  if (surfaceFacts.length === 0) return [];
 
-  const mean =
-    surfaceFacts.reduce((sum, f) => sum + f.reExports.length, 0) /
-    surfaceFacts.length;
-
-  return surfaceFacts
-    .filter((f) => f.reExports.length > mean)
-    .map((f) => f.path)
-    .sort();
+  return selectPathsByMean(surfaceFacts, (fact) => fact.reExports.length, "gt");
 }
 
 /**
@@ -182,7 +171,7 @@ export function inferDependencyPolicies(
     project.files,
     normalized,
   );
-  const prefixToUnit = buildPrefixToUnitMap(units);
+  const prefixToUnit = new Map(units.map((unit) => [unit.pathPrefix, unit]));
   const connectionState = collectPolicyConnections(
     units,
     project.imports,
@@ -269,26 +258,17 @@ export function inferExplicitPublicSurfacePaths(
     >
   >,
 ): string[] {
-  const normalized = normalizeArchitectureConfig({
-    ...config,
-    dependencyPolicies: [],
-  });
-  const project = discoverArchitectureProject(cwd, normalized);
-  const codeRootSet = new Set(project.codeRoots.directories);
+  const { codeRootSet, project } = createPolicyInferenceContext(cwd, config);
 
   const rootFacts = project.sourceFacts.filter((f) =>
     codeRootSet.has(f.directoryPath),
   );
-  if (rootFacts.length === 0) return [];
 
-  const mean =
-    rootFacts.reduce((sum, f) => sum + f.exportedSymbolCount, 0) /
-    rootFacts.length;
-
-  return rootFacts
-    .filter((f) => f.exportedSymbolCount >= mean)
-    .map((f) => f.path)
-    .sort();
+  return selectPathsByMean(
+    rootFacts,
+    (fact) => fact.exportedSymbolCount,
+    "gte",
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -310,12 +290,13 @@ function buildDependencyPolicy(
   const isTypeOnly =
     allowedDependents.length > 0 &&
     !state.nonTypeOnlyTargets.has(unit.pathPrefix);
-  const role = inferPolicyRole(mayDependOn, maxPolicyFanOut);
-  const surfaceTier = inferPolicySurfaceTier(
-    unit.pathPrefix,
-    explicitPublicPaths,
-    runtimeBoundaries,
-  );
+  const role =
+    mayDependOn.length > maxPolicyFanOut ? "orchestration" : undefined;
+  const surfaceTier = explicitPublicPaths.has(unit.pathPrefix)
+    ? "public"
+    : runtimeBoundaries.has(unit.pathPrefix)
+      ? "private-runtime"
+      : undefined;
 
   return {
     allowedDependents,
@@ -355,10 +336,6 @@ function buildPolicyUnits(
   }
 
   return units;
-}
-
-function buildPrefixToUnitMap(units: PolicyUnit[]): Map<string, PolicyUnit> {
-  return new Map(units.map((u) => [u.pathPrefix, u]));
 }
 
 /** Collects cross-unit import relationships from the discovered import graph. */
@@ -434,25 +411,22 @@ function createPolicyConnectionState(
   };
 }
 
-/** Infers whether a unit should carry the orchestration role. */
-function inferPolicyRole(
-  mayDependOn: string[],
-  maxPolicyFanOut: number,
-): ArchitectureDependencyPolicyRole | undefined {
-  return mayDependOn.length > maxPolicyFanOut ? "orchestration" : undefined;
-}
+/** Normalizes config once so each inference helper shares the same project view. */
+function createPolicyInferenceContext(
+  cwd: string,
+  config?: Partial<Omit<ArchitectureAnalyzerConfig, "dependencyPolicies">>,
+): PolicyInferenceContext {
+  const normalized = normalizeArchitectureConfig({
+    ...config,
+    dependencyPolicies: [],
+  });
+  const project = discoverArchitectureProject(cwd, normalized);
 
-/** Infers the surface tier for a unit based on explicit public and runtime-only ownership. */
-function inferPolicySurfaceTier(
-  pathPrefix: string,
-  explicitPublicPaths: Set<string>,
-  runtimeBoundaries: Set<string>,
-): ArchitectureSurfaceTier | undefined {
-  if (explicitPublicPaths.has(pathPrefix)) {
-    return "public";
-  }
-
-  return runtimeBoundaries.has(pathPrefix) ? "private-runtime" : undefined;
+  return {
+    codeRootSet: new Set(project.codeRoots.directories),
+    normalized,
+    project,
+  };
 }
 
 function isInsideBoundary(
@@ -479,4 +453,25 @@ function resolveUnit(
     }
   }
   return best;
+}
+
+/** Selects path values whose metric stands above the collection mean. */
+function selectPathsByMean(
+  facts: ArchitectureProject["sourceFacts"],
+  metric: (fact: ArchitectureProject["sourceFacts"][number]) => number,
+  mode: "gt" | "gte",
+): string[] {
+  if (facts.length === 0) {
+    return [];
+  }
+
+  const mean =
+    facts.reduce((sum, fact) => sum + metric(fact), 0) / facts.length;
+
+  return facts
+    .filter((fact) =>
+      mode === "gt" ? metric(fact) > mean : metric(fact) >= mean,
+    )
+    .map((fact) => fact.path)
+    .sort();
 }
