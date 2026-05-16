@@ -1,6 +1,7 @@
 require.resolve("conventional-changelog-conventionalcommits");
 require.resolve("@semantic-release/git");
 require.resolve("@semantic-release/npm");
+require.resolve("@semantic-release/github");
 
 const conventionalCommitSections = Object.freeze([
   { section: "Features", type: "feat" },
@@ -20,6 +21,10 @@ const conventionalCommitSections = Object.freeze([
 const conventionalCommitsPresetConfig = {
   types: conventionalCommitSections,
 };
+
+const hasGitHubToken = Boolean(
+  process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN,
+);
 
 module.exports = {
   branches: ["main"],
@@ -52,6 +57,6 @@ module.exports = {
           "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}",
       },
     ],
-    "@semantic-release/github",
+    ...(hasGitHubToken ? ["@semantic-release/github"] : []),
   ],
 };
