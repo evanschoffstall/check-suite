@@ -24,9 +24,7 @@
     "lint": "eslint .",
     "check": "bun ./bin/check-suite",
     "check-suite": "bun ./bin/check-suite",
-    "test": "bun test",
-    "cicd": "bun scripts/cicd.ts",
-    "release": "bun run cicd"
+    "test": "bun test"
   },
   "files": [
     "bin",
@@ -44,7 +42,9 @@
   "license": "MIT",
   "description": "",
   "overrides": {
+    "fast-uri": "^3.1.2",
     "flatted": "^3.4.2",
+    "ip-address": "^10.1.1",
     "knip>picomatch": "4.0.4",
     "lodash": "4.18.1",
     "knip>smol-toml": "1.6.1",
