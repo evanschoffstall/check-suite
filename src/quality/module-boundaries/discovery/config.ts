@@ -3,7 +3,6 @@ import { join } from "node:path";
 
 import type {
   ArchitectureCodeTargetsConfig,
-  ArchitectureEntrypointRule,
   CodeRoots,
   NormalizedArchitectureAnalyzerConfig,
 } from "@/quality/module-boundaries/foundation/index.ts";
@@ -25,7 +24,10 @@ import {
   safeReadDir,
 } from "@/quality/module-boundaries/scan/index.ts";
 
+import { normalizeEntrypointRules } from "./entrypoint-rules.ts";
 import { flattenArchitectureConfigSections } from "./grouped-config.ts";
+
+export { defineCodeTargetDiscovery } from "./code-targets.ts";
 
 /** Adds one root-level directory or file to the discovered code roots when applicable. */
 export function collectRootEntry(
@@ -252,66 +254,8 @@ function normalizeDirectoryNamingConfig(
       record.sharedHomeNames,
       architectureDefaults.DEFAULT_SHARED_HOME_NAMES,
     ),
-    testDirectories: normalizeStringListConfig(
-      record.testDirectories,
-      [],
-    ),
+    testDirectories: normalizeStringListConfig(record.testDirectories, []),
   };
-}
-
-function normalizeEntrypointRules(
-  record: Record<string, unknown>,
-): ArchitectureEntrypointRule[] {
-  const defaultRules = normalizeStringListConfig(
-    record.entrypointNames,
-    architectureDefaults.DEFAULT_ENTRYPOINT_NAMES,
-  ).map((name) => ({
-    allowSiblingEntrypoints: false,
-    allowTopLevelStatements: false,
-    name,
-  }));
-  const rulesByName = new Map(
-    defaultRules.map((entrypointRule) => [entrypointRule.name, entrypointRule]),
-  );
-
-  if (!Array.isArray(record.entrypointRules)) {
-    return [...rulesByName.values()].sort((left, right) =>
-      left.name.localeCompare(right.name),
-    );
-  }
-
-  for (const candidate of record.entrypointRules) {
-    if (!isRecord(candidate)) {
-      continue;
-    }
-
-    const rawName = candidate.name;
-    if (typeof rawName !== "string") {
-      continue;
-    }
-
-    const name = rawName.trim();
-    if (name.length === 0) {
-      continue;
-    }
-
-    const previousRule = rulesByName.get(name);
-    rulesByName.set(name, {
-      allowSiblingEntrypoints:
-        typeof candidate.allowSiblingEntrypoints === "boolean"
-          ? candidate.allowSiblingEntrypoints
-          : previousRule?.allowSiblingEntrypoints ?? false,
-      allowTopLevelStatements:
-        typeof candidate.allowTopLevelStatements === "boolean"
-          ? candidate.allowTopLevelStatements
-          : previousRule?.allowTopLevelStatements ?? false,
-      name,
-    });
-  }
-
-  return [...rulesByName.values()].sort((left, right) =>
-    left.name.localeCompare(right.name),
-  );
 }
 
 function normalizePolicyConfig(
