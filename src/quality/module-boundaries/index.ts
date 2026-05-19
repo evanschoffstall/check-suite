@@ -1,7 +1,4 @@
-export {
-  analyzeArchitecture,
-  formatArchitectureViolations,
-} from "./analyze";
+export { analyzeArchitecture, formatArchitectureViolations } from "./analyze";
 export {
   inferAllowedRootFileStems,
   inferCentralSurfacePathPrefixes,

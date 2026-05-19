@@ -34,22 +34,18 @@ export {
   formatViolations,
 } from "@/quality/complexity/report/index.ts";
 export {
-  DEFAULT_COMPLEXITY_THRESHOLDS,
-} from "@/quality/complexity/shared/index.ts";
-export type {
-  ComplexityThresholds,
-  ComplexityViolation,
-  FileMetrics,
-  FunctionMetrics,
-  TopLevelDeclaration,
-  TopLevelFunctionNode,
-  TypeScriptFunctionMetrics,
-} from "@/quality/complexity/shared/index.ts";
-export {
   collectExcludedRanges,
+  type ComplexityThresholds,
+  type ComplexityViolation,
   computeCyclomaticComplexity,
   computeMaxNestingDepth,
   countNonCommentLines,
   countTokens,
+  DEFAULT_COMPLEXITY_THRESHOLDS,
+  type FileMetrics,
+  type FunctionMetrics,
   isPositionInsideRanges,
+  type TopLevelDeclaration,
+  type TopLevelFunctionNode,
+  type TypeScriptFunctionMetrics,
 } from "@/quality/complexity/shared/index.ts";

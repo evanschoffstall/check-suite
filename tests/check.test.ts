@@ -38,9 +38,7 @@ import {
   startCheckingIndicator,
   withCheckingIndicator,
 } from "../src/suite-processing/checking-indicator/index.ts";
-import {
-  printSuiteOutputs,
-} from "../src/suite-processing/display.ts";
+import { printSuiteOutputs } from "../src/suite-processing/display.ts";
 import {
   appendTimedOutDrainMessage,
   appendTimedOutMessage,
@@ -129,9 +127,7 @@ describe("check CLI", () => {
     expect(parseCliOptions([]).outputMode).toBe("failures-only");
     expect(parseCliOptions([]).renderMode).toBe("styled");
     expect(parseCliOptions([]).failureOutputLineLimit).toBeNull();
-    expect(parseCliOptions(["--output=all", "--lint"]).outputMode).toBe(
-      "all",
-    );
+    expect(parseCliOptions(["--output=all", "--lint"]).outputMode).toBe("all");
     expect(parseCliOptions(["--output=failures"]).outputMode).toBe(
       "failures-only",
     );
@@ -325,7 +321,10 @@ describe("format helpers", () => {
     }) as typeof process.stdout.write;
 
     try {
-      printPostProcessMessages([{ text: "warn message", tone: "warn" }], "plain");
+      printPostProcessMessages(
+        [{ text: "warn message", tone: "warn" }],
+        "plain",
+      );
       printPostProcessSections(
         [{ items: ["first"], title: "Section", tone: "fail" }],
         "plain",
@@ -384,9 +383,9 @@ describe("format helpers", () => {
         false,
       );
       expect(writeLines).toEqual(["fail output\n"]);
-      expect(infoLines.some((line) => stripAnsi(line).includes("fail step"))).toBe(
-        true,
-      );
+      expect(
+        infoLines.some((line) => stripAnsi(line).includes("fail step")),
+      ).toBe(true);
 
       infoLines.length = 0;
       writeLines.length = 0;
@@ -404,9 +403,9 @@ describe("format helpers", () => {
         false,
       );
       expect(writeLines).toEqual(["pass output\n", "fail output\n"]);
-      expect(infoLines.some((line) => stripAnsi(line).includes("pass step"))).toBe(
-        true,
-      );
+      expect(
+        infoLines.some((line) => stripAnsi(line).includes("pass step")),
+      ).toBe(true);
     } finally {
       console.info = originalConsoleInfo;
       process.stdout.write = originalStdoutWrite;
@@ -439,8 +438,14 @@ describe("format helpers", () => {
         "pass-step": { exitCode: 0, output: "pass raw", timedOut: false },
       };
       const processedResults = {
-        "fail-step": { displayOutput: "line 1\nline 2\nline 3\n", postProcess: null },
-        "pass-step": { displayOutput: "pass line 1\npass line 2\npass line 3\n", postProcess: null },
+        "fail-step": {
+          displayOutput: "line 1\nline 2\nline 3\n",
+          postProcess: null,
+        },
+        "pass-step": {
+          displayOutput: "pass line 1\npass line 2\npass line 3\n",
+          postProcess: null,
+        },
       };
 
       printSuiteOutputs(
@@ -460,12 +465,12 @@ describe("format helpers", () => {
         "pass line 1\npass line 2\npass line 3\n",
         "line 1\nline 2\n... truncated to first 2 lines of failing output (--fail-lines=2)\n",
       ]);
-      expect(infoLines.some((line) => stripAnsi(line).includes("pass step"))).toBe(
-        true,
-      );
-      expect(infoLines.some((line) => stripAnsi(line).includes("fail step"))).toBe(
-        true,
-      );
+      expect(
+        infoLines.some((line) => stripAnsi(line).includes("pass step")),
+      ).toBe(true);
+      expect(
+        infoLines.some((line) => stripAnsi(line).includes("fail step")),
+      ).toBe(true);
     } finally {
       console.info = originalConsoleInfo;
       process.stdout.write = originalStdoutWrite;
@@ -485,15 +490,18 @@ describe("format helpers", () => {
 
     expect(stripAnsi(renderCheckingFrame(0))).toContain("Checking");
 
-    const resultPromise = withCheckingIndicator(async (indicator) => {
-      taskStarted = true;
-      indicator.setDetailLine({ label: "lint", output: "src/check.ts" });
-      return "done";
-    }, {
-      enabled: true,
-      frameIntervalMs: 1,
-      output,
-    });
+    const resultPromise = withCheckingIndicator(
+      async (indicator) => {
+        taskStarted = true;
+        indicator.setDetailLine({ label: "lint", output: "src/check.ts" });
+        return "done";
+      },
+      {
+        enabled: true,
+        frameIntervalMs: 1,
+        output,
+      },
+    );
 
     expect(taskStarted).toBe(false);
 
@@ -505,7 +513,11 @@ describe("format helpers", () => {
       true,
     );
     expect(
-      writes.some((chunk) => /Checking.*\[\d+\.\d+s\] \[lint\] src\/check\.ts/.test(stripAnsi(chunk))),
+      writes.some((chunk) =>
+        /Checking.*\[\d+\.\d+s\] \[lint\] src\/check\.ts/.test(
+          stripAnsi(chunk),
+        ),
+      ),
     ).toBe(true);
     expect(writes.at(-1)).toBe("\r\x1b[2K\x1b[?25h");
   });
@@ -530,7 +542,11 @@ describe("format helpers", () => {
     expect(stripAnsi(writes[1])).toContain("Checking");
     indicator.setDetailLine({ label: "lint", output: "building graph" });
     expect(
-      writes.some((chunk) => /Checking.*\[\d+\.\d+s\] \[lint\] building graph/.test(stripAnsi(chunk))),
+      writes.some((chunk) =>
+        /Checking.*\[\d+\.\d+s\] \[lint\] building graph/.test(
+          stripAnsi(chunk),
+        ),
+      ),
     ).toBe(true);
 
     await indicator.stop();

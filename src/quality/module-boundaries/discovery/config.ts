@@ -37,7 +37,10 @@ export function collectRootEntry(
   entry: { isDirectory(): boolean; isFile(): boolean; name: string },
 ): void {
   if (entry.isDirectory()) {
-    if (isIgnoredDirectory(entry.name, config) || isTestDirectory(entry.name, config)) {
+    if (
+      isIgnoredDirectory(entry.name, config) ||
+      isTestDirectory(entry.name, config)
+    ) {
       return;
     }
 
@@ -87,7 +90,10 @@ export function discoverCodeRoots(
  * The returned `directories` list is suitable as a source-scan target for any
  * platform step that needs to know which directories contain project code.
  */
-export function discoverDefaultCodeRoots(cwd: string, configValue?: unknown): CodeRoots {
+export function discoverDefaultCodeRoots(
+  cwd: string,
+  configValue?: unknown,
+): CodeRoots {
   return discoverCodeRoots(cwd, normalizeArchitectureConfig(configValue ?? {}));
 }
 
@@ -140,13 +146,17 @@ function collectConfiguredRoot(
     return;
   }
 
-  if (directoryContainsCode(absoluteRootPath, config, normalizedRootDirectory)) {
+  if (
+    directoryContainsCode(absoluteRootPath, config, normalizedRootDirectory)
+  ) {
     roots.directories.push(normalizedRootDirectory);
   }
 }
 
 /** Normalizes file-target overrides that define which files count as code. */
-function normalizeCodeTargetsConfig(value: unknown): Required<ArchitectureCodeTargetsConfig> {
+function normalizeCodeTargetsConfig(
+  value: unknown,
+): Required<ArchitectureCodeTargetsConfig> {
   const record = isRecord(value) ? value : {};
 
   return {
@@ -273,7 +283,9 @@ function normalizePolicyConfig(
 
   return {
     dependencyPolicies: normalizeDependencyPolicies(record.dependencyPolicies),
-    entrypointNames: entrypointRules.map((entrypointRule) => entrypointRule.name),
+    entrypointNames: entrypointRules.map(
+      (entrypointRule) => entrypointRule.name,
+    ),
     entrypointRules,
     requireAcyclicDependencyPolicies: normalizeBooleanConfig(
       record.requireAcyclicDependencyPolicies,
@@ -321,10 +333,7 @@ function normalizePublicSurfaceConfig(
 
 function normalizeRootScopeConfig(
   record: Record<string, unknown>,
-): Pick<
-  NormalizedArchitectureAnalyzerConfig,
-  "rootDirectories"
-> {
+): Pick<NormalizedArchitectureAnalyzerConfig, "rootDirectories"> {
   return {
     rootDirectories: normalizeStringListConfig(record.rootDirectories, []),
   };
@@ -386,4 +395,3 @@ function normalizeThresholdConfig(
     ),
   };
 }
-

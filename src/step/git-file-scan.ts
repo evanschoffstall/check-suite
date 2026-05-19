@@ -135,7 +135,9 @@ function joinOutputs(parts: string[]): string {
 }
 
 async function resolveGitVisibleFiles(cwd: string): Promise<ResolvedGitFiles> {
-  const result = await spawnBuffered(cwd, "git", [...GIT_LS_FILES_ARGS]);
+  const result = await spawnBuffered(cwd, "git", [...GIT_LS_FILES_ARGS], {
+    env: { ...process.env, GIT_CEILING_DIRECTORIES: dirname(cwd) },
+  });
 
   if (result.exitCode === 0) {
     const paths = result.output
@@ -202,9 +204,11 @@ async function spawnBuffered(
   cwd: string,
   command: string,
   args: string[],
+  options: { env?: Record<string, string | undefined> } = {},
 ): Promise<{ exitCode: number; output: string }> {
   const child = Bun.spawn([command, ...args], {
     cwd,
+    env: options.env,
     stderr: "pipe",
     stdin: "ignore",
     stdout: "pipe",
