@@ -1,20 +1,21 @@
 /// <reference types="bun" />
 /// <reference types="node" />
 
-export type {
-  ComplexityAnalyzerAdapter,
-  ComplexityCheckOptions,
-} from "./main";
-export type { ComplexityCheckResult } from "./main";
-export { runComplexityCheck } from "./main";
 export {
+  type ComplexityAnalyzerAdapter,
+  type ComplexityCheckOptions,
+  type ComplexityCheckResult,
+  runComplexityCheck,
+} from "./main";
+export {
+  type ComplexityColumnMap,
+  createCsvSpawnComplexityAdapter,
   createSpawnComplexityAdapter,
+  type CsvSpawnComplexityAdapterOptions,
   parseCsvComplexityRows,
+  type SpawnComplexityAdapterOptions,
 } from "./spawn-adapter.ts";
-export type {
-  ComplexityColumnMap,
-  SpawnComplexityAdapterOptions,
-} from "./spawn-adapter.ts";
+export { type ComplexityStepOptions, defineComplexityStep } from "./step.ts";
 export {
   collectTopLevelTypeScriptFunctionMetrics,
   resolveTopLevelFunctionMetrics,

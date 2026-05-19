@@ -10,7 +10,12 @@ export interface CheckConfig {
 }
 
 /** A single entry in the flat {@link defineCheckSuiteConfig} array. */
-export type CheckConfigEntry = PathsConfigEntry | StepConfig | SuiteConfigEntry;
+export type CheckConfigEntry =
+  | KindsConfigEntry
+  | PathsConfigEntry
+  | StepConfig
+  | StepEntry
+  | SuiteConfigEntry;
 
 export interface CheckRow {
   details: string;
@@ -44,6 +49,11 @@ export interface KillableProcess {
   kill(signal?: number | string): void;
 }
 
+/** A kind-handler map entry in the flat {@link defineCheckSuiteConfig} array. */
+export interface KindsConfigEntry {
+  kinds: Record<string, unknown>;
+}
+
 export interface PackageManifest {
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
@@ -69,6 +79,21 @@ export interface RunOptions {
   timeoutDrainMs?: number;
   timeoutMs?: number;
 }
+
+/** A declarative step entry normalized through a config-owned kind handler. */
+export interface StepEntry {
+  [option: string]: unknown;
+  kind: string;
+}
+
+/** Config-owned normalizer for one declarative step-entry kind. */
+export type StepEntryHandler = (
+  entry: Record<string, unknown>,
+  handlers: StepEntryHandlers,
+) => StepConfig | StepConfig[];
+
+/** Normalizers for declarative step-entry kinds. */
+export type StepEntryHandlers = Partial<Record<string, StepEntryHandler>>;
 
 export interface StreamCollector {
   done: Promise<void>;

@@ -1,4 +1,9 @@
-import type { Command } from "@/types/index.ts";
+import { dirname } from "node:path";
+
+import type { Command, StepConfig, Summary } from "@/types/index.ts";
+
+import { type CommandArgsInput, tokenizeCommandArgs } from "./args.ts";
+import { defineInlineStep } from "./build.ts";
 
 const MAX_DEFAULT_ARG_LENGTH = 100_000;
 
@@ -23,19 +28,47 @@ export interface GitFileScanOptions {
    * Args used when the working directory is not inside a git repository.
    * Defaults to `fileArgs` when omitted.
    */
-  fallbackArgs?: readonly string[];
+  fallbackArgs?: CommandArgsInput;
   /** Args prepended before each file-path batch, e.g. `["scanner", "--no-glob"]`. */
-  fileArgs: readonly string[];
+  fileArgs: CommandArgsInput;
   /** Maximum combined argument length before splitting into a new batch. Defaults to 100 000. */
   maxArgLength?: number;
   /** Message written when the git-visible file set is empty. */
   noFilesMessage?: string;
 }
 
+/** User-facing factory options for wrapping {@link runGitFileScan} in a step. */
+export interface GitFileScanStepOptions extends GitFileScanOptions {
+  enabled?: boolean;
+  failMsg?: string;
+  key?: string;
+  label: string;
+  passMsg?: string;
+  summary?: Summary;
+}
+
 type ResolvedGitFiles =
   | { exitCode: number; kind: "failure"; output: string }
   | { kind: "fallback" }
   | { kind: "resolved"; paths: string[] };
+
+/**
+ * Wraps {@link runGitFileScan} in an inline step so config only has to supply
+ * the git-scan command contract.
+ */
+export function defineGitFileScanStep(
+  options: GitFileScanStepOptions,
+): StepConfig {
+  return defineInlineStep({
+    enabled: options.enabled,
+    failMsg: options.failMsg ?? `${options.label} failed`,
+    key: options.key ?? options.label,
+    label: options.label,
+    passMsg: options.passMsg,
+    source: ({ cwd }) => runGitFileScan(cwd, options),
+    summary: options.summary,
+  });
+}
 
 /**
  * Runs a command against the git-visible files in the target workspace and
@@ -54,9 +87,10 @@ export async function runGitFileScan(
   }
 
   if (gitFiles.kind === "fallback") {
-    const result = await spawnBuffered(cwd, options.command, [
-      ...(options.fallbackArgs ?? options.fileArgs),
-    ]);
+    const fallbackArgs = tokenizeCommandArgs(
+      options.fallbackArgs ?? options.fileArgs,
+    );
+    const result = await spawnBuffered(cwd, options.command, [...fallbackArgs]);
     return buildTimedCommand(result.exitCode, result.output, startedAt);
   }
 
@@ -161,15 +195,15 @@ async function runFileBatches(
   startedAt: number,
 ): Promise<Command> {
   const maxLen = options.maxArgLength ?? MAX_DEFAULT_ARG_LENGTH;
+  const fileArgs = tokenizeCommandArgs(options.fileArgs);
   const outputParts: string[] = [];
   let finalExitCode = 0;
 
   // Batches are intentionally sequential: a non-soft failure stops further
   // processing, and exit-code ordering is deterministic.
-  for (const batch of chunkPaths(paths, options.fileArgs, maxLen)) {
-     
+  for (const batch of chunkPaths(paths, fileArgs, maxLen)) {
     const result = await spawnBuffered(cwd, options.command, [
-      ...options.fileArgs,
+      ...fileArgs,
       ...batch,
     ]);
 

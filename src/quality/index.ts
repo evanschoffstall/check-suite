@@ -10,8 +10,10 @@ export {
   computeMaxNestingDepth,
   countNonCommentLines,
   countTokens,
+  createCsvSpawnComplexityAdapter,
   createSpawnComplexityAdapter,
   DEFAULT_COMPLEXITY_THRESHOLDS,
+  defineComplexityStep,
   findFileViolations,
   findFunctionViolations,
   formatViolations,
@@ -26,8 +28,10 @@ export type {
   ComplexityCheckOptions,
   ComplexityCheckResult,
   ComplexityColumnMap,
+  ComplexityStepOptions,
   ComplexityThresholds,
   ComplexityViolation,
+  CsvSpawnComplexityAdapterOptions,
   FileMetrics,
   FunctionMetrics,
   SpawnComplexityAdapterOptions,
@@ -37,6 +41,8 @@ export type {
 } from "@/quality/complexity/index.ts";
 export {
   analyzeArchitecture,
+  defineArchitectureStep,
+  defineCodeTargetDiscovery,
   discoverDefaultCodeRoots,
   formatArchitectureViolations,
   inferAllowedRootFileStems,
@@ -49,4 +55,6 @@ export {
 export type {
   ArchitectureAnalyzerConfig,
   ArchitectureCheckResult,
+  ArchitectureStepOptions,
+  CodeTargetDiscoveryOptions,
 } from "@/quality/module-boundaries/index.ts";

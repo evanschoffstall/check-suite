@@ -15,6 +15,7 @@ export interface InlineStepOptions {
   key: string;
   label: string;
   passMsg?: string;
+  postProcess?: StepConfig["postProcess"];
   /** Inline TypeScript runner — function reference or serializable source string. */
   source: InlineTypeScriptSource<InlineTypeScriptContext, Command>;
   summary?: Summary;
@@ -46,6 +47,7 @@ export function defineInlineStep(options: InlineStepOptions): StepConfig {
     key: options.key,
     label: options.label,
     passMsg: options.passMsg ?? "",
+    postProcess: options.postProcess,
     summary: options.summary ?? { type: "simple" },
   };
 }

@@ -1,8 +1,15 @@
 import { availableParallelism, cpus } from "node:os";
 
-import type { Command, LintConfig, StepConfig, Summary } from "@/types/index.ts";
+import type {
+  Command,
+  LintConfig,
+  StepConfig,
+  Summary,
+} from "@/types/index.ts";
 
 import { run } from "@/process/index.ts";
+
+import { type CommandArgsInput, tokenizeCommandArgs } from "./args.ts";
 
 // ---------------------------------------------------------------------------
 // Platform defaults
@@ -49,9 +56,9 @@ const DEFAULT_MAX_FILES = 5000;
  */
 export interface LintStepOptions {
   /** Linter CLI args passed to `bunx`. Must include the tool name as the first element. */
-  args: readonly string[];
+  args: CommandArgsInput;
   /** Optional arg prefix inserted before the derived worker count, for example `["--concurrency"]`. */
-  concurrencyArgs?: readonly string[];
+  concurrencyArgs?: CommandArgsInput;
   /** Optional env var that overrides the derived worker count. Defaults to `CHECK_SUITE_LINT_CONCURRENCY`. */
   concurrencyEnvVar?: string;
   enabled?: boolean;
@@ -156,9 +163,9 @@ async function countLintFiles(cfg: LintConfig): Promise<number> {
 
 function createLintConfig(options: LintStepOptions): LintConfig {
   return {
-    args: [...options.args],
+    args: tokenizeCommandArgs(options.args),
     concurrencyArgs: options.concurrencyArgs
-      ? [...options.concurrencyArgs]
+      ? tokenizeCommandArgs(options.concurrencyArgs)
       : undefined,
     concurrencyEnvVar: options.concurrencyEnvVar,
     globExtensions: [...(options.globExtensions ?? DEFAULT_GLOB_EXTENSIONS)],

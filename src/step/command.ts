@@ -1,9 +1,11 @@
 import type { OutputFilter, StepConfig, Summary } from "@/types/index.ts";
 
+import { type CommandArgsInput, tokenizeCommandArgs } from "./args.ts";
+
 /** Options for constructing a subprocess-backed {@link StepConfig}. */
 export interface CommandStepOptions {
   allowSuiteFlagArgs?: boolean;
-  args: string[];
+  args: CommandArgsInput;
   cmd: string;
   enabled?: boolean;
   ensureDirs?: string[];
@@ -12,6 +14,7 @@ export interface CommandStepOptions {
   label: string;
   outputFilter?: OutputFilter;
   passMsg?: string;
+  postProcess?: StepConfig["postProcess"];
   preRun?: boolean;
   serialGroup?: string;
   summary?: Summary;
@@ -28,7 +31,7 @@ export interface CommandStepOptions {
 export function defineCommandStep(options: CommandStepOptions): StepConfig {
   return {
     allowSuiteFlagArgs: options.allowSuiteFlagArgs,
-    args: options.args,
+    args: tokenizeCommandArgs(options.args),
     cmd: options.cmd,
     enabled: options.enabled ?? true,
     ensureDirs: options.ensureDirs,
@@ -37,6 +40,7 @@ export function defineCommandStep(options: CommandStepOptions): StepConfig {
     label: options.label,
     outputFilter: options.outputFilter,
     passMsg: options.passMsg ?? "",
+    postProcess: options.postProcess,
     preRun: options.preRun,
     serialGroup: options.serialGroup,
     summary: options.summary ?? { type: "simple" },

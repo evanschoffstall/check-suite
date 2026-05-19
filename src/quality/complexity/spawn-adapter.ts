@@ -1,11 +1,7 @@
+import type { ComplexityAnalyzerAdapter } from "@/quality/complexity/main.ts";
+import type { FunctionMetrics } from "@/quality/complexity/shared/index.ts";
 
-
-import type {
-  ComplexityAnalyzerAdapter,
-} from "@/quality/complexity/main.ts";
-import type {
-  FunctionMetrics,
-} from "@/quality/complexity/shared/index.ts";
+import { defineNumberRecord } from "@/foundation/index.ts";
 
 /**
  * Maps {@link FunctionMetrics} field names to zero-based column indices in a
@@ -23,6 +19,20 @@ export interface ComplexityColumnMap {
   path: number;
   startLine: number;
   tokenCount: number;
+}
+
+/**
+ * Concise authoring options for a CSV-emitting complexity analyzer that only
+ * needs a fixed arg prefix, a column map, and a repeated exclude-path switch.
+ */
+export interface CsvSpawnComplexityAdapterOptions {
+  baseArgs: readonly string[];
+  columnMap: ComplexityColumnMap | string;
+  command: string;
+  excludeArgs?: readonly string[];
+  failureLabel: string;
+  installHint: string;
+  missingModulePattern?: RegExp;
 }
 
 /** Options for constructing a subprocess-backed {@link ComplexityAnalyzerAdapter}. */
@@ -54,6 +64,35 @@ export interface SpawnComplexityAdapterOptions {
 }
 
 const DEFAULT_MISSING_MODULE_PATTERN = /No module named/i;
+
+/**
+ * Builds a spawn-backed CSV analyzer without repeating the common CSV parsing
+ * and exclude-path argument plumbing in repository config.
+ */
+export function createCsvSpawnComplexityAdapter(
+  options: CsvSpawnComplexityAdapterOptions,
+): ComplexityAnalyzerAdapter {
+  const excludeArgs = [...(options.excludeArgs ?? ["-x"])];
+  const columnMap =
+    typeof options.columnMap === "string"
+      ? (defineNumberRecord(
+          options.columnMap,
+        ) as unknown as ComplexityColumnMap)
+      : options.columnMap;
+
+  return createSpawnComplexityAdapter({
+    buildArgs: (targets, excludedPaths) => [
+      ...options.baseArgs,
+      ...excludedPaths.flatMap((path) => [...excludeArgs, path]),
+      ...targets,
+    ],
+    command: options.command,
+    failureLabel: options.failureLabel,
+    installHint: options.installHint,
+    missingModulePattern: options.missingModulePattern,
+    parseOutput: (output) => parseCsvComplexityRows(output, columnMap),
+  });
+}
 
 /**
  * Creates a {@link ComplexityAnalyzerAdapter} that spawns an external process
