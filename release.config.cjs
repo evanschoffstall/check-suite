@@ -1,5 +1,7 @@
 require.resolve("conventional-changelog-conventionalcommits");
+require.resolve("@semantic-release/commit-analyzer");
 require.resolve("@semantic-release/git");
+require.resolve("@semantic-release/release-notes-generator");
 require.resolve("@semantic-release/npm");
 require.resolve("@semantic-release/github");
 
@@ -22,12 +24,9 @@ const conventionalCommitsPresetConfig = {
   types: conventionalCommitSections,
 };
 
-const hasGitHubToken = Boolean(
-  process.env.GH_TOKEN ?? process.env.GITHUB_TOKEN,
-);
-
 module.exports = {
   branches: ["main"],
+  repositoryUrl: "git@github.com:evanschoffstall/check-suite.git",
   plugins: [
     [
       "@semantic-release/commit-analyzer",
@@ -54,9 +53,9 @@ module.exports = {
       {
         assets: ["package.json"],
         message:
-          "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}",
+          "chore(release): ${nextRelease.version} \n\n${nextRelease.notes}",
       },
     ],
-    ...(hasGitHubToken ? ["@semantic-release/github"] : []),
+    "@semantic-release/github",
   ],
 };
