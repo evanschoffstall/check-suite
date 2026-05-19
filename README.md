@@ -4,7 +4,7 @@
 
 # check-suite
 
-*A production-grade quality suite and statistical analysis platform driven by a thin config file.*
+_A production-grade quality suite and statistical analysis platform driven by a thin config file._
 
 [![TypeScript 5](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Bun](https://img.shields.io/badge/Bun-runtime-F9F1E1?style=for-the-badge&logo=bun&logoColor=black)](https://bun.sh)
@@ -30,20 +30,20 @@ The engine is entirely generic. It has no knowledge of any specific tool, linter
 
 ## Highlights
 
-| Capability | What it gives you |
-| --- | --- |
-| Unified step runner | One command runs every quality gate in the repo, locally and in CI. |
-| Parallel execution | Steps run concurrently unless you opt into a serial group. |
-| Step selection | Run a single step in isolation, exclude steps, or run only the summary. |
-| Timeout management | Per-step timeouts with drain windows, env-var overrides, and readable messages. |
+| Capability                        | What it gives you                                                                          |
+| --------------------------------- | ------------------------------------------------------------------------------------------ |
+| Unified step runner               | One command runs every quality gate in the repo, locally and in CI.                        |
+| Parallel execution                | Steps run concurrently unless you opt into a serial group.                                 |
+| Step selection                    | Run a single step in isolation, exclude steps, or run only the summary.                    |
+| Timeout management                | Per-step timeouts with drain windows, env-var overrides, and readable messages.            |
 | Inline TypeScript post-processing | Write typed post-process functions directly in config; check-suite compiles and runs them. |
-| Coverage analysis | Parse LCOV artifacts or console output with configurable path filters and thresholds. |
-| Complexity analysis | Adapter-backed cyclomatic complexity and nesting depth checks across the full source tree. |
-| Architecture boundary enforcement | Infer or declare module dependency policies and enforce them against the import graph. |
-| Lint handler | Auto-derive worker count, file count, and glob patterns for any lint command. |
-| Git file scanning | Run targeted checks only against files changed in the current branch. |
-| Token resolution | Interpolate dynamic values into step configuration without hardcoding. |
-| Plain and styled output | Full ANSI-styled terminal renderer for local use; plain-text mode for CI and scripts. |
+| Coverage analysis                 | Parse LCOV artifacts or console output with configurable path filters and thresholds.      |
+| Complexity analysis               | Adapter-backed cyclomatic complexity and nesting depth checks across the full source tree. |
+| Architecture boundary enforcement | Infer or declare module dependency policies and enforce them against the import graph.     |
+| Lint handler                      | Auto-derive worker count, file count, and glob patterns for any lint command.              |
+| Git file scanning                 | Run targeted checks only against files changed in the current branch.                      |
+| Token resolution                  | Interpolate dynamic values into step configuration without hardcoding.                     |
+| Plain and styled output           | Full ANSI-styled terminal renderer for local use; plain-text mode for CI and scripts.      |
 
 ## Quick start
 
@@ -59,25 +59,24 @@ bun add -d check-suite
 
 ### 2. Create a config
 
-Add `check-suite.config.ts` to your project root. The config exports a `defineCheckSuiteConfig` call with an array of step declarations.
+Add `check-suite.config.ts` to your project root. The config exports a `defineCheckSuiteConfig` call with a concise object containing `paths`, `steps`, and optional suite settings.
 
 ```ts
 import { defineCheckSuiteConfig } from "check-suite/config-schema";
 import { defineStep } from "check-suite/step";
 
-export default defineCheckSuiteConfig([
-  defineStep({
-    args: ["eslint", "."],
-    key: "lint",
-    label: "lint",
-  }),
-  defineStep({
-    args: ["tsc", "--noEmit"],
-    cmd: "bun",
-    key: "types",
-    label: "types",
-  }),
-]);
+export default defineCheckSuiteConfig({
+  paths: {},
+  steps: [
+    defineStep({ args: ["eslint", "."], key: "lint", label: "lint" }),
+    defineStep({
+      args: ["tsc", "--noEmit"],
+      cmd: "bun",
+      key: "types",
+      label: "types",
+    }),
+  ],
+});
 ```
 
 > [!NOTE]
@@ -108,25 +107,25 @@ You should see a step-by-step run with pass/fail status for each declared step, 
 
 ## CLI reference
 
-| Command | Purpose |
-| --- | --- |
-| `check-suite` | Run all enabled steps. |
-| `check-suite summary` | Run all steps without detailed per-step output. |
-| `check-suite keys` | List all enabled step keys. |
-| `check-suite <step-key>` | Run a single step in isolation. |
-| `check-suite help` | Print usage text. |
+| Command                  | Purpose                                         |
+| ------------------------ | ----------------------------------------------- |
+| `check-suite`            | Run all enabled steps.                          |
+| `check-suite summary`    | Run all steps without detailed per-step output. |
+| `check-suite keys`       | List all enabled step keys.                     |
+| `check-suite <step-key>` | Run a single step in isolation.                 |
+| `check-suite help`       | Print usage text.                               |
 
 **Suite options:**
 
-| Flag | Purpose |
-| --- | --- |
-| `--output=failures` | Show detailed output only for failing steps (default). |
-| `--output=all` | Show detailed output for all steps. |
-| `--format=plain` | Disable ANSI styling, animation, and decorative glyphs. |
-| `--format=styled` | Use the default styled terminal renderer. |
-| `--fail-lines=<n>` | Truncate each failing step's output to the first `n` lines. |
-| `--no=<step-key>` | Exclude a step from the run. |
-| `--<step-key>` | Run only the named step(s). |
+| Flag                | Purpose                                                     |
+| ------------------- | ----------------------------------------------------------- |
+| `--output=failures` | Show detailed output only for failing steps (default).      |
+| `--output=all`      | Show detailed output for all steps.                         |
+| `--format=plain`    | Disable ANSI styling, animation, and decorative glyphs.     |
+| `--format=styled`   | Use the default styled terminal renderer.                   |
+| `--fail-lines=<n>`  | Truncate each failing step's output to the first `n` lines. |
+| `--no=<step-key>`   | Exclude a step from the run.                                |
+| `--<step-key>`      | Run only the named step(s).                                 |
 
 ## Configuration
 
@@ -139,10 +138,20 @@ You should see a step-by-step run with pass/fail status for each declared step, 
 defineStep({ label: "knip", args: ["knip", "--config", "knip.json"] });
 
 // Lint handler — auto-derives worker count and file glob
-defineStep({ handler: "lint", label: "eslint", args: ["eslint", "--max-warnings", "0"] });
+defineStep({
+  handler: "lint",
+  label: "eslint",
+  args: ["eslint", "--max-warnings", "0"],
+});
 
 // Inline TypeScript step — source is compiled and run in-process
-defineStep({ label: "check-css", key: "css", source: async ({ cwd }) => { /* ... */ } });
+defineStep({
+  label: "check-css",
+  key: "css",
+  source: async ({ cwd }) => {
+    /* ... */
+  },
+});
 ```
 
 You can also import the lower-level factories directly when you need explicit control:
@@ -156,11 +165,15 @@ You can also import the lower-level factories directly when you need explicit co
 Declare named paths and token values alongside steps. check-suite resolves `{tokenName}` interpolations in step args, timeout values, and post-process data at runtime.
 
 ```ts
-defineCheckSuiteConfig([
-  { paths: { coverage: "coverage/lcov.info" } },
-  { suite: { tokens: { coverageThreshold: 80 } } },
-  defineStep({ /* ... */ }),
-]);
+defineCheckSuiteConfig({
+  paths: { coverage: "coverage/lcov.info" },
+  steps: [
+    defineStep({
+      /* ... */
+    }),
+  ],
+  suite: { timeoutMs: 120_000 },
+});
 ```
 
 ### Post-processing
@@ -175,7 +188,10 @@ defineStep({
   postProcess: {
     source: ({ displayOutput, helpers }) => {
       const count = (displayOutput.match(/error/g) ?? []).length;
-      return { status: count === 0 ? "pass" : "fail", summary: `${count} errors` };
+      return {
+        status: count === 0 ? "pass" : "fail",
+        summary: `${count} errors`,
+      };
     },
   },
 });
@@ -207,9 +223,9 @@ defineStep({
 import { definePolicies } from "check-suite/recipes";
 
 const policies = definePolicies({
-  cli:    { dependsOn: ["config", "types"] },
+  cli: { dependsOn: ["config", "types"] },
   config: { dependsOn: ["types"], tier: "public" },
-  types:  { tier: "public" },
+  types: { tier: "public" },
 });
 ```
 
@@ -218,12 +234,12 @@ const policies = definePolicies({
 
 ## Stack
 
-| Layer | Technology |
-| --- | --- |
-| Runtime | Bun |
-| Language | TypeScript 5 |
-| Config validation | Zod |
-| CLI | Native Bun process (no framework) |
+| Layer             | Technology                        |
+| ----------------- | --------------------------------- |
+| Runtime           | Bun                               |
+| Language          | TypeScript 5                      |
+| Config validation | Zod                               |
+| CLI               | Native Bun process (no framework) |
 
 ## Project structure
 
